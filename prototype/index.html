@@ -1,0 +1,1095 @@
+<title>Trucks2U Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;1,700;1,800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one phone-width app column; brand bar on top, role switcher, screen, bottom tab bar. */
+:root {
+  --bg: #eef2f7;
+  --surface: #ffffff;
+  --surface-2: #f5f7fb;
+  --line: #d9e0ea;
+  --fg: #101a2b;
+  --muted: #5b6880;
+  --brand: #0b1730;
+  --brand-fg: #ffffff;
+  --accent: #1667e8;
+  --accent-fg: #ffffff;
+  --accent-soft: #e3edfd;
+  --good: #1a8a4a;
+  --good-soft: #e1f4e8;
+  --warn: #a86400;
+  --warn-soft: #fdf0d9;
+  --bad: #c0352b;
+  --bad-soft: #fbe5e3;
+  --display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+  --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #070e1c; --surface: #101b31; --surface-2: #0c1527; --line: #22314f;
+    --fg: #e8eef8; --muted: #93a2bd; --brand: #050b17; --brand-fg: #ffffff;
+    --accent: #3d86ff; --accent-fg: #ffffff; --accent-soft: #15284d;
+    --good: #4cc47e; --good-soft: #10301f; --warn: #f0a73a; --warn-soft: #34260c;
+    --bad: #f0726a; --bad-soft: #3a1513; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #070e1c; --surface: #101b31; --surface-2: #0c1527; --line: #22314f;
+  --fg: #e8eef8; --muted: #93a2bd; --brand: #050b17; --brand-fg: #ffffff;
+  --accent: #3d86ff; --accent-fg: #ffffff; --accent-soft: #15284d;
+  --good: #4cc47e; --good-soft: #10301f; --warn: #f0a73a; --warn-soft: #34260c;
+  --bad: #f0726a; --bad-soft: #3a1513; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.45 var(--body); }
+.wrap { max-width: 460px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px 24px; display: grid; gap: 12px; }
+.app { background: var(--surface-2); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; min-height: 640px; }
+.bar { background: var(--brand); color: var(--brand-fg); padding: 14px 16px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.logo { font: italic 800 26px/1 var(--display); letter-spacing: .5px; }
+.logo b { color: #4d94ff; }
+.bar small { font: 600 11px/1.2 var(--body); letter-spacing: 1.5px; text-transform: uppercase; opacity: .7; text-align: right; }
+.roles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
+.roles button { border: 0; background: transparent; color: var(--muted); font: 600 13px/1.2 var(--body); padding: 9px 4px; border-radius: 9px; cursor: pointer; }
+.roles button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
+.roles-label { font: 600 11px/1 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; }
+.roles-label button { background: none; border: 0; color: var(--accent); font: inherit; letter-spacing: inherit; cursor: pointer; padding: 0; }
+main { flex: 1; padding: 16px; display: grid; gap: 14px; align-content: start; }
+h1 { font: 700 26px/1.1 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 700 19px/1.15 var(--display); margin: 0; letter-spacing: .2px; }
+.eyebrow { font: 600 11px/1 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.card.tap { cursor: pointer; text-align: left; font: inherit; color: inherit; width: 100%; }
+.card.tap:hover { border-color: var(--accent); }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; }
+.row > * { min-width: 0; }
+.stack { display: grid; gap: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 600 12px/1 var(--body); padding: 5px 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.pill { font: 700 11px/1 var(--body); letter-spacing: .6px; text-transform: uppercase; padding: 5px 8px; border-radius: 6px; white-space: nowrap; }
+.pill.good { background: var(--good-soft); color: var(--good); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--bad-soft); color: var(--bad); }
+.pill.info { background: var(--accent-soft); color: var(--accent); }
+.btn { border: 0; border-radius: 11px; background: var(--accent); color: var(--accent-fg); font: 700 15px/1 var(--body); padding: 13px 16px; cursor: pointer; width: 100%; }
+.btn.ghost { background: var(--surface); color: var(--accent); border: 1px solid var(--line); }
+.btn.small { width: auto; padding: 9px 12px; font-size: 13px; border-radius: 9px; }
+.btn.good { background: var(--good); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:focus-visible, .roles button:focus-visible, .tabs button:focus-visible, .card.tap:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.back { background: none; border: 0; color: var(--accent); font: 600 14px/1 var(--body); padding: 0; cursor: pointer; justify-self: start; }
+.num { font-variant-numeric: tabular-nums; }
+.big { font: 700 28px/1 var(--display); font-variant-numeric: tabular-nums; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 4px; }
+.stat .big { font-size: 22px; }
+.stat span { font-size: 12px; color: var(--muted); }
+.meter { height: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--accent); }
+.route { display: grid; grid-template-columns: 14px 1fr; gap: 2px 10px; font-size: 14px; }
+.route .dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--accent); margin-top: 5px; }
+.route .dot.end { background: var(--accent); }
+.route .line { width: 2px; background: var(--line); margin-left: 4px; height: 14px; }
+.list { display: grid; gap: 0; }
+.list > div { padding: 10px 0; border-top: 1px solid var(--line); }
+.list > div:first-child { border-top: 0; padding-top: 0; }
+.truck-ic { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; flex: none; font: 700 13px/1 var(--display); }
+.thumb { width: 44px; height: 44px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); object-fit: cover; flex: none; display: grid; place-items: center; font-size: 10px; color: var(--muted); }
+label.field { display: grid; gap: 6px; font: 600 13px/1.2 var(--body); color: var(--muted); }
+input, select, textarea { width: 100%; font: 500 15px/1.3 var(--body); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.steps i { height: 4px; border-radius: 4px; background: var(--line); }
+.steps i.on { background: var(--accent); }
+.typecount { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+.stepper { display: flex; align-items: center; gap: 4px; }
+.stepper button { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 700 18px/1 var(--body); cursor: pointer; }
+.stepper output { width: 28px; text-align: center; font: 700 18px/1 var(--display); }
+.sum { display: grid; gap: 6px; font-size: 14px; }
+.sum .row { padding: 2px 0; }
+.sum .total { border-top: 1px solid var(--line); padding-top: 8px; font-weight: 700; }
+.check { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: start; }
+.check .mark { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 700 12px/1 var(--body); margin-top: 1px; }
+.mark.good { background: var(--good-soft); color: var(--good); }
+.mark.warn { background: var(--warn-soft); color: var(--warn); }
+.mark.bad { background: var(--bad-soft); color: var(--bad); }
+.note { font-size: 12.5px; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 10px; padding: 8px 10px; }
+.tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: 4px; }
+.tabs button { background: none; border: 0; color: var(--muted); font: 600 11.5px/1.1 var(--body); padding: 10px 2px 8px; display: grid; justify-items: center; gap: 4px; cursor: pointer; }
+.tabs button[aria-current="page"] { color: var(--accent); }
+.tabs svg { width: 22px; height: 22px; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--brand); color: var(--brand-fg); padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; max-width: calc(100% - 32px); z-index: 20; }
+.map { width: 100%; height: auto; display: block; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); }
+.map .road { fill: none; stroke: var(--line); stroke-width: 9; stroke-linecap: round; }
+.map .road2 { fill: none; stroke: var(--surface); stroke-width: 2; stroke-dasharray: 6 6; }
+.map .fence { fill: var(--good-soft); stroke: var(--good); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.map .place { fill: var(--fg); font: 700 11px var(--body); }
+.map .tk { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.map .tk.in { fill: var(--good); }
+.map .tl { fill: var(--fg); font: 700 10px var(--body); }
+.stage { font-size: 12.5px; color: var(--muted); }
+.foot { font-size: 12px; color: var(--muted); text-align: center; }
+@media (prefers-reduced-motion: no-preference) { .card.tap { transition: border-color .15s; } }
+</style>
+
+<div class="wrap">
+  <div class="stack" style="gap:6px">
+    <div class="roles-label"><span>Viewing as</span><button id="reset" type="button">Reset demo</button></div>
+    <div class="roles" role="group" aria-label="Viewing as">
+      <button type="button" data-role="contractor">Contractor</button>
+      <button type="button" data-role="owner">Truck owner</button>
+      <button type="button" data-role="broker">Broker</button>
+      <button type="button" data-role="admin">Admin</button>
+    </div>
+  </div>
+  <div class="app">
+    <header class="bar"><div class="logo">TRUCKS<b>2U</b></div><small>Heavy trucks.<br>On demand.</small></header>
+    <main id="screen"></main>
+    <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+  </div>
+  <p class="foot">Clickable prototype with sample data. Names, companies and numbers are examples. Changes are kept only until you reload.</p>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const FEE = 0.05;           // Trucks2U platform fee
+const BROKER = 0.11;        // typical broker cut, for comparison
+const TYPES = {
+  w10: { name: "10 wheeler", short: "10W", spec: "3 axle · ~15 t payload" },
+  w12: { name: "12 wheeler", short: "12W", spec: "4 axle · ~19 t payload" },
+  sd:  { name: "Super dumper", short: "SD", spec: "5+ axle · ~26 t payload" }
+};
+const PAYLOAD = { w10: 15, w12: 19, sd: 26 };   // typical tons per load
+// Asphalt plant directory: Caltrans' active Material Plant Quality Program list (Sep 2025) merged with Al's plant list.
+// cal = on the Caltrans list, mine = on Al's list. Map pins are approximate; grindings acceptance still needs confirming.
+const PLANT_SRC = "Caltrans active material plant list (Sep 2025) and your plant list";
+const PLANTS = [
+  {"id": "P01", "name": "County Asphalt (County Quarry Products)", "addr": "5501 Imhoff Dr, Martinez", "county": "Contra Costa", "lat": 38.012, "lng": -122.071, "kinds": "Batch plant, asphalt rubber", "phone": "(925) 682-0707", "cal": true, "mine": true, "notes": "Asphalt and aggregate materials."},
+  {"id": "P18", "name": "Antioch Building Materials", "addr": "1375 California Ave, Pittsburg", "county": "Contra Costa", "lat": 38.026, "lng": -121.872, "kinds": "Hot mix asphalt", "phone": "(925) 432-3828", "cal": false, "mine": true, "notes": "Hot mix asphalt and construction materials."},
+  {"id": "P02", "name": "Dutra Materials, Richmond", "addr": "961 Stenmark Dr, Richmond", "county": "Contra Costa", "lat": 37.935, "lng": -122.412, "kinds": "Continuous plant", "phone": "(510) 970-7717", "cal": true, "mine": true, "notes": "Hot mix asphalt, aggregates and recycling services."},
+  {"id": "P03", "name": "Gallagher & Burk, High Street", "addr": "344 High St, Oakland", "county": "Alameda", "lat": 37.763, "lng": -122.213, "kinds": "Continuous plant", "phone": "(510) 261-0466", "sales": "(925) 829-1446", "hours": "Weekdays 7:00 AM to 3:30 PM", "cal": true, "mine": true, "notes": "Hot mix, recycled asphalt mixes and warm mix."},
+  {"id": "P19", "name": "Argent Materials, Oakland", "addr": "8300 Baldwin St, Oakland", "county": "Alameda", "lat": 37.744, "lng": -122.199, "kinds": "Recycling yard (not a hot mix plant)", "cal": false, "mine": true, "recycle": true, "notes": "Recycling and aggregate facility. Could be a dump site for grindings; services not confirmed."},
+  {"id": "P04", "name": "Berkeley Asphalt (Martin Marietta)", "addr": "699 Virginia St, Berkeley", "county": "Alameda", "lat": 37.876, "lng": -122.301, "kinds": "Batch plant", "phone": "(510) 526-1611", "cal": true, "mine": true, "notes": "Hot mix asphalt. Caltrans still lists the owner as Hanson Aggregates."},
+  {"id": "P05", "name": "Granite Construction, Pleasanton", "addr": "1544 Stanley Blvd, Pleasanton", "county": "Alameda", "lat": 37.672, "lng": -121.841, "kinds": "Continuous plant", "phone": "(408) 327-7070", "cal": true, "mine": true, "notes": "Asphalt concrete facility."},
+  {"id": "P06", "name": "Vulcan Materials, Pleasanton", "addr": "52 El Charro Rd, Pleasanton", "county": "Alameda", "lat": 37.688, "lng": -121.836, "kinds": "Continuous plant", "phone": "(925) 249-3068", "cal": true, "mine": true, "notes": "Asphalt and construction materials. Your list says 50 El Charro Rd; Caltrans says 52."},
+  {"id": "P07", "name": "DeSilva Gates, Sunol", "addr": "6527 Calaveras Rd, Sunol", "county": "Alameda", "lat": 37.556, "lng": -121.862, "kinds": "Continuous plant, asphalt rubber", "phone": "(925) 519-6828", "hours": "Weekdays 7:00 AM to 3:30 PM", "cal": true, "mine": true, "notes": "Asphalt concrete and tack oil."},
+  {"id": "P08", "name": "Martin Marietta, Sunol", "addr": "7999 Athenour Way, Sunol", "county": "Alameda", "lat": 37.598, "lng": -121.886, "kinds": "Continuous plant, asphalt rubber", "phone": "(925) 533-6007", "cal": true, "mine": true, "notes": "Hot mix, recycled asphalt and aggregates."},
+  {"id": "P09", "name": "Granite Construction, Santa Clara", "addr": "3800 Bassett St, Santa Clara", "county": "Santa Clara", "lat": 37.393, "lng": -121.951, "kinds": "Continuous plant", "phone": "(408) 327-7050", "cal": true, "mine": true, "notes": "Asphalt concrete and recycled products."},
+  {"id": "P10", "name": "Reed & Graham", "addr": "690 Sunol St, San Jose", "county": "Santa Clara", "lat": 37.323, "lng": -121.905, "kinds": "Batch plant", "cal": true, "mine": false},
+  {"id": "P11", "name": "Graniterock, Redwood City", "addr": "365 Blomquist St, Redwood City", "county": "San Mateo", "lat": 37.505, "lng": -122.217, "kinds": "Batch and continuous plants", "phone": "(650) 482-3800", "cal": true, "mine": true, "notes": "Asphalt and road materials (Peninsula Road Materials)."},
+  {"id": "P12", "name": "Graniterock, South San Francisco", "addr": "1321 Lowrie Ave, South San Francisco", "county": "San Mateo", "lat": 37.65, "lng": -122.396, "kinds": "Batch plant", "cal": true, "mine": false},
+  {"id": "P13", "name": "Dutra Materials, San Rafael", "addr": "1000 Pt. San Pedro Rd, San Rafael", "county": "Marin", "lat": 37.99, "lng": -122.476, "kinds": "Continuous plant", "phone": "(415) 258-6855", "cal": true, "mine": true, "notes": "Quarry and materials operation."},
+  {"id": "P14", "name": "Vulcan Materials, Napa", "addr": "2301 Napa Vallejo Hwy, Napa", "county": "Napa", "lat": 38.247, "lng": -122.266, "kinds": "Batch plants", "cal": true, "mine": false},
+  {"id": "P15", "name": "Vulcan Materials, Vallejo (former Syar)", "addr": "885 Lake Herman Rd, Vallejo", "county": "Solano", "lat": 38.086, "lng": -122.186, "kinds": "Batch and continuous plants, asphalt rubber", "cal": true, "mine": true},
+  {"id": "P16", "name": "Vulcan Materials, Santa Rosa (Todd Road)", "addr": "260 Ghilotti Ave, Santa Rosa", "county": "Sonoma", "lat": 38.403, "lng": -122.722, "kinds": "Batch and continuous plants", "cal": true, "mine": true, "notes": "Your list calls it the Todd Road plant with no street address; Caltrans lists 260 Ghilotti Ave."},
+  {"id": "P17", "name": "BoDean Co.", "addr": "1060 Maxwell Dr, Santa Rosa", "county": "Sonoma", "lat": 38.463, "lng": -122.737, "kinds": "Batch plant, asphalt rubber", "cal": true, "mine": true}
+];
+const FROM = { "Oakland": { lat: 37.804, lng: -122.271 }, "San Francisco": { lat: 37.774, lng: -122.419 }, "San Jose": { lat: 37.338, lng: -121.886 },
+  "Hayward": { lat: 37.669, lng: -122.081 }, "Concord": { lat: 37.978, lng: -122.031 }, "Fremont": { lat: 37.548, lng: -121.989 },
+  "San Mateo": { lat: 37.563, lng: -122.322 }, "San Rafael": { lat: 37.974, lng: -122.531 }, "Santa Rosa": { lat: 38.440, lng: -122.714 }, "Vallejo": { lat: 38.104, lng: -122.257 } };
+let SITE = FROM["Oakland"];   // where distances are measured from
+function miles(a, b) {
+  const R = 3958.8, r = x => x * Math.PI / 180, dLat = r(b.lat - a.lat), dLng = r(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h)) * 1.3;   // x1.3 for road distance vs straight line
+}
+const driveMin = mi => Math.round(mi * 2.2 + 4);   // rough: loaded dump truck, mixed roads
+const plantsByDistance = () => PLANTS.map(p => ({ p, mi: miles(SITE, p) })).sort((a, b) => a.mi - b.mi);
+const plant = id => PLANTS.find(p => p.id === id);
+
+const KINDS = ["Haul off grindings", "Deliver asphalt", "Round trip: grindings out, asphalt in"];
+const ME_OWNER = "Delgado Hauling";   // the owner-operator we view as
+const MY_TRUCKS = [
+  { id: "T-14", type: "w12", plate: "4XKD218" },
+  { id: "T-22", type: "sd",  plate: "7HTR904" }
+];
+const MY_DRIVERS = [
+  { name: "Ray Delgado (you)", cdl: "Class A", med: "May 2027" },
+  { name: "Marco Ruiz", cdl: "Class A", med: "Feb 2027" },
+  { name: "Sam Diaz", cdl: "Class B", med: "Dec 2026" }
+];
+
+function seed() {
+  return {
+    jobs: [
+      {
+        id: "J-1042", name: "Main St mill and overlay", kind: KINDS[2],
+        pickup: "Job site: Main St, Oak Ave to 5th St", dropoff: "Gallagher & Burk, 344 High St, Oakland",
+        date: "Today", start: "6:00 AM", needs: { w10: 2, w12: 3, sd: 1 }, rate: { w10: 115, w12: 130, sd: 150 },
+        notes: "Stage on Oak Ave shoulder. Hard hats and vests on site.", approved: false,
+        dsp: { contact: "Mike Lucas, foreman", phone: "(510) 555-0187", gate: "No gate. Enter from Oak Ave, flagger will wave you in.", staging: "Oak Ave shoulder, north side. Stay out of the bike lane.",
+          order: "G&B order 77412", mix: "1/2 in. HMA Type A, 64-10", ppe: "Hard hat, vest, safety glasses", notes: "Tarp every load of hot mix. Back in from 5th St only; Main St is one lane until 2 PM." },
+        updates: [
+          { time: "5:40 AM", text: "Plant is loading on time. First 4 trucks go straight to the plant, the rest wait at staging.", readBy: ["T-14", "R-3", "B-7"] },
+          { time: "9:15 AM", text: "Paver is slowing down. Hold 15 minutes at the plant before loading your next asphalt load.", readBy: ["R-3"] }
+        ],
+        assignments: [
+          { truck: "T-14", type: "w12", owner: ME_OWNER, status: "onsite", checkIn: "5:52 AM", hours: null,
+            tickets: [ { no: "448712", tons: 18.6, time: "7:15 AM", photo: null }, { no: "448790", tons: 19.1, time: "9:02 AM", photo: null } ] },
+          { truck: "R-3", type: "w12", owner: "R&J Trucking", status: "onsite", checkIn: "5:58 AM", hours: null,
+            tickets: [ { no: "448715", tons: 18.9, time: "7:24 AM", photo: null } ] },
+          { truck: "B-7", type: "w10", owner: "Bautista Transport", status: "onsite", checkIn: "6:04 AM", hours: null,
+            tickets: [ { no: "448722", tons: 14.8, time: "7:40 AM", photo: null } ] },
+          { truck: "K-1", type: "sd", owner: "Kowalski & Sons", status: "assigned", checkIn: null, hours: null, tickets: [] }
+        ]
+      },
+      {
+        id: "J-1038", name: "Lakeside lot repave", kind: KINDS[0],
+        pickup: "Lakeside Plaza, 300 Shore Rd", dropoff: "County recycling yard, 88 Quarry Rd",
+        date: "Yesterday", start: "7:00 AM", needs: { w10: 0, w12: 2, sd: 0 }, rate: { w10: 115, w12: 130, sd: 150 },
+        notes: "", approved: false,
+        assignments: [
+          { truck: "T-14", type: "w12", owner: ME_OWNER, status: "done", checkIn: "6:55 AM", hours: 9.5,
+            tickets: [ { no: "77104", tons: 18.2, time: "8:10 AM", photo: null }, { no: "77131", tons: 18.7, time: "10:20 AM", photo: null }, { no: "77160", tons: 18.4, time: "1:05 PM", photo: null } ] },
+          { truck: "R-5", type: "w12", owner: "R&J Trucking", status: "done", checkIn: "6:58 AM", hours: 9.5,
+            tickets: [ { no: "77108", tons: 18.0, time: "8:22 AM", photo: null }, { no: "77140", tons: 18.8, time: "10:41 AM", photo: null } ] }
+        ]
+      },
+      {
+        id: "J-1047", name: "Route 9 shoulder widening", kind: KINDS[1],
+        pickup: "Gallagher & Burk, 344 High St, Oakland", dropoff: "Route 9, mile 14 to 16",
+        date: "Tomorrow", start: "5:30 AM", needs: { w10: 1, w12: 2, sd: 2 }, rate: { w10: 115, w12: 135, sd: 155 },
+        notes: "Night crew handoff at 5:15 AM. Tarps required.", approved: false,
+        assignments: [
+          { truck: "M-2", type: "sd", owner: "Moreno Bros", status: "assigned", checkIn: null, hours: null, tickets: [] }
+        ]
+      }
+    ],
+    paidOut: 18420,   // sample: owner's earlier payouts this month
+    applicants: [
+      { id: "A1", name: "Kowalski & Sons", trucks: "2 super dumpers", checks: [
+        ["USDOT 3184472 active, no out-of-service order", "good", "Checked automatically"],
+        ["Commercial auto liability, $1M", "warn", "Certificate uploaded, needs review"],
+        ["General liability and workers' comp", "good", "Expires Mar 2027"],
+        ["CDL Class A, MVR clean", "good", "Background check passed"],
+        ["DOT medical card", "good", "Expires Jun 2027"],
+        ["Drug testing program and Clearinghouse", "warn", "Consortium letter uploaded, needs review"],
+        ["Truck registration and annual inspection", "good", "2 trucks"],
+        ["W-9 and payout bank account", "good", "Verified by payment provider"] ] },
+      { id: "A2", name: "Bright Line Hauling", trucks: "1 ten wheeler", checks: [
+        ["USDOT 4019935 active, no out-of-service order", "good", "Checked automatically"],
+        ["Commercial auto liability, $1M", "bad", "Policy expired Sep 30, 2026"],
+        ["General liability and workers' comp", "warn", "Sole-owner exemption, needs review"],
+        ["CDL Class B, MVR clean", "good", "Background check passed"],
+        ["DOT medical card", "good", "Expires Jan 2027"],
+        ["Drug testing program and Clearinghouse", "good", "Clear"],
+        ["Truck registration and annual inspection", "good", "1 truck"],
+        ["W-9 and payout bank account", "good", "Verified by payment provider"] ] },
+      { id: "A3", name: "Ortega Trucking", trucks: "3 twelve wheelers", checks: [
+        ["USDOT 2871106 active, no out-of-service order", "good", "Checked automatically"],
+        ["Commercial auto liability, $1M", "good", "Expires Feb 2027"],
+        ["General liability and workers' comp", "good", "Expires Feb 2027"],
+        ["CDL Class B, MVR: 1 speeding ticket (2024)", "warn", "Background check flagged, needs review"],
+        ["DOT medical card", "good", "Expires Aug 2027"],
+        ["Drug testing program and Clearinghouse", "good", "Clear"],
+        ["Truck registration and annual inspection", "good", "3 trucks"],
+        ["W-9 and payout bank account", "good", "Verified by payment provider"] ] }
+    ],
+    approvedApplicants: [],
+    driverOf: { "T-14": "Ray Delgado (you)", "T-22": "Marco Ruiz" },
+    insuranceRenewed: false,
+    passed: [],
+    broker: {
+      name: "Summit Dispatch", dispatchedBefore: 212,
+      roster: [
+        { id: "S-01", owner: "Ortiz Trucking", driver: "Luis Ortiz", type: "w10", docs: "good" },
+        { id: "S-02", owner: "Ortiz Trucking", driver: "Dan Ortiz", type: "w12", docs: "good" },
+        { id: "S-05", owner: "Hill Country Haul", driver: "Mike Hill", type: "w12", docs: "good" },
+        { id: "S-07", owner: "Nguyen Transport", driver: "Tam Nguyen", type: "w12", docs: "expiring" },
+        { id: "S-09", owner: "Carver & Co", driver: "Ben Carver", type: "sd", docs: "good" },
+        { id: "S-11", owner: "Carver & Co", driver: "Joe Carver", type: "sd", docs: "bad" },
+        { id: "S-14", owner: "Reyes Hauling", driver: "Ana Reyes", type: "w10", docs: "good" },
+        { id: "S-16", owner: "Patel Freight", driver: "Raj Patel", type: "sd", docs: "good" }
+      ],
+      jobs: [
+        { id: "B-301", customer: "Greenfield Excavating", name: "Subdivision pad, Lot 12-20", kind: "Haul off dirt", date: "Today", start: "6:30 AM",
+          pickup: "Greenfield Estates, 400 Ridge Rd", dropoff: "Fill site, 15 Mill Pond Ln", needs: { w10: 1, w12: 2, sd: 1 }, assigned: { w10: ["S-01"], w12: ["S-02"], sd: [] } },
+        { id: "B-302", customer: "Metro Paving", name: "Harbor Blvd overlay", kind: "Deliver asphalt", date: "Tomorrow", start: "5:00 AM",
+          pickup: "Gallagher & Burk, 344 High St, Oakland", dropoff: "Harbor Blvd, 2nd to 9th St", needs: { w10: 0, w12: 3, sd: 2 }, assigned: { w10: [], w12: [], sd: ["S-16"] } }
+      ]
+    }
+  };
+}
+
+let S = seed();
+let ui = { role: "contractor", tab: "jobs", view: null, draft: null, applicant: null };
+
+const $ = (s, el = document) => el.querySelector(s);
+const money = n => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money0 = n => "$" + Math.round(n).toLocaleString("en-US");
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const job = id => S.jobs.find(j => j.id === id);
+const needed = j => Object.values(j.needs).reduce((a, b) => a + b, 0);
+const filled = (j, t) => j.assignments.filter(a => !t || a.type === t).length;
+const tons = a => a.tickets.reduce((s, t) => s + t.tons, 0);
+const billOf = (j, a) => (a.hours || 0) * j.rate[a.type];
+const jobBill = j => j.assignments.reduce((s, a) => s + billOf(j, a), 0);
+const allDone = j => j.assignments.length > 0 && j.assignments.every(a => a.status === "done");
+
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 2400);
+}
+
+function statusPill(a) {
+  if (a.status === "done") return '<span class="pill good">Checked out</span>';
+  if (a.status === "onsite") return '<span class="pill info">On the clock</span>';
+  return '<span class="pill warn">Assigned</span>';
+}
+
+function route(j) {
+  return `<div class="route"><span class="dot"></span><span>${esc(j.pickup)}</span><span class="line"></span><span></span><span class="dot end"></span><span>${esc(j.dropoff)}</span></div>`;
+}
+
+function jobFillChips(j) {
+  return Object.keys(TYPES).filter(t => j.needs[t]).map(t =>
+    `<span class="chip">${TYPES[t].short} ${filled(j, t)}/${j.needs[t]}</span>`).join("");
+}
+
+/* ---------- Dispatch info (job notes for drivers) ---------- */
+const DSP_FIELDS = [["contact", "On-site contact"], ["phone", "Contact phone"], ["staging", "Staging spot"], ["gate", "Gate and access"],
+  ["order", "Plant order or ticket #"], ["mix", "Material or mix"], ["ppe", "Safety gear"], ["notes", "Other notes"]];
+const anyJob = id => job(id) || (S.broker && S.broker.jobs.find(j => j.id === id));
+const dsp = j => (j.dsp ||= { notes: j.notes || "" });
+const updatesOf = j => (j.updates ||= []);
+const unreadFor = (j, truck) => updatesOf(j).filter(u => !u.readBy.includes(truck));
+function dspList(j) {
+  const d = dsp(j), rows = DSP_FIELDS.filter(([k]) => d[k]);
+  return rows.length ? `<div class="sum">${rows.map(([k, label]) => `<div class="row" style="align-items:flex-start"><span class="muted" style="flex:none;width:40%">${label}</span><span style="text-align:right${k === "phone" ? ";user-select:all" : ""}">${esc(d[k])}</span></div>`).join("")}</div>` : '<p class="muted">No dispatch info yet.</p>';
+}
+function dspEditor(j, drivers) {
+  if (ui.dspEdit === j.id) return `<div class="card"><h2>Edit dispatch info</h2>
+    ${DSP_FIELDS.map(([k, label]) => `<label class="field">${label}${k === "notes" ? `<textarea id="d-${k}" rows="3">${esc(dsp(j)[k] || "")}</textarea>` : `<input id="d-${k}" value="${esc(dsp(j)[k] || "")}">`}</label>`).join("")}
+    <div class="row" style="gap:8px"><button class="btn small" type="button" data-act="dsp-save:${j.id}" style="flex:1">Save and notify drivers</button><button class="btn small ghost" type="button" data-act="dsp-cancel" style="flex:1">Cancel</button></div></div>`;
+  const ups = updatesOf(j);
+  return `<div class="card"><div class="row"><h2>Dispatch info for drivers</h2><button class="btn small ghost" type="button" data-act="dsp-edit:${j.id}">Edit</button></div>
+    ${dspList(j)}
+    <div class="stack" style="gap:6px;border-top:1px solid var(--line);padding-top:10px"><strong style="font-size:14px">Send an update to every driver on this job</strong>
+      <textarea id="d-msg" rows="2" placeholder="e.g. Plant is down 30 minutes. Hold at staging."></textarea>
+      <button class="btn small" type="button" data-act="dsp-send:${j.id}" style="justify-self:start">Send to ${drivers} driver${drivers === 1 ? "" : "s"}</button></div>
+    ${ups.length ? `<div class="list">${ups.slice().reverse().map(u => `<div><div class="row"><span class="eyebrow">${esc(u.time)}</span>${j.assignments ? `<span class="muted num" style="font-size:12px">Read by ${u.readBy.length} of ${drivers}</span>` : '<span class="muted" style="font-size:12px">Sent by text</span>'}</div><p style="font-size:14px">${esc(u.text)}</p></div>`).join("")}</div>` : ""}</div>`;
+}
+function dspDriverCard(j, truck) {
+  const unread = unreadFor(j, truck), ups = updatesOf(j);
+  return `<div class="card" style="${unread.length ? "border:2px solid var(--warn)" : ""}"><div class="row"><h2>Dispatch info</h2>${unread.length ? `<span class="pill warn">${unread.length} new</span>` : ""}</div>
+    ${ups.length ? `<div class="list">${ups.slice().reverse().map(u => { const isNew = !u.readBy.includes(truck); return `<div class="stack" style="gap:6px"><div class="row"><span class="eyebrow">${esc(u.time)} · from dispatch</span>${isNew ? '<span class="pill warn">New</span>' : ""}</div><p style="font-size:14px${isNew ? ";font-weight:600" : ""}">${esc(u.text)}</p></div>`; }).join("")}</div>
+      ${unread.length ? `<button class="btn small" type="button" data-act="dsp-ack:${j.id}:${truck}" style="justify-self:start">Got it</button>` : ""}` : ""}
+    <div style="${ups.length ? "border-top:1px solid var(--line);padding-top:10px" : ""}">${dspList(j)}</div></div>`;
+}
+
+/* ---------- Contractor ---------- */
+function contractorJobs() {
+  const active = S.jobs.filter(j => !j.approved);
+  const done = S.jobs.filter(j => j.approved);
+  const card = j => {
+    const pct = Math.round(100 * filled(j) / Math.max(1, needed(j)));
+    let pill = filled(j) >= needed(j) ? '<span class="pill good">Fully booked</span>' : '<span class="pill warn">Finding trucks</span>';
+    if (allDone(j) && !j.approved) pill = '<span class="pill info">Ready to approve</span>';
+    if (j.approved) pill = '<span class="pill good">Approved</span>';
+    return `<button type="button" class="card tap" data-go="job:${j.id}">
+      <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span>${pill}</div>
+      <h2>${esc(j.name)}</h2>
+      <p class="muted" style="font-size:14px">${esc(j.kind)}</p>
+      <div class="meter" aria-label="${pct}% of trucks booked"><i style="width:${pct}%"></i></div>
+      <div class="row"><div class="chips">${jobFillChips(j)}</div><span class="muted num" style="font-size:13px">${filled(j)} of ${needed(j)} trucks</span></div>
+    </button>`;
+  };
+  return `<div class="row"><h1>Your jobs</h1><button class="btn small" type="button" data-act="new-job">+ Post a job</button></div>
+    ${active.map(card).join("")}
+    ${done.length ? `<p class="eyebrow">Approved and billed</p>${done.map(card).join("")}` : ""}`;
+}
+
+function contractorJob(j) {
+  const ready = allDone(j);
+  const bill = jobBill(j);
+  const assignRows = j.assignments.map(a => `
+    <div class="stack" style="gap:6px">
+      <div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[a.type].short}</span>
+        <div><strong>${esc(a.truck)} · ${esc(a.owner)}</strong><div class="muted" style="font-size:13px">${TYPES[a.type].name}${a.checkIn ? " · in at " + esc(a.checkIn) : ""}</div></div></div>
+        ${statusPill(a)}</div>
+      ${a.tickets.length ? `<div class="muted num" style="font-size:13px">${a.tickets.length} load ticket${a.tickets.length > 1 ? "s" : ""} · ${tons(a).toFixed(1)} t${a.hours ? " · " + a.hours + " hrs" : ""}</div>` : ""}
+    </div>`).join("");
+  const tickets = j.assignments.flatMap(a => a.tickets.map(t => ({ ...t, truck: a.truck })));
+  const open = Object.keys(TYPES).filter(t => j.needs[t] > filled(j, t)).map(t => `${j.needs[t] - filled(j, t)} × ${TYPES[t].name}`);
+  return `<button class="back" type="button" data-go="back">‹ All jobs</button>
+    <div class="stack" style="gap:4px"><span class="eyebrow">${esc(j.id)} · ${esc(j.date)} · start ${esc(j.start)}</span><h1>${esc(j.name)}</h1><p class="muted">${esc(j.kind)}</p></div>
+    <div class="card">${route(j)}</div>
+    ${dspEditor(j, j.assignments.length)}
+    ${j.assignments.length ? (() => { const loads = j.assignments.reduce((s, a) => s + a.tickets.length, 0), tn = j.assignments.reduce((s, a) => s + tons(a), 0), on = j.assignments.filter(a => a.status === "onsite").length;
+      return `<div class="stats"><div class="stat"><span>Loads</span><div class="big">${loads}</div></div><div class="stat"><span>Tons hauled</span><div class="big">${tn.toFixed(0)}</div></div><div class="stat"><span>On the clock</span><div class="big">${on}</div></div></div>`; })() : ""}
+    ${j.date === "Today" ? `<div class="row" style="gap:8px"><button class="btn small" type="button" data-tab="live" style="flex:1">See trucks on the map</button><button class="btn small ghost" type="button" data-act="share:${j.id}" style="flex:1">Share tracking link</button></div>` : ""}
+    <div class="card"><div class="row"><h2>Trucks</h2><span class="muted num">${filled(j)} of ${needed(j)} booked</span></div>
+      ${open.length ? `<p class="muted" style="font-size:13px">Still looking for ${open.join(", ")}. Sent to ${j.sentTo || 46} vetted drivers with the right trucks. The first ones to accept get the spots.</p>
+        <button class="btn small ghost" type="button" data-act="as-driver" style="justify-self:start">See what drivers see</button>` : ""}
+      <div class="list">${assignRows || '<div class="muted">No trucks yet.</div>'}</div></div>
+    <div class="card"><div class="row"><h2>Load tickets</h2><span class="muted num">${tickets.length}</span></div>
+      <div class="list">${tickets.length ? tickets.map(t => `<div class="row"><div class="row" style="justify-content:flex-start">${t.photo ? `<img class="thumb" src="${t.photo}" alt="Ticket ${esc(t.no)}">` : '<span class="thumb">photo</span>'}<div><strong class="num">#${esc(t.no)}</strong><div class="muted" style="font-size:13px">${esc(t.truck)} · ${esc(t.time)}</div></div></div><span class="num">${t.tons.toFixed(1)} t</span></div>`).join("") : '<div class="muted">Tickets show up here as drivers snap them.</div>'}</div></div>
+    ${ready || j.approved ? `<div class="card"><h2>${j.approved ? "Invoice" : "Approve the day"}</h2>
+      <div class="sum">${j.assignments.map(a => `<div class="row"><span>${esc(a.truck)} · ${a.hours} hrs × $${j.rate[a.type]}</span><span class="num">${money(billOf(j, a))}</span></div>`).join("")}
+      <div class="row total"><span>Total, billed by bank transfer</span><span class="num">${money(bill)}</span></div></div>
+      <p class="muted" style="font-size:13px">Includes the Trucks2U fee of ${money(bill * FEE)} (5%). Through a broker at 11% the cut would be about ${money(bill * BROKER)}.</p>
+      ${j.approved ? '<span class="pill good" style="justify-self:start">Approved · owners paid within 2 business days</span>' : `<button class="btn good" type="button" data-act="approve:${j.id}">Approve hours and tickets</button>`}</div>`
+    : `<div class="note">When every truck checks out, you approve hours and tickets here, and the invoice goes out automatically.</div>`}`;
+}
+
+function newJobForm() {
+  const d = ui.draft;
+  const stepBar = `<div class="steps">${[1, 2, 3].map(n => `<i class="${n <= d.step ? "on" : ""}"></i>`).join("")}</div>`;
+  let body = "";
+  if (d.step === 1) {
+    body = `<label class="field">Job name<input id="f-name" value="${esc(d.name)}" placeholder="e.g. Elm St mill and pave"></label>
+      <label class="field">What are the trucks doing?<select id="f-kind">${KINDS.map(k => `<option ${k === d.kind ? "selected" : ""}>${k}</option>`).join("")}</select></label>
+      <label class="field">Job site address<input id="f-site" value="${esc(d.site)}" placeholder="Street and cross streets"></label>
+      <label class="field">Asphalt plant (closest first)<select id="f-plant">${plantsByDistance().map(({ p, mi }) => `<option value="${p.id}" ${p.id === d.plant ? "selected" : ""}>${esc(p.name)} · ${mi.toFixed(1)} mi · ${driveMin(mi)} min${p.recycle ? " · recycling yard" : ""}</option>`).join("")}</select></label>
+      <p class="muted" style="font-size:12.5px">Drive times are rough estimates from ${esc(ui.from || "Oakland")}. In the full app they come from the job's map pin.</p>
+      <label class="field">Notes for drivers<input id="f-notes" value="${esc(d.notes)}" placeholder="Staging spot, gear, gate codes"></label>`;
+  } else if (d.step === 2) {
+    const pl = d.plan;
+    const cycle = 2 * pl.drive + pl.loadDump;
+    const perTruck = Math.max(1, Math.floor(pl.hours * 60 / cycle));
+    const need = t => Math.ceil(pl.tons / (PAYLOAD[t] * perTruck));
+    body = `<div class="card"><span class="eyebrow">Load planner</span><h2>How many trucks do I need?</h2>
+      <div class="grid2"><label class="field">Tons to move<input id="p-tons" type="number" inputmode="numeric" value="${pl.tons}"></label>
+        <label class="field">Hours of work<input id="p-hours" type="number" inputmode="decimal" value="${pl.hours}"></label>
+        <label class="field">One-way drive (min)<input id="p-drive" type="number" inputmode="numeric" value="${pl.drive}"></label>
+        <label class="field">Load + dump time (min)<input id="p-ld" type="number" inputmode="numeric" value="${pl.loadDump}"></label></div>
+      <p class="muted num" style="font-size:13.5px">A round trip takes about ${cycle} min, so each truck can do <strong>${perTruck} loads</strong> in ${pl.hours} hours.</p>
+      <div class="stack" style="gap:6px">${Object.keys(TYPES).map(t => `<div class="row"><span class="num">${need(t)} × ${TYPES[t].name} <span class="muted">(${PAYLOAD[t]} t a load)</span></span><button class="btn small ghost" type="button" data-act="plan:${t}:${need(t)}">Use</button></div>`).join("")}</div>
+      <button class="btn small ghost" type="button" data-act="replan" style="justify-self:start">Recalculate</button></div>` + Object.keys(TYPES).map(t => `<div class="card"><div class="typecount">
+        <div><strong>${TYPES[t].name}</strong><div class="muted" style="font-size:13px">${TYPES[t].spec}</div></div>
+        <div class="stepper"><button type="button" data-act="dec:${t}" aria-label="Fewer ${TYPES[t].name}s">−</button><output class="num">${d.needs[t]}</output><button type="button" data-act="inc:${t}" aria-label="More ${TYPES[t].name}s">+</button></div></div>
+        <label class="field">Hourly rate ($/hr)<input id="f-rate-${t}" type="number" inputmode="numeric" min="0" value="${d.rate[t]}"></label></div>`).join("");
+  } else {
+    const n = Object.values(d.needs).reduce((a, b) => a + b, 0);
+    const est = Object.keys(TYPES).reduce((s, t) => s + d.needs[t] * d.rate[t] * 10, 0);
+    body = `<div class="grid2"><label class="field">Date<select id="f-date">${["Today", "Tomorrow", "Mon, Oct 26", "Tue, Oct 27"].map(x => `<option ${x === d.date ? "selected" : ""}>${x}</option>`).join("")}</select></label>
+      <label class="field">Start time<input id="f-start" value="${esc(d.start)}"></label></div>
+      <div class="card"><span class="eyebrow">Review</span><h2>${esc(d.name || "Untitled job")}</h2><p class="muted" style="font-size:14px">${esc(d.kind)}</p>
+        <div class="chips">${Object.keys(TYPES).filter(t => d.needs[t]).map(t => `<span class="chip">${d.needs[t]} × ${TYPES[t].name} @ $${d.rate[t]}/hr</span>`).join("")}</div>
+        <div class="sum"><div class="row"><span>Estimate for a 10-hour day, ${n} trucks</span><span class="num">${money0(est)}</span></div>
+        <div class="row"><span>Trucks2U fee inside that (5%)</span><span class="num">${money0(est * FEE)}</span></div>
+        <div class="row"><span>What a broker would take (11%)</span><span class="num">${money0(est * BROKER)}</span></div></div></div>`;
+  }
+  const n = Object.values(d.needs).reduce((a, b) => a + b, 0);
+  const canNext = d.step === 1 ? d.name.trim().length > 0 : d.step === 2 ? n > 0 : true;
+  return `<button class="back" type="button" data-act="${d.step === 1 ? "cancel-job" : "prev"}">‹ ${d.step === 1 ? "Cancel" : "Back"}</button>
+    <div class="stack" style="gap:6px"><span class="eyebrow">Post a job · step ${d.step} of 3</span>${stepBar}<h1>${["Job details", "Trucks needed", "Schedule and review"][d.step - 1]}</h1></div>
+    ${body}
+    <button class="btn" type="button" data-act="${d.step < 3 ? "next" : "post"}" ${canNext ? "" : "disabled"}>${d.step < 3 ? "Next" : "Post job to vetted owners"}</button>`;
+}
+
+function contractorBilling() {
+  const approved = S.jobs.filter(j => j.approved);
+  const pending = S.jobs.filter(j => !j.approved && allDone(j));
+  const total = approved.reduce((s, j) => s + jobBill(j), 0);
+  return `<h1>Billing</h1>
+    <div class="card"><span class="eyebrow">Approved this month</span><div class="big">${money(total)}</div>
+      <p class="muted" style="font-size:13px">Trucks2U fee inside that: ${money(total * FEE)}. A broker at 11% would have taken about ${money(total * BROKER)}, so you kept ${money(total * (BROKER - FEE))}.</p></div>
+    ${pending.length ? `<p class="eyebrow">Waiting on your approval</p>${pending.map(j => `<button type="button" class="card tap" data-go="job:${j.id}"><div class="row"><strong>${esc(j.name)}</strong><span class="num">${money(jobBill(j))}</span></div><span class="pill info" style="justify-self:start">Review and approve</span></button>`).join("")}` : ""}
+    ${approved.length ? `<p class="eyebrow">Invoices</p>${approved.map(j => `<button type="button" class="card tap" data-go="job:${j.id}"><div class="row"><strong>${esc(j.name)}</strong><span class="num">${money(jobBill(j))}</span></div><span class="muted" style="font-size:13px">${esc(j.id)} · paid by bank transfer</span></button>`).join("")}` : '<div class="note">Approve a finished job and its invoice shows up here.</div>'}`;
+}
+
+/* ---------- Asphalt plant directory ---------- */
+function plantsScreen() {
+  const q = (ui.plq || "").toLowerCase();
+  const list = plantsByDistance().filter(({ p }) => !q || (p.name + " " + p.addr + " " + p.county).toLowerCase().includes(q));
+  return `<div class="stack" style="gap:4px"><span class="eyebrow">Plant directory · ${PLANTS.length} Bay Area sites</span><h1>Asphalt plants</h1></div>
+    <div class="grid2"><label class="field">Distance from<select id="pl-from">${Object.keys(FROM).map(c => `<option ${c === (ui.from || "Oakland") ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+      <label class="field">Search<input id="pl-q" type="search" placeholder="Name or city" value="${esc(ui.plq || "")}"></label></div>
+    ${list.map(({ p, mi }) => `<button type="button" class="card tap" data-go="plant:${p.id}">
+      <div class="row"><h2>${esc(p.name)}</h2><span class="num muted" style="font-size:13px;white-space:nowrap">${mi.toFixed(0)} mi · ~${driveMin(mi)} min</span></div>
+      <span class="muted" style="font-size:13px">${esc(p.addr)} · ${esc(p.county)} County</span>
+      <div class="chips"><span class="chip">${esc(p.kinds)}</span>${p.cal ? '<span class="pill good">Caltrans approved</span>' : ""}${p.recycle ? '<span class="pill warn">Recycling yard</span>' : ""}${p.hours ? '<span class="pill info">Hours listed</span>' : ""}</div>
+    </button>`).join("") || '<div class="note">No plants match.</div>'}
+    <div class="note">From the ${PLANT_SRC}. Distances are rough straight-line estimates; the full app uses real driving routes.</div>`;
+}
+function plantDetail(p) {
+  const mi = miles(SITE, p);
+  return `<button class="back" type="button" data-go="back">‹ Plants</button>
+    <div class="stack" style="gap:4px"><span class="eyebrow">${esc(p.county)} County</span><h1>${esc(p.name)}</h1><p class="muted">${esc(p.addr)}, CA</p></div>
+    <div class="stats"><div class="stat"><span>From ${esc(ui.from || "Oakland")}</span><div class="big">${mi.toFixed(0)} mi</div></div><div class="stat"><span>Drive, loaded</span><div class="big">~${driveMin(mi)} min</div></div><div class="stat"><span>Wait at scale</span><div class="big">—</div></div></div>
+    <div class="card"><div class="sum">
+      <div class="row"><span>Plant type</span><span style="text-align:right">${esc(p.kinds)}</span></div>
+      <div class="row"><span>Caltrans status</span><span style="text-align:right">${p.cal ? "Active, approved" : "Not on the Caltrans list"}</span></div>
+      ${p.phone ? `<div class="row"><span>Phone</span><span class="num" style="user-select:all">${p.phone}</span></div>` : ""}
+      ${p.sales ? `<div class="row"><span>Sales</span><span class="num" style="user-select:all">${p.sales}</span></div>` : ""}
+      <div class="row"><span>Hours</span>${p.hours ? `<span style="text-align:right">${p.hours}<br><span class="muted" style="font-size:12px">published, call to confirm</span></span>` : '<span class="muted">Not confirmed yet</span>'}</div>
+      <div class="row"><span>Takes grindings (RAP)</span><span class="muted">Not confirmed yet</span></div>
+      <div class="row"><span>Source</span><span style="text-align:right">${[p.cal && "Caltrans list", p.mine && "your plant list"].filter(Boolean).join(" and ")}</span></div></div>
+      ${p.notes ? `<p style="font-size:14px">${esc(p.notes)}</p>` : ""}
+      <p class="muted" style="font-size:12.5px">Wait time fills in automatically once Trucks2U trucks start checking in and out at this plant.</p></div>
+    <button class="btn ghost" type="button" data-act="suggest">Add hours or grindings info</button>`;
+}
+
+/* ---------- Live tracking (simulated) ---------- */
+const CYCLE = 48;   // demo seconds per round trip, standing in for a ~48 minute cycle
+const MAP_PATH = "M48 178 C 120 178, 120 70, 190 92 S 260 40, 296 46";
+const short = s => s.replace(/^Job site: /, "").split(",")[0];
+function liveTrucks() {
+  return S.jobs.filter(j => j.date === "Today").flatMap(j => j.assignments.filter(a => a.status === "onsite").map((a, i) => ({ j, a, i })));
+}
+function truckState(i) {
+  const p = ((Date.now() / 1000) / CYCLE + i * 0.29) % 1;
+  if (p < 0.12) return { p, f: 0, stage: 0, eta: Math.round((0.12 - p) * CYCLE + 0.33 * CYCLE) };
+  if (p < 0.45) return { p, f: (p - 0.12) / 0.33, stage: 1, eta: Math.round((0.45 - p) * CYCLE) };
+  if (p < 0.55) return { p, f: 1, stage: 2, eta: 0 };
+  return { p, f: 1 - (p - 0.55) / 0.45, stage: 3, eta: Math.round((1 - p) * CYCLE) };
+}
+function stageText(j, st) {
+  const a = short(j.pickup), b = short(j.dropoff);
+  return [`Loading at ${a}`, st.eta < 1 ? `Arriving at ${b}` : `Hauling to ${b} · ETA ${st.eta} min`, `Dumping at ${b}`, st.eta < 1 ? `Arriving at ${a}` : `Returning to ${a} · ${st.eta} min out`][st.stage];
+}
+function contractorLive() {
+  const lt = liveTrucks();
+  const j = S.jobs.find(x => x.date === "Today");
+  const waiting = S.jobs.filter(x => x.date === "Today").flatMap(x => x.assignments.filter(a => a.status === "assigned"));
+  return `<div class="stack" style="gap:4px"><span class="eyebrow">Today · live</span><h1>Where are my trucks?</h1></div>
+    <div class="card" style="padding:10px">
+      <svg class="map" id="map" viewBox="0 0 340 220" role="img" aria-label="Map of trucks between ${esc(short(j.pickup))} and ${esc(short(j.dropoff))}">
+        <circle class="fence" cx="48" cy="178" r="26"/><circle class="fence" cx="296" cy="46" r="26"/>
+        <path class="road" id="road" d="${MAP_PATH}"/><path class="road2" d="${MAP_PATH}"/>
+        <text class="place" x="20" y="214">${esc(short(j.pickup))}</text><text class="place" x="320" y="14" text-anchor="end">${esc(short(j.dropoff))}</text>
+        ${lt.map(({ a }) => `<g data-tk="${esc(a.truck)}"><circle class="tk" r="8"/><text class="tl" text-anchor="middle" dy="-12">${esc(a.truck)}</text></g>`).join("")}
+      </svg>
+      <div class="row" style="font-size:12px"><span class="muted">Green circles are geofences: arrival and departure are logged automatically.</span></div>
+    </div>
+    <div class="card"><div class="row"><h2>${esc(j.name)}</h2><span class="muted num">avg cycle ${CYCLE} min</span></div>
+      <div class="list">${lt.map(({ j, a }) => `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[a.type].short}</span><div><strong>${esc(a.truck)} · ${esc(a.owner)}</strong><div class="stage" data-stage="${esc(a.truck)}">…</div></div></div><span class="muted num" style="font-size:13px">${a.tickets.length} load${a.tickets.length === 1 ? "" : "s"}</span></div>`).join("")}
+      ${waiting.map(a => `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[a.type].short}</span><div><strong>${esc(a.truck)} · ${esc(a.owner)}</strong><div class="stage">Not checked in yet</div></div></div><span class="pill warn">Late?</span></div>`).join("")}</div></div>
+    <div class="note">Simulated for the prototype. In the real app each truck's position comes from the driver's phone every 30 seconds.</div>`;
+}
+function tickMap() {
+  const road = document.getElementById("road"); if (!road) return;
+  const len = road.getTotalLength();
+  liveTrucks().forEach(({ j, a, i }) => {
+    const st = truckState(i), pt = road.getPointAtLength(st.f * len);
+    const g = document.querySelector(`[data-tk="${a.truck}"]`);
+    if (g) { g.setAttribute("transform", `translate(${pt.x.toFixed(1)} ${pt.y.toFixed(1)})`); g.firstElementChild.classList.toggle("in", st.stage === 0 || st.stage === 2); }
+    const s = document.querySelector(`[data-stage="${a.truck}"]`); if (s) s.textContent = stageText(j, st);
+  });
+}
+setInterval(tickMap, 250);
+
+/* ---------- Truck owner ---------- */
+function myAssignments() {
+  return S.jobs.flatMap(j => j.assignments.filter(a => a.owner === ME_OWNER).map(a => ({ j, a })));
+}
+function busyTrucks(j) { return new Set(S.jobs.filter(x => x.date === j.date).flatMap(x => x.assignments.filter(a => a.owner === ME_OWNER).map(a => a.truck))); }
+
+function ownerOffers() {
+  return S.jobs.filter(j => !j.approved && j.date !== "Yesterday" && !S.passed.includes(j.id)).map(j => {
+    const busy = busyTrucks(j);
+    return { j, fits: MY_TRUCKS.filter(t => !busy.has(t.id) && j.needs[t.type] > filled(j, t.type)) };
+  }).filter(x => x.fits.length);
+}
+function offerCard({ j, fits }) {
+  const pl = PLANTS.find(p => j.pickup.includes(p.name) || j.dropoff.includes(p.name));
+  const mi = pl ? miles(SITE, pl) : null;
+  return `<div class="card" style="border:2px solid var(--accent)">
+    <div class="row"><span class="pill info">New job request</span><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span></div>
+    <h2>${esc(j.name)}</h2>${route(j)}
+    <div class="row muted num" style="font-size:13px"><span>${esc(j.kind)}</span>${mi ? `<span>~${mi.toFixed(0)} mi run</span>` : ""}</div>
+    <div class="note">${needed(j) - filled(j)} of ${needed(j)} trucks still open. First come, first served: once the spots fill, the request disappears.</div>
+    ${fits.map(t => `<div class="row"><div><strong>${t.id} · ${TYPES[t.type].name}</strong><div class="muted num" style="font-size:13px">$${j.rate[t.type]}/hr · about ${money0(j.rate[t.type] * 10 * (1 - FEE))} to you for 10 hrs</div></div>
+      <button class="btn small good" type="button" data-act="accept:${j.id}:${t.id}">Accept</button></div>`).join("")}
+    <button class="btn small ghost" type="button" data-act="pass:${j.id}" style="justify-self:start">Pass</button>
+  </div>`;
+}
+function ownerToday() {
+  const offers = ownerOffers();
+  const mine = myAssignments().filter(x => x.a.status !== "done" || !x.j.approved).filter(x => x.j.date !== "Yesterday");
+  const insWarn = !S.insuranceRenewed;
+  return `<div class="stack" style="gap:4px"><span class="eyebrow">${ME_OWNER}</span><h1>Your trucks today</h1></div>
+    ${offers.map(offerCard).join("")}
+    <div class="row" style="justify-content:flex-start;gap:8px"><span class="pill good">Verified</span>${insWarn ? '<button class="pill warn" style="border:0;cursor:pointer" type="button" data-tab="docs">Insurance expires in 24 days</button>' : ""}</div>
+    ${mine.length ? mine.map(({ j, a }) => `<button type="button" class="card tap" data-go="work:${j.id}:${a.truck}">
+      <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)} · ${esc(a.truck)}</span>${statusPill(a)}</div>
+      <h2>${esc(j.name)}</h2>${unreadFor(j, a.truck).length ? `<span class="pill warn" style="justify-self:start">${unreadFor(j, a.truck).length} new dispatch note${unreadFor(j, a.truck).length > 1 ? "s" : ""}</span>` : ""}${route(j)}
+      <div class="row"><span class="muted" style="font-size:13px">${TYPES[a.type].name} · $${j.rate[a.type]}/hr</span><span class="muted num" style="font-size:13px">${a.tickets.length} tickets</span></div>
+    </button>`).join("") : '<div class="note">No jobs booked. Open the Find work tab to pick one up.</div>'}`;
+}
+
+function ownerFind() {
+  const open = S.jobs.filter(j => !j.approved && j.date !== "Yesterday").map(j => {
+    const busy = busyTrucks(j);
+    const fits = MY_TRUCKS.filter(t => !busy.has(t.id) && j.needs[t.type] > filled(j, t.type));
+    return { j, fits };
+  }).filter(x => x.fits.length);
+  return `<h1>Find work</h1><p class="muted">Jobs that need one of your trucks. Rates are set by the contractor; you keep 95%.</p>
+    ${open.length ? open.map(({ j, fits }) => `<div class="card">
+      <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span><span class="chip">${esc(j.kind.split(":")[0])}</span></div>
+      <h2>${esc(j.name)}</h2>${route(j)}
+      ${j.notes ? `<div class="note">${esc(j.notes)}</div>` : ""}
+      ${fits.map(t => `<div class="row"><div><strong>${t.id} · ${TYPES[t.type].name}</strong><div class="muted num" style="font-size:13px">$${j.rate[t.type]}/hr · you get $${(j.rate[t.type] * (1 - FEE)).toFixed(2)}/hr</div></div>
+        <button class="btn small" type="button" data-act="accept:${j.id}:${t.id}">Accept</button></div>`).join("")}
+    </div>`).join("") : '<div class="note">All of your trucks are booked for the open jobs. New jobs show up here and by text.</div>'}`;
+}
+
+function ownerWork(j, a) {
+  const truck = a.truck;
+  let action = "";
+  if (a.status === "assigned") action = `<button class="btn" type="button" data-act="checkin:${j.id}:${truck}">Check in at site</button><p class="muted" style="font-size:12.5px">Check-in records your location and time. In the full app this happens automatically when the truck enters the job site.</p>`;
+  else if (a.status === "onsite") action = `
+    <div class="card"><h2>Add a load ticket</h2>
+      <div class="grid2"><label class="field">Ticket #<input id="t-no" inputmode="numeric" placeholder="448801"></label><label class="field">Tons<input id="t-tons" type="number" step="0.1" inputmode="decimal" placeholder="18.5"></label></div>
+      <label class="field">Photo of ticket<input id="t-photo" type="file" accept="image/*" capture="environment"></label>
+      <button class="btn" type="button" data-act="ticket:${j.id}:${truck}">Save ticket</button></div>
+    <div class="card"><h2>End of day</h2>
+      <label class="field">Hours on the clock<input id="t-hours" type="number" step="0.25" inputmode="decimal" value="10"></label>
+      <button class="btn ghost" type="button" data-act="checkout:${j.id}:${truck}">Check out</button>
+      <p class="muted" style="font-size:12.5px">In the full app hours come from check-in and check-out times.</p></div>`;
+  else action = `<div class="card"><div class="sum">
+      <div class="row"><span>${a.hours} hrs × $${j.rate[a.type]}</span><span class="num">${money(billOf(j, a))}</span></div>
+      <div class="row"><span>Trucks2U fee (5%)</span><span class="num">−${money(billOf(j, a) * FEE)}</span></div>
+      <div class="row total"><span>Your payout</span><span class="num">${money(billOf(j, a) * (1 - FEE))}</span></div></div>
+      ${j.approved ? '<span class="pill good" style="justify-self:start">Approved · paying out</span>' : '<span class="pill warn" style="justify-self:start">Waiting on contractor approval</span>'}</div>`;
+  return `<button class="back" type="button" data-go="back">‹ Today</button>
+    <div class="stack" style="gap:4px"><span class="eyebrow">${esc(truck)} · ${esc(j.date)} · start ${esc(j.start)}</span><h1>${esc(j.name)}</h1><p class="muted">${esc(j.kind)}</p><div>${statusPill(a)}</div></div>
+    <div class="card">${route(j)}</div>
+    ${dspDriverCard(j, truck)}
+    ${action}
+    <div class="card"><div class="row"><h2>Your tickets</h2><span class="muted num">${tons(a).toFixed(1)} t</span></div>
+      <div class="list">${a.tickets.length ? a.tickets.map(t => `<div class="row"><div class="row" style="justify-content:flex-start">${t.photo ? `<img class="thumb" src="${t.photo}" alt="Ticket ${esc(t.no)}">` : '<span class="thumb">photo</span>'}<div><strong class="num">#${esc(t.no)}</strong><div class="muted" style="font-size:13px">${esc(t.time)}</div></div></div><span class="num">${t.tons.toFixed(1)} t</span></div>`).join("") : '<div class="muted">No tickets yet.</div>'}</div></div>`;
+}
+
+function ownerPay() {
+  const mine = myAssignments().filter(x => x.a.status === "done");
+  const approved = mine.filter(x => x.j.approved), waiting = mine.filter(x => !x.j.approved);
+  const sum = arr => arr.reduce((s, x) => s + billOf(x.j, x.a) * (1 - FEE), 0);
+  return `<h1>Pay</h1>
+    <div class="stats"><div class="stat"><span>Paid this month</span><div class="big">${money0(S.paidOut)}</div></div>
+      <div class="stat"><span>On the way</span><div class="big">${money0(sum(approved))}</div></div>
+      <div class="stat"><span>Awaiting approval</span><div class="big">${money0(sum(waiting))}</div></div></div>
+    <div class="card"><h2>Recent work</h2><div class="list">${mine.length ? mine.map(({ j, a }) => `<div class="row"><div><strong>${esc(j.name)}</strong><div class="muted" style="font-size:13px">${esc(a.truck)} · ${a.hours} hrs · ${esc(j.date)}</div></div>
+      <div style="text-align:right"><div class="num">${money(billOf(j, a) * (1 - FEE))}</div>${j.approved ? '<span class="pill good">Paying out</span>' : '<span class="pill warn">Pending</span>'}</div></div>`).join("") : '<div class="muted">Nothing yet.</div>'}</div></div>
+    <div class="card"><h2>Weekly statements</h2><div class="list">
+      <div class="row"><div><strong>Week of Oct 12</strong><div class="muted" style="font-size:13px">T-14: 5 days, 61 loads · T-22: 4 days, 38 loads</div></div><span class="num">$9,880.50</span></div>
+      <div class="row"><div><strong>Week of Oct 5</strong><div class="muted" style="font-size:13px">T-14: 5 days, 58 loads · T-22: 5 days, 44 loads</div></div><span class="num">$8,539.50</span></div></div></div>
+    <div class="note">Payouts land within 2 business days of the contractor approving the day. Broker loads often pay in 30 days or more.</div>`;
+}
+
+function ownerFleet() {
+  return `<h1>Fleet</h1><p class="muted">Pick who drives each truck. The driver gets job texts and checks in from their own phone; you see every load and get paid for the truck.</p>
+    ${MY_TRUCKS.map(t => `<div class="card"><div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[t.type].short}</span><div><strong>${t.id} · ${TYPES[t.type].name}</strong><div class="muted" style="font-size:13px">plate ${t.plate}</div></div></div><span class="pill good">Active</span></div>
+      <div class="row" style="gap:8px"><select id="drv-${t.id}" aria-label="Driver for ${t.id}" style="flex:1;min-width:0">${MY_DRIVERS.map(d => `<option ${S.driverOf[t.id] === d.name ? "selected" : ""}>${esc(d.name)}</option>`).join("")}</select><button class="btn small" type="button" data-act="driver:${t.id}" data-pick="drv-${t.id}" style="flex:none">Save</button></div></div>`).join("")}
+    <div class="card"><h2>Drivers</h2><div class="list">${MY_DRIVERS.map(d => `<div class="row"><div><strong>${esc(d.name)}</strong><div class="muted" style="font-size:13px">CDL ${d.cdl} · medical card to ${d.med}</div></div><span class="pill good">Verified</span></div>`).join("")}</div>
+      <p class="muted" style="font-size:12.5px">Each driver goes through the CDL, medical card, MVR and drug testing checks.</p></div>`;
+}
+
+function ownerDocs() {
+  const items = [
+    ["USDOT 2290183 active", "good", "Checked automatically · last checked Oct 1"],
+    ["Commercial auto liability, $1M", S.insuranceRenewed ? "warn" : "warn", S.insuranceRenewed ? "New certificate uploaded, under review" : "Expires Nov 17, 2026"],
+    ["General liability and workers' comp", "good", "Expires Mar 2027"],
+    ["CDL Class A, MVR clean", "good", "Rechecked yearly"],
+    ["DOT medical card", "good", "Expires May 2027"],
+    ["Drug testing program and Clearinghouse", "good", "Clear"],
+    ["T-14 registration and annual inspection", "good", "Inspected Apr 2026"],
+    ["T-22 registration and annual inspection", "good", "Inspected Jul 2026"],
+    ["W-9 and payout bank account", "good", "Verified by payment provider"]
+  ];
+  return `<button class="card tap" type="button" data-act="su-start" style="border-style:dashed"><span class="eyebrow">New truck owner?</span><strong>Sign up and upload your documents</strong><span class="muted" style="font-size:13px">License, insurance, DOT number, registration and more. Takes about 10 minutes on your phone.</span></button>
+    <h1>Documents</h1><p class="muted">Every item has to stay green for your trucks to see jobs. We remind you 30 days before anything expires.</p>
+    <div class="card"><div class="list">${items.map(([t, s, d]) => `<div class="check"><span class="mark ${s}">${s === "good" ? "✓" : "!"}</span><div><strong style="font-size:14px">${t}</strong><div class="muted" style="font-size:13px">${d}</div></div><span></span></div>`).join("")}</div></div>
+    ${S.insuranceRenewed ? "" : `<div class="card"><h2>Renew insurance certificate</h2><label class="field">Certificate of insurance (PDF or photo)<input id="coi" type="file" accept="image/*,application/pdf"></label><button class="btn" type="button" data-act="coi">Upload</button></div>`}
+    <div class="card"><h2>Your trucks</h2><div class="list">${MY_TRUCKS.map(t => `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[t.type].short}</span><div><strong>${t.id} · ${TYPES[t.type].name}</strong><div class="muted" style="font-size:13px">${TYPES[t.type].spec} · plate ${t.plate}</div></div></div><span class="pill good">Active</span></div>`).join("")}</div></div>`;
+}
+
+/* ---------- Broker ---------- */
+const BFEE = 15;   // sample per-truck dispatch fee, per truck per day
+const B = () => S.broker;
+const bTruck = id => B().roster.find(t => t.id === id);
+const bNeed = j => Object.values(j.needs).reduce((a, b) => a + b, 0);
+const bFilled = j => Object.values(j.assigned).reduce((a, b) => a + b.length, 0);
+const bDispatched = () => B().jobs.reduce((s, j) => s + bFilled(j), 0);
+function bBusy(date) {
+  const ids = new Set(B().jobs.filter(j => j.date === date).flatMap(j => Object.values(j.assigned).flat()));
+  S.jobs.filter(j => j.date === date).forEach(j => j.assignments.forEach(a => ids.add(a.truck)));
+  return ids;
+}
+const docsPill = d => d === "good" ? '<span class="pill good">Verified</span>' : d === "expiring" ? '<span class="pill warn">Expiring</span>' : '<span class="pill bad">Blocked</span>';
+
+function brokerBoard() {
+  const card = j => { const pct = Math.round(100 * bFilled(j) / Math.max(1, bNeed(j)));
+    return `<button type="button" class="card tap" data-go="bjob:${j.id}">
+      <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span>${bFilled(j) >= bNeed(j) ? '<span class="pill good">All dispatched</span>' : `<span class="pill warn">${bNeed(j) - bFilled(j)} to dispatch</span>`}</div>
+      <h2>${esc(j.name)}</h2><p class="muted" style="font-size:14px">${esc(j.customer)} · ${esc(j.kind)}</p>
+      <div class="meter"><i style="width:${pct}%"></i></div>
+      <div class="row"><div class="chips">${Object.keys(TYPES).filter(t => j.needs[t]).map(t => `<span class="chip">${TYPES[t].short} ${j.assigned[t].length}/${j.needs[t]}</span>`).join("")}</div><span class="muted num" style="font-size:13px">${bFilled(j)} of ${bNeed(j)} trucks</span></div></button>`; };
+  const open = S.jobs.filter(j => !j.approved && j.date !== "Yesterday" && filled(j) < needed(j));
+  return `<div class="stack" style="gap:4px"><span class="eyebrow">${esc(B().name)}</span><h1>Dispatch board</h1></div>
+    <p class="muted">Your customers' jobs. Pick a truck and the driver gets the job details by text, no phone calls.</p>
+    ${B().jobs.map(card).join("")}
+    ${open.length ? `<p class="eyebrow">Open jobs from Trucks2U contractors</p>${open.map(j => `<button type="button" class="card tap" data-go="tjob:${j.id}">
+      <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span><span class="pill info">${needed(j) - filled(j)} trucks wanted</span></div>
+      <h2>${esc(j.name)}</h2><div class="chips">${jobFillChips(j)}</div></button>`).join("")}` : ""}`;
+}
+
+function slotPicker(date, type, act) {
+  const busy = bBusy(date);
+  const free = B().roster.filter(t => t.type === type && !busy.has(t.id) && t.docs !== "bad");
+  if (!free.length) return '<span class="muted" style="font-size:13px">No free verified trucks of this type</span>';
+  const sid = "pick-" + act.replace(/:/g, "-");
+  return `<div class="row" style="gap:8px"><select id="${sid}" aria-label="Choose a truck" style="flex:1;min-width:0">${free.map(t => `<option value="${t.id}">${t.id} · ${esc(t.driver)}${t.docs === "expiring" ? " (docs expiring)" : ""}</option>`).join("")}</select>
+    <button class="btn small" type="button" data-act="${act}" data-pick="${sid}" style="flex:none">Dispatch</button></div>`;
+}
+
+function brokerJob(j) {
+  const sections = Object.keys(TYPES).filter(t => j.needs[t]).map(t => {
+    const rows = j.assigned[t].map(id => { const tr = bTruck(id); return `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[t].short}</span><div><strong>${id} · ${esc(tr.driver)}</strong><div class="muted" style="font-size:13px">${esc(tr.owner)}</div></div></div>
+      <button class="btn small ghost" type="button" data-act="bun:${j.id}:${t}:${id}">Remove</button></div>`; }).join("");
+    const left = j.needs[t] - j.assigned[t].length;
+    return `<div class="card"><div class="row"><h2>${TYPES[t].name}</h2><span class="muted num">${j.assigned[t].length} of ${j.needs[t]}</span></div>
+      <div class="list">${rows}${left > 0 ? `<div>${slotPicker(j.date, t, `bdis:${j.id}:${t}`)}</div>` : ""}</div></div>`;
+  }).join("");
+  return `<button class="back" type="button" data-go="back">‹ Dispatch board</button>
+    <div class="stack" style="gap:4px"><span class="eyebrow">${esc(j.id)} · ${esc(j.date)} · start ${esc(j.start)}</span><h1>${esc(j.name)}</h1><p class="muted">${esc(j.customer)} · ${esc(j.kind)}</p></div>
+    <div class="card">${route(j)}</div>${sections}
+    ${dspEditor(j, bFilled(j))}
+    <div class="note">Trucks2U fee: $${BFEE} per truck dispatched. Your rates and billing with ${esc(j.customer)} stay the same.</div>`;
+}
+
+function brokerT2Job(j) {
+  const sections = Object.keys(TYPES).filter(t => j.needs[t] > filled(j, t)).map(t => `<div class="card"><div class="row"><h2>${TYPES[t].name}</h2><span class="muted num">$${j.rate[t]}/hr · ${j.needs[t] - filled(j, t)} open</span></div>${slotPicker(j.date, t, `tdis:${j.id}:${t}`)}</div>`).join("");
+  return `<button class="back" type="button" data-go="back">‹ Dispatch board</button>
+    <div class="stack" style="gap:4px"><span class="eyebrow">Trucks2U contractor job · ${esc(j.date)} · ${esc(j.start)}</span><h1>${esc(j.name)}</h1><p class="muted">${esc(j.kind)}</p></div>
+    <div class="card">${route(j)}</div>${sections || '<div class="note">This job is fully booked.</div>'}
+    <div class="note">On Trucks2U contractor jobs the usual 5% fee applies instead of the per-truck fee, and the contractor pays through the app.</div>`;
+}
+
+function brokerTrucks() {
+  const busy = bBusy("Today");
+  return `<h1>Your trucks</h1><p class="muted">Owner-operators you dispatch. Each one goes through the same Trucks2U vetting; a blocked truck can't be dispatched until its documents are current.</p>
+    <div class="card"><div class="list">${B().roster.map(t => `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[t.type].short}</span><div><strong>${t.id} · ${esc(t.driver)}</strong><div class="muted" style="font-size:13px">${esc(t.owner)} · ${busy.has(t.id) ? "Working today" : "Free today"}</div></div></div>${docsPill(t.docs)}</div>`).join("")}</div></div>
+    <button class="btn ghost" type="button" data-act="invite">Invite a truck owner</button>`;
+}
+
+function brokerBilling() {
+  const n = B().dispatchedBefore + bDispatched();
+  return `<h1>Billing</h1>
+    <div class="stats"><div class="stat"><span>Trucks dispatched this month</span><div class="big">${n}</div></div>
+      <div class="stat"><span>Fee per truck</span><div class="big">$${BFEE}</div></div>
+      <div class="stat"><span>Owed to Trucks2U</span><div class="big">${money0(n * BFEE)}</div></div></div>
+    <div class="note">Billed monthly by bank transfer. A truck counts once per day it is dispatched. The $${BFEE} fee is a sample number to discuss.</div>`;
+}
+
+/* ---------- Truck owner sign-up (vetting) ---------- */
+const SU_STEPS = ["Business and DOT", "Driver's license", "Insurance", "Your truck", "Testing, taxes and payout"];
+function newSignup() { return { step: 1, f: { cdlClass: "Class A", liab: "$1,000,000", ttype: "w12" }, files: {}, dot: null }; }
+const fld = (k, label, attrs = "") => `<label class="field">${label}<input data-f="${k}" value="${esc(ui.signup.f[k] || "")}" ${attrs}></label>`;
+function fileFld(k, label, hint = "") {
+  const f = ui.signup.files[k];
+  return `<label class="field">${label}${hint ? `<span style="font-weight:400;font-size:12px">${hint}</span>` : ""}
+    <input type="file" data-file="${k}" accept="image/*,application/pdf" capture="environment">
+    ${f ? `<span class="row" style="justify-content:flex-start;gap:8px;color:var(--good)">${f.url ? `<img class="thumb" src="${f.url}" alt="">` : ""}✓ ${esc(f.name)}</span>` : ""}</label>`;
+}
+const SU_REQ = [
+  ["biz", "Business name"], ["phone", "Mobile phone"], ["usdot", "USDOT number"], ["file:cdlFront", "Photo of license (front)"], ["cdlExp", "License expiration date"],
+  ["file:med", "DOT medical card"], ["file:coi", "Certificate of insurance"], ["coiExp", "Insurance expiration date"],
+  ["plate", "License plate"], ["file:reg", "Truck registration"], ["file:insp", "Annual DOT inspection"], ["file:drug", "Drug testing program letter"],
+  ["chk:consent", "Consent to background checks"], ["chk:terms", "Agree to terms"]
+];
+function suMissing() {
+  const su = ui.signup;
+  return SU_REQ.filter(([k]) => k.startsWith("file:") ? !su.files[k.slice(5)] : k.startsWith("chk:") ? !su.f[k.slice(4)] : !(su.f[k] || "").trim()).map(x => x[1]);
+}
+function signupScreen() {
+  const su = ui.signup, st = su.step;
+  if (su.done) return `<div class="stack" style="gap:4px"><span class="eyebrow">Sign-up sent</span><h1>Thanks, we're checking your documents</h1></div>
+    <div class="card"><p>Most owners are approved within 1 business day. We'll text you at ${esc(su.f.phone)} if anything needs fixing, and again when your truck can start taking jobs.</p></div>
+    <button class="btn" type="button" data-act="su-admin">See it in the admin review queue</button>
+    <button class="btn ghost" type="button" data-act="su-close">Close</button>`;
+  let body = "";
+  if (st === 1) body = `${fld("biz", "Business name", 'placeholder="e.g. Delgado Hauling LLC"')}${fld("name", "Your name")}
+    <div class="grid2">${fld("phone", "Mobile phone", 'inputmode="tel" placeholder="(510) 555-0142"')}${fld("email", "Email", 'type="email"')}</div>
+    <div class="row" style="gap:8px;align-items:end"><div style="flex:1">${fld("usdot", "USDOT number", 'inputmode="numeric" placeholder="7 digits"')}</div><button class="btn small ghost" type="button" data-act="su-dot" style="flex:none">Check</button></div>
+    ${su.dot ? `<div class="note" style="color:var(--good)">${su.dot}</div>` : '<p class="muted" style="font-size:12.5px">We look this up in the federal FMCSA database to confirm it is active with no out-of-service order.</p>'}
+    ${fld("mc", "MC or CA number (if you have one)")}`;
+  if (st === 2) body = `<div class="grid2"><label class="field">License class<select data-f="cdlClass"><option ${su.f.cdlClass === "Class A" ? "selected" : ""}>Class A</option><option ${su.f.cdlClass === "Class B" ? "selected" : ""}>Class B</option></select></label>
+      ${fld("cdlExp", "Expires", 'type="date"')}</div>
+    ${fileFld("cdlFront", "Photo of license, front")}${fileFld("cdlBack", "Photo of license, back")}
+    ${fileFld("med", "DOT medical card", "The card from your DOT physical")}
+    <p class="muted" style="font-size:12.5px">Adding more drivers? You can add them from the Fleet tab after you're approved. Each driver uploads their own license and medical card.</p>`;
+  if (st === 3) body = `${fileFld("coi", "Certificate of insurance (COI)", "Ask your agent to list Trucks2U as additional insured")}
+    <div class="grid2"><label class="field">Auto liability limit<select data-f="liab">${["$750,000", "$1,000,000", "$2,000,000"].map(x => `<option ${su.f.liab === x ? "selected" : ""}>${x}</option>`).join("")}</select></label>${fld("coiExp", "Policy expires", 'type="date"')}</div>
+    ${fileFld("wc", "Workers' comp certificate", "Skip if you are a sole owner with no employees")}
+    <label class="row" style="justify-content:flex-start;gap:8px;font-size:14px"><input type="checkbox" data-f="wcExempt" style="width:auto" ${su.f.wcExempt ? "checked" : ""}> I'm a sole owner with no employees</label>`;
+  if (st === 4) body = `<label class="field">Truck type<select data-f="ttype">${Object.keys(TYPES).map(t => `<option value="${t}" ${su.f.ttype === t ? "selected" : ""}>${TYPES[t].name} (${TYPES[t].spec})</option>`).join("")}</select></label>
+    <div class="grid2">${fld("plate", "License plate")}${fld("vin", "VIN (last 6 is fine)")}</div>
+    ${fileFld("reg", "Registration")}${fileFld("insp", "Annual DOT inspection report")}${fileFld("tphoto", "Photo of the truck", "Side view, plate visible")}`;
+  if (st === 5) body = `${fileFld("drug", "Drug and alcohol testing program", "Your consortium enrollment letter")}
+    ${fileFld("w9", "W-9", "Or fill it in online after approval")}
+    <div class="card" style="gap:6px"><strong>Payout account</strong><p class="muted" style="font-size:13px">You connect your bank through our payment partner, so we never see your account number.</p><button class="btn small ghost" type="button" data-act="su-bank" style="justify-self:start">${su.f.bank ? "✓ Bank connected" : "Connect bank"}</button></div>
+    <label class="row" style="justify-content:flex-start;gap:8px;font-size:14px;align-items:flex-start"><input type="checkbox" data-f="consent" style="width:auto;margin-top:3px" ${su.f.consent ? "checked" : ""}> I allow Trucks2U to run a driving record (MVR) check and an FMCSA Clearinghouse query.</label>
+    <label class="row" style="justify-content:flex-start;gap:8px;font-size:14px;align-items:flex-start"><input type="checkbox" data-f="terms" style="width:auto;margin-top:3px" ${su.f.terms ? "checked" : ""}> I agree to the Trucks2U owner-operator terms.</label>
+    ${(() => { const m = suMissing(); return m.length ? `<div class="note">Still needed: ${m.join(", ")}.</div>` : ""; })()}`;
+  return `<button class="back" type="button" data-act="${st === 1 ? "su-close" : "su-prev"}">‹ ${st === 1 ? "Cancel" : "Back"}</button>
+    <div class="stack" style="gap:6px"><span class="eyebrow">Truck owner sign-up · step ${st} of ${SU_STEPS.length}</span>
+      <div class="steps" style="grid-template-columns:repeat(${SU_STEPS.length},1fr)">${SU_STEPS.map((_, i) => `<i class="${i < st ? "on" : ""}"></i>`).join("")}</div><h1>${SU_STEPS[st - 1]}</h1></div>
+    ${body}
+    <button class="btn" type="button" data-act="${st < SU_STEPS.length ? "su-next" : "su-submit"}" ${st === SU_STEPS.length && suMissing().length ? "disabled" : ""}>${st < SU_STEPS.length ? "Next" : "Send for review"}</button>
+    ${st < SU_STEPS.length ? '<p class="muted" style="font-size:12.5px;text-align:center">You can save and finish later. Nothing is shared until you send it.</p>' : ""}`;
+}
+function submitSignup() {
+  const su = ui.signup, f = su.f, F = su.files, id = "A" + (S.applicants.length + 1);
+  const fileNote = k => F[k] ? "Uploaded: " + F[k].name : "Not uploaded";
+  const fmtD = d => { const x = new Date(d + "T12:00:00"); return isNaN(x) ? d : x.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); };
+  f.coiExp = fmtD(f.coiExp); f.cdlExp = fmtD(f.cdlExp);
+  S.applicants.unshift({ id, name: f.biz, trucks: "one " + TYPES[f.ttype].name.toLowerCase(), fresh: true, checks: [
+    [`USDOT ${f.usdot} active, no out-of-service order`, su.dot ? "good" : "warn", su.dot ? "Checked automatically" : "Not checked yet", null],
+    [`Commercial auto liability, ${f.liab}`, "warn", `Expires ${f.coiExp} · needs review`, F.coi],
+    ["Workers' comp", "warn", f.wcExempt ? "Sole-owner exemption, needs review" : fileNote("wc"), F.wc],
+    [`CDL ${f.cdlClass}, expires ${f.cdlExp}`, "warn", "License photo uploaded · MVR check running", F.cdlFront],
+    ["DOT medical card", "warn", fileNote("med"), F.med],
+    ["Drug testing program and Clearinghouse", "warn", "Consortium letter uploaded · Clearinghouse consent given", F.drug],
+    [`Truck registration and annual inspection (plate ${f.plate})`, "warn", "Registration and inspection uploaded", F.reg],
+    ["W-9 and payout bank account", f.bank && F.w9 ? "good" : "warn", f.bank ? "Bank connected" + (F.w9 ? ", W-9 on file" : ", W-9 still needed") : "Bank not connected yet", F.w9]
+  ] });
+  su.done = true;
+}
+
+/* ---------- Admin ---------- */
+function adminVetting() {
+  const pending = S.applicants.filter(a => !S.approvedApplicants.includes(a.id));
+  const counts = a => ({ bad: a.checks.filter(c => c[1] === "bad").length, warn: a.checks.filter(c => c[1] === "warn").length });
+  return `<h1>Vetting queue</h1><p class="muted">No owner sees jobs until every check is green.</p>
+    <button class="btn small ghost" type="button" data-act="su-start" style="justify-self:start">Preview the sign-up form drivers fill in</button>
+    ${pending.length ? pending.map(a => { const c = counts(a); return `<button type="button" class="card tap" data-go="app:${a.id}">
+      <div class="row"><h2>${esc(a.name)}</h2>${c.bad ? `<span class="pill bad">${c.bad} failed</span>` : c.warn ? `<span class="pill warn">${c.warn} to review</span>` : '<span class="pill good">Ready</span>'}</div>
+      <span class="muted" style="font-size:13px">${esc(a.trucks)} · ${a.checks.filter(x => x[1] === "good").length} of ${a.checks.length} checks passed</span></button>`; }).join("") : '<div class="note">Queue is clear.</div>'}
+    ${S.approvedApplicants.length ? `<p class="eyebrow">Approved today</p><div class="card"><div class="list">${S.approvedApplicants.map(id => `<div class="row"><strong>${esc(S.applicants.find(a => a.id === id).name)}</strong><span class="pill good">Approved</span></div>`).join("")}</div></div>` : ""}`;
+}
+
+function adminApplicant(a) {
+  const bad = a.checks.some(c => c[1] === "bad"), warn = a.checks.some(c => c[1] === "warn");
+  return `<button class="back" type="button" data-go="back">‹ Queue</button>
+    <div class="stack" style="gap:4px"><span class="eyebrow">Applicant · ${esc(a.trucks)}</span><h1>${esc(a.name)}</h1></div>
+    <div class="card"><div class="list">${a.checks.map(([t, s, d, file], i) => `<div class="check"><span class="mark ${s}">${s === "good" ? "✓" : s === "bad" ? "✕" : "!"}</span>
+      <div class="stack" style="gap:6px"><div><strong style="font-size:14px">${esc(t)}</strong><div class="muted" style="font-size:13px">${esc(d)}</div></div>
+        ${file ? (file.url ? `<img src="${file.url}" alt="${esc(file.name)}" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--line);object-fit:contain;background:var(--surface-2)">` : `<span class="chip" style="justify-self:start">📄 ${esc(file.name)}</span>`) : ""}</div>
+      ${s === "warn" ? `<div class="stack" style="gap:6px"><button class="btn small ghost" type="button" data-act="verify:${a.id}:${i}">Mark OK</button><button class="btn small ghost" type="button" data-act="reject:${a.id}:${i}" style="color:var(--bad)">Reject</button></div>` : "<span></span>"}</div>`).join("")}</div></div>
+    ${bad ? '<div class="note">A failed check blocks approval. The owner gets a text asking for a current document.</div>' : ""}
+    <button class="btn good" type="button" data-act="approve-app:${a.id}" ${bad || warn ? "disabled" : ""}>Approve owner and trucks</button>`;
+}
+
+function adminOverview() {
+  const trucksOut = S.jobs.filter(j => j.date === "Today").reduce((s, j) => s + filled(j), 0);
+  const fees = S.jobs.filter(j => j.approved).reduce((s, j) => s + jobBill(j) * FEE, 0) + 1286.4;
+  const expiring = [["Delgado Hauling", "Auto liability", "Nov 17"], ["R&J Trucking", "DOT medical card (driver J. Ruiz)", "Nov 30"], ["Moreno Bros", "Annual inspection, M-2", "Dec 4"]];
+  return `<h1>Overview</h1>
+    <div class="stats"><div class="stat"><span>Trucks working today</span><div class="big">${trucksOut}</div></div>
+      <div class="stat"><span>Open jobs</span><div class="big">${S.jobs.filter(j => !j.approved).length}</div></div>
+      <div class="stat"><span>Fees this month</span><div class="big">${money0(fees)}</div></div></div>
+    <div class="card"><h2>Expiring in the next 45 days</h2><div class="list">${expiring.map(([o, d, w]) => `<div class="row"><div><strong>${o}</strong><div class="muted" style="font-size:13px">${d}</div></div><span class="pill warn">${w}</span></div>`).join("")}</div>
+      <p class="muted" style="font-size:12.5px">Owners get reminders at 30, 14 and 3 days. On the expiry date their trucks stop seeing jobs.</p></div>
+    <div class="note">Coming after the pilot: live map of every truck, geofence arrival alerts, and utilization reports.</div>`;
+}
+
+/* ---------- Shell ---------- */
+const ICONS = {
+  jobs: '<path d="M3 7h18v12H3zM8 7V5h8v2" fill="none" stroke="currentColor" stroke-width="2"/>',
+  bill: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" fill="none" stroke="currentColor" stroke-width="2"/>',
+  today: '<path d="M2 15V8h11v7M13 11h5l3 3v1H13" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="2"/>',
+  find: '<circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l5 5" stroke="currentColor" stroke-width="2"/>',
+  pay: '<rect x="3" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/>',
+  docs: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z M8.5 12l2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="2"/>',
+  vet: '<path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z M8.5 12l2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="2"/>',
+  board: '<path d="M4 4h16v16H4zM4 9h16M9 9v11" fill="none" stroke="currentColor" stroke-width="2"/>',
+  trucks: '<path d="M2 15V8h11v7M13 11h5l3 3v1H13" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="2"/>',
+  bfee: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" fill="none" stroke="currentColor" stroke-width="2"/>',
+  live: '<path d="M12 21s-6-5.5-6-11a6 6 0 0112 0c0 5.5-6 11-6 11z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2" fill="currentColor"/>',
+  plants: '<path d="M3 21V11l5 3V11l5 3V5h4v16zM2 21h20M17 5V2" fill="none" stroke="currentColor" stroke-width="2"/>',
+  fleet: '<circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 010 6M18 15c2 .5 3 2.5 3 5" fill="none" stroke="currentColor" stroke-width="2"/>',
+  over: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2"/>'
+};
+const TABS = {
+  contractor: [["jobs", "Jobs"], ["live", "Live map"], ["plants", "Plants"], ["bill", "Billing"]],
+  owner: [["today", "Today"], ["find", "Find work"], ["fleet", "Fleet"], ["pay", "Pay"], ["docs", "Docs"]],
+  broker: [["board", "Dispatch"], ["trucks", "Trucks"], ["bfee", "Billing"]],
+  admin: [["vet", "Vetting"], ["over", "Overview"]]
+};
+
+function screen() {
+  const v = ui.view;
+  if (ui.signup) return signupScreen();
+  if (ui.role === "contractor") {
+    if (ui.draft) return newJobForm();
+    if (v && v.startsWith("job:")) return contractorJob(job(v.slice(4)));
+    if (v && v.startsWith("plant:")) return plantDetail(plant(v.slice(6)));
+    return ui.tab === "bill" ? contractorBilling() : ui.tab === "live" ? contractorLive() : ui.tab === "plants" ? plantsScreen() : contractorJobs();
+  }
+  if (ui.role === "owner") {
+    if (v && v.startsWith("work:")) { const [, jid, t] = v.split(":"); const j = job(jid); return ownerWork(j, j.assignments.find(a => a.truck === t)); }
+    return { today: ownerToday, find: ownerFind, fleet: ownerFleet, pay: ownerPay, docs: ownerDocs }[ui.tab]();
+  }
+  if (ui.role === "broker") {
+    if (v && v.startsWith("bjob:")) return brokerJob(B().jobs.find(j => j.id === v.slice(5)));
+    if (v && v.startsWith("tjob:")) return brokerT2Job(job(v.slice(5)));
+    return { board: brokerBoard, trucks: brokerTrucks, bfee: brokerBilling }[ui.tab]();
+  }
+  if (v && v.startsWith("app:")) return adminApplicant(S.applicants.find(a => a.id === v.slice(4)));
+  return ui.tab === "over" ? adminOverview() : adminVetting();
+}
+
+function render() {
+  document.querySelectorAll("[data-role]").forEach(b => b.setAttribute("aria-pressed", b.dataset.role === ui.role));
+  $("#screen").innerHTML = screen();
+  $("#tabs").innerHTML = TABS[ui.role].map(([k, label]) => `<button type="button" data-tab="${k}" ${ui.tab === k && !ui.view && !ui.draft ? 'aria-current="page"' : ""}><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>${label}</button>`).join("");
+  tickMap();
+}
+
+function syncDraft() {
+  const d = ui.draft; if (!d) return;
+  const val = id => { const el = document.getElementById(id); return el ? el.value : null; };
+  if (d.step === 1) {
+    d.name = val("f-name") ?? d.name; d.kind = val("f-kind") ?? d.kind; d.site = val("f-site") ?? d.site; d.notes = val("f-notes") ?? d.notes;
+    const np = val("f-plant"); if (np && np !== d.plant) { d.plant = np; d.plan.drive = driveMin(miles(SITE, plant(np))); }
+  }
+  if (d.step === 2) {
+    Object.keys(TYPES).forEach(t => { const r = parseFloat(val("f-rate-" + t)); if (!isNaN(r)) d.rate[t] = r; });
+    [["p-tons", "tons"], ["p-hours", "hours"], ["p-drive", "drive"], ["p-ld", "loadDump"]].forEach(([id, k]) => { const x = parseFloat(val(id)); if (x > 0) d.plan[k] = x; });
+  }
+  if (d.step === 3) { d.date = val("f-date") ?? d.date; d.start = val("f-start") ?? d.start; }
+}
+
+// Prototype only: other drivers on the app accept a new job one by one, leaving a spot for you to try.
+const OTHER_DRIVERS = [["R&J Trucking", "R-8"], ["Bautista Transport", "B-2"], ["Ortega Trucking", "O-4"], ["Moreno Bros", "M-6"], ["Kowalski & Sons", "K-3"], ["Hill Country Haul", "H-1"], ["Patel Freight", "PF-2"], ["Reyes Hauling", "RH-5"]];
+function simulateAccepts(id) {
+  const step = () => {
+    const j = job(id); if (!j) return;
+    const open = Object.keys(TYPES).filter(t => j.needs[t] > filled(j, t));
+    if (needed(j) - filled(j) <= 1 || !open.length) return;
+    const t = open[Math.floor(Math.random() * open.length)];
+    const [owner, tk] = OTHER_DRIVERS[j.assignments.length % OTHER_DRIVERS.length];
+    j.assignments.push({ truck: tk + "-" + j.assignments.length, type: t, owner, status: "assigned", checkIn: null, hours: null, tickets: [] });
+    if (ui.role === "contractor") toast(`${owner} accepted (${TYPES[t].name}). ${filled(j)} of ${needed(j)} filled.`);
+    const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName);
+    if (!ui.draft && !ui.dspEdit && !typing && !ui.view?.startsWith("work:") && ui.tab !== "plants") render();
+    setTimeout(step, 3500);
+  };
+  setTimeout(step, 3000);
+}
+
+function nowTime() { return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
+
+function act(name, arg1, arg2, arg3, pick) {
+  const d = ui.draft;
+  switch (name) {
+    case "new-job":
+      ui.draft = { step: 1, name: "", kind: KINDS[2], site: "", plant: plantsByDistance()[0].p.id, notes: "", needs: { w10: 0, w12: 2, sd: 0 }, rate: { w10: 115, w12: 130, sd: 150 }, date: "Tomorrow", start: "6:00 AM", plan: { tons: 600, hours: 10, drive: driveMin(plantsByDistance()[0].mi), loadDump: 20 } }; break;
+    case "replan": syncDraft(); break;
+    case "plan": syncDraft(); Object.keys(TYPES).forEach(t => d.needs[t] = 0); d.needs[arg1] = +arg2; toast(`Set to ${arg2} × ${TYPES[arg1].name}.`); break;
+    case "cancel-job": ui.draft = null; break;
+    case "next": syncDraft(); d.step++; break;
+    case "prev": syncDraft(); d.step--; break;
+    case "inc": syncDraft(); d.needs[arg1] = Math.min(20, d.needs[arg1] + 1); break;
+    case "dec": syncDraft(); d.needs[arg1] = Math.max(0, d.needs[arg1] - 1); break;
+    case "post": {
+      syncDraft();
+      const id = "J-" + (1048 + S.jobs.length);
+      const pl = plant(d.plant), siteTxt = "Job site: " + (d.site.trim() || d.name.trim()), plTxt = `${pl.name}, ${pl.addr}`;
+      S.jobs.unshift({ id, name: d.name.trim(), kind: d.kind, pickup: d.kind === KINDS[1] ? plTxt : siteTxt, dropoff: d.kind === KINDS[1] ? siteTxt : plTxt, date: d.date, start: d.start, needs: { ...d.needs }, rate: { ...d.rate }, notes: d.notes, approved: false, assignments: [] });
+      S.jobs[0].sentTo = 38 + Math.floor(Math.random() * 20);
+      ui.draft = null; ui.view = "job:" + id; toast(`Sent to ${S.jobs[0].sentTo} vetted drivers. Watch the spots fill.`); simulateAccepts(id); break;
+    }
+    case "approve": job(arg1).approved = true; toast("Approved. Invoice sent and owners paid out."); break;
+    case "dsp-edit": ui.dspEdit = arg1; break;
+    case "dsp-cancel": ui.dspEdit = null; break;
+    case "dsp-save": { const j = anyJob(arg1), d = dsp(j); DSP_FIELDS.forEach(([k]) => { d[k] = $("#d-" + k).value.trim(); }); j.notes = d.notes; ui.dspEdit = null;
+      updatesOf(j).push({ time: nowTime(), text: "Dispatch info was updated. Check the details below.", readBy: [] }); toast("Saved. Drivers got a text and an alert in the app."); break; }
+    case "dsp-send": { const j = anyJob(arg1), t = $("#d-msg").value.trim(); if (!t) { toast("Type the update first."); return; }
+      updatesOf(j).push({ time: nowTime(), text: t, readBy: [] }); toast("Sent. Drivers got a text and an alert in the app."); break; }
+    case "dsp-ack": { const j = anyJob(arg1); updatesOf(j).forEach(u => { if (!u.readBy.includes(arg2)) u.readBy.push(arg2); }); toast("Dispatch knows you've read it."); break; }
+    case "pass": S.passed.push(arg1); toast("Passed. You won't see this request again."); break;
+    case "as-driver": ui = { role: "owner", tab: "today", view: null, draft: null }; render(); window.scrollTo(0, 0); return;
+    case "accept": {
+      const j = job(arg1), t = MY_TRUCKS.find(x => x.id === arg2);
+      if (filled(j, t.type) >= j.needs[t.type]) { toast("Sorry, another driver just took that spot."); break; }
+      j.assignments.push({ truck: t.id, type: t.type, owner: ME_OWNER, status: "assigned", checkIn: null, hours: null, tickets: [] });
+      toast(`${t.id} booked on ${j.name}.`); break;
+    }
+    case "checkin": { const a = job(arg1).assignments.find(x => x.truck === arg2); a.status = "onsite"; a.checkIn = nowTime(); toast("Checked in."); break; }
+    case "ticket": {
+      const a = job(arg1).assignments.find(x => x.truck === arg2);
+      const no = $("#t-no").value.trim(), tn = parseFloat($("#t-tons").value), file = $("#t-photo").files[0];
+      if (!no || isNaN(tn)) { toast("Enter the ticket number and tons."); return; }
+      const add = photo => { a.tickets.push({ no, tons: tn, time: nowTime(), photo }); toast("Ticket saved. The contractor can see it now."); render(); };
+      if (file) { const r = new FileReader(); r.onload = () => add(r.result); r.readAsDataURL(file); } else add(null);
+      return;
+    }
+    case "checkout": {
+      const a = job(arg1).assignments.find(x => x.truck === arg2), h = parseFloat($("#t-hours").value);
+      if (isNaN(h) || h <= 0) { toast("Enter the hours worked."); return; }
+      a.status = "done"; a.hours = h; toast("Checked out. Sent to the contractor for approval."); break;
+    }
+    case "coi": if (!$("#coi").files.length) { toast("Choose the certificate file first."); return; } S.insuranceRenewed = true; toast("Uploaded. Trucks2U reviews it within 1 business day."); break;
+    case "verify": { const a = S.applicants.find(x => x.id === arg1); a.checks[+arg2][1] = "good"; a.checks[+arg2][2] = "Reviewed and approved by admin"; break; }
+    case "bdis": { const j = B().jobs.find(x => x.id === arg1); j.assigned[arg2].push(pick); toast(`${pick} dispatched. ${bTruck(pick).driver} got the job details by text.`); break; }
+    case "bun": { const j = B().jobs.find(x => x.id === arg1); j.assigned[arg2] = j.assigned[arg2].filter(x => x !== arg3); toast(`${arg3} removed. The driver was notified.`); break; }
+    case "tdis": { const j = job(arg1), t = bTruck(pick); j.assignments.push({ truck: t.id, type: t.type, owner: t.owner + " (via " + B().name + ")", status: "assigned", checkIn: null, hours: null, tickets: [] }); toast(`${t.id} booked on ${j.name}. The contractor sees it now.`); break; }
+    case "invite": toast("In the full app this sends the owner a sign-up link by text."); return;
+    case "share": {
+      const link = "trucks2u.com/track/" + arg1.toLowerCase();
+      try { navigator.clipboard.writeText("https://" + link).then(() => toast("Tracking link copied. Your customer sees trucks and ETAs, no login."), () => toast("Tracking link: " + link)); } catch (e) { toast("Tracking link: " + link); }
+      return;
+    }
+    case "driver": S.driverOf[arg1] = pick; toast(`${pick} is driving ${arg1}. They get the job texts.`); break;
+    case "suggest": toast("In the full app this sends your correction to Trucks2U to check."); return;
+    case "reject": { const a = S.applicants.find(x => x.id === arg1); a.checks[+arg2][1] = "bad"; a.checks[+arg2][2] = "Rejected. The owner got a text asking for a new document."; toast("Rejected. The owner was asked to upload a new one."); break; }
+    case "su-start": ui.signup = newSignup(); break;
+    case "su-close": ui.signup = null; break;
+    case "su-next": ui.signup.step++; break;
+    case "su-prev": ui.signup.step--; break;
+    case "su-dot": { const n = (ui.signup.f.usdot || "").replace(/\D/g, ""); if (n.length < 6) { toast("Enter your USDOT number first."); return; } ui.signup.dot = `✓ USDOT ${n} is active, authorized for property, no out-of-service order. (Sample result; the real app asks FMCSA.)`; break; }
+    case "su-bank": ui.signup.f.bank = true; toast("Bank connected (sample)."); break;
+    case "su-submit": submitSignup(); toast("Sent for review."); break;
+    case "su-admin": { const id = S.applicants[0].id; ui = { role: "admin", tab: "vet", view: "app:" + id, draft: null }; break; }
+    case "approve-app": S.approvedApplicants.push(arg1); ui.view = null; toast("Approved. The owner can now accept jobs."); break;
+  }
+  render();
+}
+
+document.addEventListener("click", e => {
+  const r = e.target.closest("[data-role]");
+  if (r) { ui = { role: r.dataset.role, tab: TABS[r.dataset.role][0][0], view: null, draft: null }; render(); window.scrollTo(0, 0); return; }
+  const t = e.target.closest("[data-tab]");
+  if (t) { ui.tab = t.dataset.tab; ui.view = null; ui.draft = null; render(); window.scrollTo(0, 0); return; }
+  const g = e.target.closest("[data-go]");
+  if (g) { ui.view = g.dataset.go === "back" ? null : g.dataset.go; ui.dspEdit = null; render(); window.scrollTo(0, 0); return; }
+  const a = e.target.closest("[data-act]");
+  if (a) { const [n, x, y, z] = a.dataset.act.split(":"); const pk = a.dataset.pick ? document.getElementById(a.dataset.pick).value : null; act(n, x, y, z, pk); }
+});
+document.addEventListener("input", e => {
+  const k = e.target.dataset && e.target.dataset.f;
+  if (k && ui.signup) ui.signup.f[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
+});
+document.addEventListener("change", e => {
+  const k = e.target.dataset && e.target.dataset.f;
+  if (k && ui.signup) { ui.signup.f[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value; if (e.target.type === "checkbox" && ui.signup.step === 5) render(); }
+  const fk = e.target.dataset && e.target.dataset.file;
+  if (fk && ui.signup && e.target.files[0]) {
+    const file = e.target.files[0], su = ui.signup;
+    if (file.type.startsWith("image/")) { const r = new FileReader(); r.onload = () => { su.files[fk] = { name: file.name, url: r.result }; render(); }; r.readAsDataURL(file); }
+    else { su.files[fk] = { name: file.name, url: null }; render(); }
+  }
+  if (ui.draft && ui.draft.step === 1 && (e.target.id === "f-plant" || e.target.id === "f-kind")) { syncDraft(); render(); }
+  if (e.target.id === "pl-q") { ui.plq = e.target.value; render(); }
+  if (e.target.id === "pl-from") { ui.from = e.target.value; SITE = FROM[ui.from]; render(); }
+});
+document.addEventListener("input", e => {
+  if (ui.draft && ui.draft.step === 1 && e.target.id === "f-name") {
+    ui.draft.name = e.target.value;
+    const b = $("[data-act=next]"); if (b) b.disabled = !e.target.value.trim();
+  }
+});
+$("#reset").addEventListener("click", () => { S = seed(); ui = { role: ui.role, tab: TABS[ui.role][0][0], view: null, draft: null }; render(); toast("Demo reset."); });
+// Direct links: #signup opens the truck owner sign-up, as a new driver would see it.
+function openFromHash() {
+  if (location.hash === "#signup") { ui = { role: "owner", tab: "docs", view: null, draft: null, signup: newSignup() }; }
+  render();
+}
+window.addEventListener("hashchange", openFromHash);
+openFromHash();
+</script>

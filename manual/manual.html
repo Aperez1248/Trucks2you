@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Trucks2U User Manual</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;1,700;1,800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+@page { size: Letter; margin: 0.65in 0.7in 0.75in; }
+:root { --ink:#101a2b; --muted:#5b6880; --brand:#0b1730; --accent:#1667e8; --soft:#e3edfd; --line:#d9e0ea; --good:#1a8a4a; --warn:#a86400; --warnsoft:#fdf0d9; }
+* { box-sizing: border-box; }
+html, body { margin:0; background:#fff; color:var(--ink); font: 11pt/1.5 "Barlow", Arial, sans-serif; }
+h1,h2,h3 { font-family:"Barlow Condensed", "Arial Narrow", sans-serif; margin:0; line-height:1.1; }
+h1 { font-size: 30pt; font-weight:700; }
+h2 { font-size: 19pt; font-weight:700; margin-bottom: 4pt; }
+h3 { font-size: 14.5pt; font-weight:700; margin-bottom: 4pt; }
+p { margin: 0 0 7pt; }
+ol, ul { margin: 0 0 7pt; padding-left: 18pt; }
+li { margin-bottom: 3pt; }
+b, strong { font-weight:700; }
+.muted { color: var(--muted); }
+.eyebrow { font: 600 9pt/1 "Barlow", sans-serif; letter-spacing: 1.6pt; text-transform: uppercase; color: var(--accent); margin-bottom: 6pt; display:block; }
+
+/* Cover */
+.cover { height: 9.4in; display:grid; grid-template-columns: 1fr 2.9in; gap: 0.4in; align-items:center; break-after: page; }
+.logo { font: italic 800 40pt/1 "Barlow Condensed", sans-serif; letter-spacing:.5pt; color: var(--brand); }
+.logo b { color: var(--accent); }
+.cover h1 { font-size: 40pt; margin: 18pt 0 10pt; }
+.cover .lead { font-size: 14pt; color: var(--muted); margin-bottom: 18pt; }
+.cover img { width: 100%; border-radius: 14pt; box-shadow: 0 6pt 24pt rgba(11,23,48,.18); }
+.badge { display:inline-block; background: var(--warnsoft); color: var(--warn); font: 700 9pt/1 "Barlow", sans-serif; letter-spacing:1pt; text-transform:uppercase; padding: 6pt 9pt; border-radius: 5pt; }
+
+/* Sections */
+.part { break-before: page; }
+.part-head { background: var(--brand); color:#fff; border-radius: 12pt; padding: 18pt 20pt; margin-bottom: 16pt; }
+.part-head .eyebrow { color: #8fb6ff; }
+.part-head h2 { font-size: 26pt; color:#fff; margin:0 0 6pt; }
+.part-head p { color: #c9d4e8; margin:0; font-size: 11.5pt; }
+
+.step { display:grid; grid-template-columns: 1fr 2.15in; gap: 0.3in; align-items:start; break-inside: avoid; margin-bottom: 14pt; padding-bottom: 12pt; border-bottom: 1px solid var(--line); }
+.step > div, .shot { break-inside: avoid; }
+.step:last-child { border-bottom: 0; }
+.step.flip { grid-template-columns: 2.15in 1fr; }
+.shot { width: 100%; border-radius: 10pt; border: 1px solid var(--line); display:block; }
+.shot.tall { max-height: 7.4in; width:auto; max-width:100%; margin: 0 auto; }
+.cap { font-size: 9pt; color: var(--muted); text-align:center; margin-top: 5pt; }
+.pair { display:grid; grid-template-columns: 1fr 1fr; gap: 0.3in; break-inside: avoid; margin: 6pt 0 16pt; }
+.trio { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.22in; break-inside: avoid; margin: 6pt 0 16pt; }
+.num { display:inline-grid; place-items:center; width: 20pt; height: 20pt; border-radius: 50%; background: var(--accent); color:#fff; font: 700 10pt/1 "Barlow", sans-serif; margin-right: 6pt; vertical-align: 2pt; }
+.tip { background: var(--soft); border-radius: 8pt; padding: 8pt 11pt; font-size: 10pt; margin: 8pt 0; }
+.tip b { color: var(--accent); }
+.proto { background: var(--warnsoft); border-radius: 8pt; padding: 8pt 11pt; font-size: 10pt; margin: 8pt 0; }
+.proto b { color: var(--warn); }
+
+/* Flow */
+.flow { display:grid; grid-template-columns: repeat(6, 1fr); gap: 6pt; margin: 10pt 0 14pt; }
+.flow div { background: #f5f7fb; border:1px solid var(--line); border-radius: 8pt; padding: 8pt 7pt; font-size: 9.5pt; line-height:1.3; position: relative; }
+.flow div b { display:block; font: 700 12pt/1.1 "Barlow Condensed", sans-serif; margin-bottom: 3pt; color: var(--brand); }
+.flow div i { font-style: normal; color: var(--accent); font-weight: 700; font-size: 9pt; }
+
+table { width:100%; border-collapse: collapse; font-size: 10pt; margin: 6pt 0 12pt; }
+th, td { text-align:left; padding: 6pt 8pt; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 700; background: #f5f7fb; }
+.roles { display:grid; grid-template-columns: 1fr 1fr; gap: 10pt; margin: 8pt 0 14pt; }
+.roles div { border:1px solid var(--line); border-radius: 10pt; padding: 10pt 12pt; }
+.roles h3 { margin-bottom: 3pt; }
+.roles p { font-size: 10pt; margin:0; }
+.toc { columns: 2; column-gap: 0.4in; font-size: 11pt; }
+.toc div { break-inside: avoid; margin-bottom: 10pt; }
+.toc b { font: 700 13pt/1.2 "Barlow Condensed", sans-serif; display:block; }
+.toc span { color: var(--muted); font-size: 10pt; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<section class="cover">
+  <div>
+    <div class="logo">TRUCKS<b>2U</b></div>
+    <h1>User Manual</h1>
+    <p class="lead">How the app works, screen by screen, for contractors, truck owners and drivers, brokers, and the Trucks2U office.</p>
+    <span class="badge">Prototype · sample data</span>
+    <p class="muted" style="margin-top:18pt;font-size:10pt">Version of October 29, 2026. Every name, company, truck and dollar amount in these pictures is an example. The prototype can be opened at claude.ai/artifact/J8Dnv2sjcjJoJGbnvPnfzj.</p>
+  </div>
+  <img src="shots/c01_jobs.png" alt="">
+</section>
+
+<!-- INTRO -->
+<section>
+  <span class="eyebrow">Start here</span>
+  <h2>What Trucks2U does</h2>
+  <p>Trucks2U connects paving and grading contractors with vetted dump truck owner-operators (10 wheelers, 12 wheelers and super dumpers). It works like Uber for hauling: a contractor posts a job, every approved truck owner with the right type of truck gets the request on their phone, and the first ones to accept get the spots. During the day the app tracks every load, collects the scale tickets, and at the end of the day the contractor approves the hours and everyone gets paid by bank transfer.</p>
+  <p>Trucks2U charges a <b>5% fee</b>, built into the hourly rate. A typical broker takes 10 to 12%.</p>
+
+  <h3 style="margin-top:12pt">How one job moves through the app</h3>
+  <div class="flow">
+    <div><i>1</i><b>Post</b>Contractor enters the site, plant, trucks and rate.</div>
+    <div><i>2</i><b>Request</b>Vetted owners with the right trucks get it on their phone.</div>
+    <div><i>3</i><b>Accept</b>First to tap Accept get the spots. The rest disappear.</div>
+    <div><i>4</i><b>Haul</b>Drivers check in, haul, and snap each scale ticket.</div>
+    <div><i>5</i><b>Approve</b>Contractor reviews hours and tickets, taps Approve.</div>
+    <div><i>6</i><b>Get paid</b>Contractor billed by ACH. Owners paid in about 2 days.</div>
+  </div>
+
+  <h3>The four kinds of users</h3>
+  <div class="roles">
+    <div><h3>Contractor</h3><p>Posts jobs, plans how many trucks are needed, watches trucks live, shares a tracking link with the customer, approves the day and pays.</p></div>
+    <div><h3>Truck owner / driver</h3><p>Signs up and uploads documents once, accepts job requests, reads dispatch updates, checks in, records load tickets, assigns drivers to trucks and gets paid weekly.</p></div>
+    <div><h3>Broker</h3><p>Dispatches their own trucks to their own customers through the app instead of calling and texting. Pays Trucks2U a flat fee per truck per day.</p></div>
+    <div><h3>Admin (Trucks2U office)</h3><p>Reviews every new owner's documents before they can see jobs, watches for expiring insurance and medical cards, and keeps the plant directory up to date.</p></div>
+  </div>
+
+  <div class="step" style="border-bottom:0">
+    <div>
+      <h3>Getting around the prototype</h3>
+      <ol>
+        <li><b>Viewing as</b> (top row): tap Contractor, Truck owner, Broker or Admin to see the app the way that person would. In the real app each person only sees their own view.</li>
+        <li><b>Bottom tabs</b>: each view has its own tabs, like Jobs, Live map, Plants and Billing for a contractor.</li>
+        <li><b>Back links</b> in blue at the top left of a screen take you back one step.</li>
+        <li><b>Reset demo</b> (top right) puts all sample data back to the start. Reloading the page does the same.</li>
+      </ol>
+      <div class="proto"><b>Prototype note:</b> this is a clickable model for showing people how the app will work. Nothing is saved, no texts or payments are sent, and some things (the live map, the USDOT check, other drivers accepting) are simulated. The Reference section at the end lists what is real and what is pretend.</div>
+    </div>
+    <div><img class="shot" src="shots/c01_jobs.png" alt=""><div class="cap">The "Viewing as" switcher and the contractor's Jobs tab</div></div>
+  </div>
+</section>
+
+<!-- CONTENTS -->
+<section style="break-before:page">
+  <span class="eyebrow">Contents</span>
+  <h2 style="margin-bottom:14pt">What's in this manual</h2>
+  <div class="toc">
+    <div><b>Part 1. Contractor</b><span>Your jobs · Posting a job · Picking the plant · Load planner · Review and fees · Watching trucks accept · The job during the day · Tracking link · Dispatch info and updates for drivers · Live map · Approving the day · Billing · Asphalt plant directory</span></div>
+    <div><b>Part 2. Truck owner and driver</b><span>Signing up and uploading documents · New job requests · Find work · Checking in · Dispatch info and updates · Load tickets · Checking out · Fleet and drivers · Pay · Documents and renewals</span></div>
+    <div><b>Part 3. Broker</b><span>Dispatch board · Dispatching your own customer's job · Dispatch info for drivers · Filling Trucks2U contractor jobs · Your trucks · Billing</span></div>
+    <div><b>Part 4. Admin</b><span>Vetting queue · Reviewing an applicant's documents · Approving an owner · Overview and expiring documents · Plant directory upkeep</span></div>
+    <div><b>Reference</b><span>What's real and what's simulated · Words used in the app</span></div>
+  </div>
+</section>
+
+<!-- PART 1 CONTRACTOR -->
+<section class="part">
+  <div class="part-head"><span class="eyebrow">Part 1</span><h2>Contractor</h2><p>Post a job, get trucks without phone calls, watch every load, and pay once at the end of the day.</p></div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">1</span>Your jobs</h3>
+      <p>The Jobs tab lists every job you have posted, newest first. Each card shows:</p>
+      <ul>
+        <li>The <b>date and start time</b>.</li>
+        <li>A <b>status</b>: <i>Finding trucks</i> while spots are open, <i>Ready to approve</i> when every truck has checked out.</li>
+        <li>A <b>progress bar</b> and chips like <b>12W 2/3</b>, meaning 2 of the 3 twelve-wheelers you asked for are booked.</li>
+      </ul>
+      <p>Tap a card to open the job. Tap <b>+ Post a job</b> to start a new one.</p>
+    </div>
+    <div><img class="shot" src="shots/c01_jobs.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">2</span>Post a job: job details and plant</h3>
+      <p>Posting takes three short steps. On step 1 you fill in:</p>
+      <ul>
+        <li><b>Job name</b>, for example "Elm St mill and pave".</li>
+        <li><b>What the trucks are doing</b>: haul off grindings, deliver asphalt, or a round trip (grindings out, asphalt in).</li>
+        <li><b>Job site address</b>, with cross streets.</li>
+        <li><b>Asphalt plant</b>. The list is sorted closest first and shows the miles and rough drive time for each plant, so picking the nearest one is one tap. Recycling yards are marked.</li>
+        <li><b>Notes for drivers</b>: staging spot, safety gear, gate codes. You can add more detail later in the job's dispatch info.</li>
+      </ul>
+      <p>Tap <b>Next</b>.</p>
+    </div>
+    <div><img class="shot" src="shots/c04_post1.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">3</span>Load planner: how many trucks do I need?</h3>
+      <p>Step 2 starts with a calculator so you don't have to guess. Enter:</p>
+      <ul>
+        <li><b>Tons to move</b> and <b>hours of work</b>.</li>
+        <li><b>One-way drive time</b> to the plant (filled in from the plant you picked).</li>
+        <li><b>Load and dump time</b> per trip.</li>
+      </ul>
+      <p>The app works out the round trip time and how many loads each truck can do in the day, then tells you how many trucks of each type it takes. In the example, 600 tons with a 16 minute drive needs 3 twelve-wheelers.</p>
+      <p>Tap <b>Use</b> next to the option you want and the counts below are set for you. You can still change each count with <b>−</b> and <b>+</b>, and set the <b>hourly rate</b> for each truck type. Tap <b>Recalculate</b> after changing a number.</p>
+    </div>
+    <div><img class="shot tall" src="shots/c05b_post2_used.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">4</span>Schedule, review and post</h3>
+      <p>Step 3 asks for the <b>date</b> and <b>start time</b>, then shows a review of the whole job with the trucks, the rates, and an estimate for a 10 hour day.</p>
+      <p>The review also shows the Trucks2U fee that is already inside that estimate (5%) next to what a broker would take (11%), so you can see the savings.</p>
+      <p>Tap <b>Post job to vetted owners</b>.</p>
+      <div class="tip"><b>Who gets it?</b> Only truck owners who have passed vetting and have the right type of truck. Owners with expired insurance or paperwork don't see it.</div>
+    </div>
+    <div><img class="shot" src="shots/c06_post3.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">5</span>Watch the trucks accept</h3>
+      <p>As soon as you post, the job opens and the app tells you how many vetted drivers it was sent to. Trucks start appearing in the <b>Trucks</b> list as owners accept, and a message pops up each time ("R&amp;J Trucking accepted, 2 of 3 filled").</p>
+      <p>It's first come, first served. Once every spot is filled, the request disappears from everyone else's phone.</p>
+      <p><b>See what drivers see</b> switches to the truck owner view so you can see the request from the other side.</p>
+      <div class="proto"><b>Prototype note:</b> the "other drivers" accepting are simulated. They stop with one spot left, so you can try accepting it yourself from the Truck owner view.</div>
+    </div>
+    <div><img class="shot" src="shots/c08_filling.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">6</span>The job during the day</h3>
+      <p>Open any job to see everything in one place:</p>
+      <ul>
+        <li><b>Route</b> from the job site to the plant, and the dispatch info for drivers (see the next step).</li>
+        <li><b>Loads, tons hauled</b> and how many trucks are <b>on the clock</b> right now.</li>
+        <li><b>Trucks</b>: each truck, its owner, when it checked in, and its status (Assigned, On the clock, Checked out).</li>
+        <li><b>Load tickets</b>: every scale ticket a driver has recorded, with the ticket number, time, tons and a photo.</li>
+      </ul>
+      <h3 style="margin-top:10pt">Share a tracking link with your customer</h3>
+      <p>Tap <b>Share tracking link</b> to copy a web link (like trucks2u.com/track/j-1042) you can text to the property owner or GC. They see the trucks and arrival times without downloading anything or logging in.</p>
+      <p><b>See trucks on the map</b> opens the Live map.</p>
+    </div>
+    <div><img class="shot" src="shots/x_job_detail.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">7</span>Dispatch info for drivers</h3>
+      <p>Every job has a <b>Dispatch info for drivers</b> card, right under the route. It holds what drivers need to find the job and work it safely:</p>
+      <ul>
+        <li><b>On-site contact</b> and <b>contact phone</b>.</li>
+        <li><b>Staging spot</b>, and <b>gate and access</b> (gate codes, which street to come in on).</li>
+        <li><b>Plant order or ticket number</b> and the <b>material or mix</b>.</li>
+        <li><b>Safety gear</b> and any <b>other notes</b>.</li>
+      </ul>
+      <p>Tap <b>Edit</b> to fill in or change any of these. When you tap <b>Save and notify drivers</b>, every driver on the job gets a text and an alert in the app telling them the info changed.</p>
+      <div class="tip"><b>Why it matters:</b> drivers stop calling the foreman for the gate code or the order number. It's all on their phone, on the job screen.</div>
+    </div>
+    <div><img class="shot" src="shots/d01_contractor_card.png" alt=""><div class="cap">The dispatch info card on a contractor's job</div></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">8</span>Send an update to every driver</h3>
+      <p>When something changes during the day (the plant is down, the paver slowed, a street closed), type it in <b>Send an update to every driver on this job</b> and tap <b>Send</b>. The button shows how many drivers will get it.</p>
+      <p>Each driver gets a text and an alert in the app. Your updates are listed newest first, and each one shows <b>Read by 1 of 4</b>, so you know who has seen it and who you still need to call.</p>
+      <p>One message replaces calling or texting every driver one by one.</p>
+    </div>
+    <div><img class="shot" src="shots/d03_sent.png" alt=""><div class="cap">A new update, with how many drivers have read each one</div></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">9</span>Live map: where are my trucks?</h3>
+      <p>The Live map tab shows today's job with every truck moving between the job site and the plant.</p>
+      <ul>
+        <li>The <b>green circles</b> are geofences around the site and the plant. When a truck drives in or out, the arrival and departure are logged on their own, so cycle times and wait times are recorded without anyone typing anything.</li>
+        <li>Below the map, each truck shows what it is doing right now (loading, hauling to the plant with an ETA, returning) and how many loads it has done.</li>
+        <li>The <b>average cycle time</b> is shown at the top of the list.</li>
+        <li>A truck that hasn't checked in by start time is flagged <b>Late?</b></li>
+      </ul>
+      <div class="proto"><b>Prototype note:</b> the truck movement is simulated. In the real app each truck's position comes from the driver's phone every 30 seconds.</div>
+    </div>
+    <div><img class="shot" src="shots/c09_live.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">10</span>Approve the day</h3>
+      <p>When every truck has checked out, the job card says <b>Ready to approve</b>. Open the job and scroll to <b>Approve the day</b>. You'll see each truck's hours times its rate, and the total.</p>
+      <p>Check the hours against the load tickets above it, then tap <b>Approve hours and tickets</b>. That one tap:</p>
+      <ul>
+        <li>Sends you the invoice, paid by bank transfer (ACH).</li>
+        <li>Starts the payouts to every truck owner on the job.</li>
+      </ul>
+      <p>The total already includes the 5% Trucks2U fee, and the screen shows what a broker would have taken for comparison.</p>
+    </div>
+    <div><img class="shot" src="shots/x_approve.png" alt=""><div class="cap">Bottom of a finished job</div></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">11</span>Billing</h3>
+      <p>The Billing tab shows:</p>
+      <ul>
+        <li><b>Approved this month</b>, the Trucks2U fee inside it, and how much you kept compared with an 11% broker.</li>
+        <li><b>Waiting on your approval</b>: finished jobs you still need to approve. Tap one to review it.</li>
+        <li><b>Invoices</b> for jobs you've approved.</li>
+      </ul>
+    </div>
+    <div><img class="shot" src="shots/c13_billing_after.png" alt=""><div class="cap">After approving the Lakeside job</div></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">12</span>Asphalt plant directory</h3>
+      <p>The Plants tab lists 19 Bay Area hot mix plants and recycling yards. It combines the Caltrans approved plant list (September 2025) with your own plant list.</p>
+      <ul>
+        <li><b>Distance from</b>: pick a city (Oakland, San Jose, Concord and others) and the list re-sorts closest first, with miles and drive time.</li>
+        <li><b>Search</b> by plant name or city.</li>
+        <li>Tags show the plant type, <b>Caltrans approved</b>, <b>Hours listed</b>, or <b>Recycling yard</b>.</li>
+      </ul>
+      <p>The same list feeds the plant picker when you post a job.</p>
+    </div>
+    <div><img class="shot" src="shots/c10_plants_top.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3>Plant details</h3>
+      <p>Tap a plant to see its address, distance, loaded drive time, phone and sales numbers, published hours, and whether it takes grindings (RAP).</p>
+      <p><b>Wait at scale</b> fills in on its own once Trucks2U trucks start checking in and out at that plant, so over time you'll know which plants are backed up.</p>
+      <p>If something is wrong or missing, tap <b>Add hours or grindings info</b>. Your correction goes to the Trucks2U office to check before it's added.</p>
+      <div class="proto"><b>Prototype note:</b> map pins are approximate, and hours and grindings acceptance still need to be confirmed with each plant.</div>
+    </div>
+    <div><img class="shot" src="shots/c11_plant_detail.png" alt=""></div>
+  </div>
+</section>
+
+<!-- PART 2 OWNER -->
+<section class="part">
+  <div class="part-head"><span class="eyebrow">Part 2</span><h2>Truck owner and driver</h2><p>Sign up once, get job requests on your phone, and get paid in about 2 business days instead of 30 or more.</p></div>
+
+  <h3><span class="num">1</span>Signing up and uploading your documents</h3>
+  <p>A new owner signs up from the <b>Docs</b> tab ("Sign up and upload your documents"). It takes about 10 minutes on a phone. Each document can be a photo taken right in the app or a PDF. Nothing is shared until you tap <b>Send for review</b>, and you can stop and finish later. There are five steps:</p>
+  <table>
+    <tr><th style="width:26%">Step</th><th>What you enter or upload</th></tr>
+    <tr><td><b>1. Business and DOT</b></td><td>Business name, your name, mobile phone, email, USDOT number (tap <b>Check</b> to confirm it's active with the federal FMCSA database), MC or CA number if you have one.</td></tr>
+    <tr><td><b>2. Driver's license</b></td><td>License class and expiration, photos of the front and back, and the DOT medical card.</td></tr>
+    <tr><td><b>3. Insurance</b></td><td>Certificate of insurance (COI) listing Trucks2U as additional insured, auto liability limit, expiration date, and workers' comp certificate or the sole-owner exemption.</td></tr>
+    <tr><td><b>4. Your truck</b></td><td>Truck type, license plate, VIN, registration, annual DOT inspection report, and a side photo of the truck with the plate showing.</td></tr>
+    <tr><td><b>5. Testing, taxes and payout</b></td><td>Drug and alcohol testing program letter, W-9, connecting your bank for payouts, and consent to a driving record (MVR) check and FMCSA Clearinghouse query.</td></tr>
+  </table>
+  <div class="trio">
+    <div><img class="shot" src="shots/s01_business.png" alt=""><div class="cap">Step 1: the USDOT check</div></div>
+    <div><img class="shot" src="shots/s02_license.png" alt=""><div class="cap">Step 2: license and medical card photos</div></div>
+    <div><img class="shot" src="shots/s03_insurance.png" alt=""><div class="cap">Step 3: insurance</div></div>
+  </div>
+  <div class="trio">
+    <div><img class="shot" src="shots/s04_truck.png" alt=""><div class="cap">Step 4: truck details and photos</div></div>
+    <div><img class="shot" src="shots/s05_final.png" alt=""><div class="cap">Step 5: testing, W-9, bank and consent</div></div>
+    <div><img class="shot" src="shots/s06_done.png" alt=""><div class="cap">Sent. Most owners are approved within 1 business day.</div></div>
+  </div>
+  <div class="tip"><b>Bank details are safe:</b> owners connect their bank through the payment partner, so Trucks2U never sees the account number. If something is missing on step 5, the app lists exactly what is still needed and the Send button stays grey.</div>
+
+  <div class="step" style="margin-top:14pt">
+    <div>
+      <h3><span class="num">2</span>Today: new job requests</h3>
+      <p>The <b>Today</b> tab is the home screen. New job requests that fit your trucks show up at the top with a blue border. Each one shows:</p>
+      <ul>
+        <li>Date, start time, the route and the type of work.</li>
+        <li>How many spots are still open.</li>
+        <li>Each of your trucks that fits, with the hourly rate and about what you'll make for a 10 hour day.</li>
+      </ul>
+      <p>Tap <b>Accept</b> on the truck you want to send. Tap <b>Pass</b> to hide the request.</p>
+      <div class="tip"><b>First come, first served.</b> If another driver takes the last spot first, you'll see "Sorry, another driver just took that spot."</div>
+      <p>Below the requests are your <b>verified</b> status, any warning like <b>Insurance expires in 24 days</b>, and the jobs your trucks are booked on.</p>
+    </div>
+    <div><img class="shot tall" src="shots/o01_today.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3>After you accept</h3>
+      <p>The request moves down into your booked jobs with the status <b>Assigned</b>, and the contractor sees your truck on their job right away.</p>
+      <p>Tap a booked job to open it on the day.</p>
+    </div>
+    <div><img class="shot" src="shots/o01b_accepted.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">3</span>Find work</h3>
+      <p>The <b>Find work</b> tab lists every open job that needs one of your trucks, even ones you passed on the Today screen.</p>
+      <p>Each line shows the contractor's rate and what you actually get after the 5% fee. In the example, $130 an hour means you get $123.50 an hour.</p>
+    </div>
+    <div><img class="shot" src="shots/o02_find.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">4</span>Check in at the site</h3>
+      <p>When the truck gets to the job, open the job and tap <b>Check in at site</b>. That records the time and location and puts the truck <b>On the clock</b>.</p>
+      <div class="proto"><b>In the full app</b> check-in happens on its own when the truck drives into the job site geofence.</div>
+    </div>
+    <div><img class="shot" src="shots/o03a_checkin.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">5</span>Dispatch info and updates from dispatch</h3>
+      <p>Every job screen has a <b>Dispatch info</b> card with the on-site contact and phone, staging spot, gate and access, plant order number, mix, safety gear and notes.</p>
+      <p>When dispatch sends an update or changes the info, the driver gets a text and an alert. In the app:</p>
+      <ul>
+        <li>The job card on the <b>Today</b> tab shows a tag like <b>2 new dispatch notes</b>.</li>
+        <li>On the job screen the card has an orange border, and new updates are marked <b>New</b> in bold.</li>
+        <li>Tap <b>Got it</b> to let dispatch know you've read them. The marks go away, and the contractor or broker sees you've read it.</li>
+      </ul>
+    </div>
+    <div><img class="shot" src="shots/d04_driver_new.png" alt=""><div class="cap">Two new updates waiting for the driver</div></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3>After tapping Got it</h3>
+      <p>The updates stay on the card as a record of the day, with the time each one was sent, and the dispatch info stays underneath for the driver to check any time.</p>
+    </div>
+    <div><img class="shot" src="shots/d05_driver_read.png" alt=""><div class="cap">Read: no more "New" marks</div><img class="shot" style="margin-top:10pt" src="shots/o01c_today_note.png" alt=""><div class="cap">The "new dispatch notes" tag on the Today tab</div></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">6</span>Load tickets and checking out</h3>
+      <p>For every load, the driver adds the scale ticket:</p>
+      <ol>
+        <li>Type the <b>ticket number</b> and <b>tons</b>.</li>
+        <li>Snap a <b>photo of the ticket</b>.</li>
+        <li>Tap <b>Save ticket</b>. The contractor sees it right away.</li>
+      </ol>
+      <p>That replaces the paper tickets that get lost in the cab.</p>
+      <p>At the end of the day, enter the <b>hours on the clock</b> and tap <b>Check out</b>. The day goes to the contractor to approve. <b>Your tickets</b> at the bottom shows every load and the total tons.</p>
+    </div>
+    <div><img class="shot tall" src="shots/o03_work.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">7</span>Fleet: trucks and drivers</h3>
+      <p>Owners with more than one truck or driver use the <b>Fleet</b> tab.</p>
+      <ul>
+        <li>For each truck, pick who is driving it and tap <b>Save</b>. That driver gets the job texts and checks in from their own phone.</li>
+        <li>You see every load your drivers haul, and you get paid for the truck.</li>
+        <li>Each driver goes through the same license, medical card, MVR and drug testing checks and shows <b>Verified</b> when cleared.</li>
+      </ul>
+    </div>
+    <div><img class="shot" src="shots/o04_fleet.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">8</span>Pay</h3>
+      <p>The <b>Pay</b> tab shows:</p>
+      <ul>
+        <li><b>Paid this month</b>, money <b>on the way</b>, and money <b>awaiting approval</b> from contractors.</li>
+        <li><b>Recent work</b> with what each day paid.</li>
+        <li><b>Weekly statements</b> broken out by truck, with days and loads.</li>
+      </ul>
+      <p>Payouts land within 2 business days of the contractor approving the day.</p>
+    </div>
+    <div><img class="shot" src="shots/o05_pay.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">9</span>Docs: keeping everything current</h3>
+      <p>The <b>Docs</b> tab is a checklist of every document on file: USDOT, auto liability, general liability and workers' comp, CDL and MVR, medical card, drug testing, each truck's registration and inspection, and the W-9 and bank.</p>
+      <ul>
+        <li>A green check means it's good. An orange <b>!</b> means it expires soon.</li>
+        <li>Every item has to stay green for your trucks to see jobs.</li>
+        <li>The app reminds you 30 days before anything expires.</li>
+      </ul>
+      <p>To renew insurance, choose the new certificate under <b>Renew insurance certificate</b> and tap <b>Upload</b>. Trucks2U reviews it within 1 business day.</p>
+    </div>
+    <div><img class="shot" src="shots/x_docs.png" alt=""></div>
+  </div>
+</section>
+
+<!-- PART 3 BROKER -->
+<section class="part">
+  <div class="part-head"><span class="eyebrow">Part 3</span><h2>Broker</h2><p>Dispatch your own trucks to your own customers without phone calls or group texts, and fill open Trucks2U jobs with your trucks.</p></div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">1</span>Dispatch board</h3>
+      <p>The <b>Dispatch</b> tab has two lists.</p>
+      <p><b>Your customers' jobs</b> (top): jobs from the broker's own customers, with how many trucks still need to be dispatched, like <b>2 to dispatch</b>.</p>
+      <p><b>Open jobs from Trucks2U contractors</b> (bottom): jobs posted in the app that still need trucks. A broker can fill these with their trucks.</p>
+      <p>Tap any job to dispatch trucks to it.</p>
+    </div>
+    <div><img class="shot tall" src="shots/b01_board.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">2</span>Dispatching your own customer's job</h3>
+      <p>The job is split by truck type. For each open spot:</p>
+      <ol>
+        <li>Pick a truck from the list (only your free, verified trucks are shown).</li>
+        <li>Tap <b>Dispatch</b>. The driver gets the job details by text right away.</li>
+      </ol>
+      <p>Tap <b>Remove</b> to take a truck off a job. The driver is told.</p>
+      <div class="tip"><b>Fee:</b> Trucks2U charges the broker a flat fee per truck dispatched. Your rates and billing with your customer stay the same.</div>
+    </div>
+    <div><img class="shot" src="shots/b03_dispatched.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">3</span>Dispatch info for your drivers</h3>
+      <p>The broker's job screen has the same <b>Dispatch info for drivers</b> card as the contractor's. Tap <b>Edit</b> to add your customer's on-site contact, staging spot, gate code, safety gear and notes, then <b>Save and notify drivers</b>.</p>
+      <p>Use <b>Send an update to every driver on this job</b> for changes during the day. Your drivers get it by text, so it replaces the group text.</p>
+    </div>
+    <div><img class="shot" src="shots/d06_broker_card.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">4</span>Filling a Trucks2U contractor job</h3>
+      <p>Open a job from the "Open jobs from Trucks2U contractors" list. It shows the open spots and the contractor's rate.</p>
+      <p>Pick one of your trucks and tap <b>Dispatch</b>. The contractor sees the truck on their job right away, listed under the owner's name "via" your company.</p>
+      <p>On these jobs the normal 5% fee applies instead of the per-truck fee, and the contractor pays through the app.</p>
+    </div>
+    <div><img class="shot" src="shots/b04_t2job.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">5</span>Your trucks</h3>
+      <p>The <b>Trucks</b> tab lists the owner-operators you dispatch, whether they're working or free today, and their vetting status.</p>
+      <ul>
+        <li><b>Verified</b>: ready to dispatch.</li>
+        <li><b>Expiring</b>: a document runs out soon.</li>
+        <li><b>Blocked</b>: a document is out of date, so the truck can't be dispatched until it's fixed.</li>
+      </ul>
+      <p>Every truck goes through the same Trucks2U vetting. <b>Invite a truck owner</b> texts an owner a sign-up link.</p>
+    </div>
+    <div><img class="shot" src="shots/b05_trucks.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">6</span>Billing</h3>
+      <p>Shows trucks dispatched this month, the fee per truck, and what is owed to Trucks2U. It's billed monthly by bank transfer, and a truck counts once per day it's dispatched.</p>
+      <div class="proto"><b>Not decided yet:</b> the $15 per truck per day fee is a placeholder until the real price is set.</div>
+    </div>
+    <div><img class="shot" src="shots/b06_billing.png" alt=""></div>
+  </div>
+</section>
+
+<!-- PART 4 ADMIN -->
+<section class="part">
+  <div class="part-head"><span class="eyebrow">Part 4</span><h2>Admin (Trucks2U office)</h2><p>Make sure every truck on the app is legal, insured and safe before it sees a single job.</p></div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">1</span>Vetting queue</h3>
+      <p>Every owner who sends in a sign-up lands here. <b>No owner sees jobs until every check is green.</b></p>
+      <p>Each applicant shows how many trucks they have, how many of the 8 checks have passed, and a tag: <b>To review</b> (documents waiting for you) or <b>Failed</b> (something was rejected).</p>
+      <p><b>Preview the sign-up form drivers fill in</b> opens the same form owners see.</p>
+    </div>
+    <div><img class="shot" src="shots/a01_vetting.png" alt=""></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">2</span>Reviewing an applicant</h3>
+      <p>Open an applicant to see every check with the uploaded document right under it.</p>
+      <ul>
+        <li>Some checks run on their own, like the <b>USDOT</b> lookup. These show a green check already.</li>
+        <li>For the rest (insurance, workers' comp, CDL, medical card, drug testing, registration and inspection), look at the picture and the dates, then tap <b>Mark OK</b>.</li>
+        <li>If a document is wrong, blurry or expired, tap <b>Reject</b>. The owner gets a text asking for a new one.</li>
+      </ul>
+    </div>
+    <div><img class="shot" src="shots/x_applicant.png" alt=""><div class="cap">Top of an applicant's review page</div></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">3</span>Approving the owner</h3>
+      <p>The green <b>Approve owner and trucks</b> button only turns on once every check is OK.</p>
+      <p>Tap it and the owner moves to <b>Approved today</b>. From that moment their trucks start getting job requests.</p>
+    </div>
+    <div><img class="shot" src="shots/x_applicant_ok.png" alt=""><div class="cap">Every check OK, so Approve is on</div><img class="shot" style="margin-top:10pt" src="shots/a04_after_approve.png" alt=""><div class="cap">The owner now shows as Approved</div></div>
+  </div>
+
+  <div class="step">
+    <div>
+      <h3><span class="num">4</span>Overview</h3>
+      <p>A quick look at the business: trucks working today, open jobs, and Trucks2U fees this month.</p>
+      <p><b>Expiring in the next 45 days</b> lists every insurance policy, medical card and inspection about to run out. Owners get reminders at 30, 14 and 3 days. On the expiration date their trucks stop seeing jobs until the new document is approved.</p>
+      <h3 style="margin-top:10pt">Plant directory upkeep</h3>
+      <p>Corrections contractors send from a plant's page ("Add hours or grindings info") come to the office to check before they're added to the directory. The directory today is the Caltrans list merged with your plant list.</p>
+      <div class="proto"><b>Coming after the pilot:</b> a live map of every truck, geofence arrival alerts and utilization reports for the office.</div>
+    </div>
+    <div><img class="shot" src="shots/a03_overview.png" alt=""></div>
+  </div>
+</section>
+
+<!-- REFERENCE -->
+<section class="part">
+  <span class="eyebrow">Reference</span>
+  <h2>What's real and what's simulated in the prototype</h2>
+  <p>The prototype shows how the app will look and work. These parts are pretend for now and get built for real in the full app:</p>
+  <table>
+    <tr><th style="width:30%">In the prototype</th><th>In the full app</th></tr>
+    <tr><td>Other drivers accepting a job</td><td>Real vetted owners get a push notification and text, and accept from their phones.</td></tr>
+    <tr><td>Live map trucks moving</td><td>Each truck's position comes from the driver's phone every 30 seconds. Geofences log arrivals and departures on their own.</td></tr>
+    <tr><td>USDOT "Check" button</td><td>Looks the number up in the federal FMCSA database.</td></tr>
+    <tr><td>MVR and Clearinghouse</td><td>Run through a background check company (such as Checkr) and FMCSA.</td></tr>
+    <tr><td>Connect bank, invoices, payouts</td><td>Handled by a payment company (Stripe) with ACH bank transfers.</td></tr>
+    <tr><td>Texts to drivers, including dispatch updates</td><td>Sent by a texting service (Twilio), plus a push alert in the app.</td></tr>
+    <tr><td>Drive times to plants</td><td>Rough estimates from a city today. The real app uses the job's map pin and Google Maps.</td></tr>
+    <tr><td>Hours on the clock typed in</td><td>Taken from check-in and check-out times.</td></tr>
+    <tr><td>Broker fee of $15 per truck per day</td><td>A placeholder until the price is decided.</td></tr>
+    <tr><td>Plant hours and grindings (RAP) acceptance</td><td>Still need to be confirmed with each plant.</td></tr>
+  </table>
+  <p class="muted">Nothing in the prototype is saved. Reloading the page or tapping Reset demo puts everything back to the starting sample data.</p>
+
+  <h2 style="margin-top:18pt">Words used in the app</h2>
+  <table>
+    <tr><th style="width:24%">Word</th><th>What it means</th></tr>
+    <tr><td><b>10W, 12W, SD</b></td><td>10 wheeler (3 axle, about 15 tons a load), 12 wheeler (4 axle, about 19 tons), super dumper (5 or more axles, about 26 tons).</td></tr>
+    <tr><td><b>Vetted / Verified</b></td><td>The owner, driver and truck passed every document check and can see jobs.</td></tr>
+    <tr><td><b>Dispatch info</b></td><td>The job details drivers need (contact, staging, gate, plant order, mix, safety gear), plus updates sent during the day.</td></tr>
+    <tr><td><b>Load ticket</b></td><td>The scale ticket from the plant for one load, with its number and tons.</td></tr>
+    <tr><td><b>On the clock</b></td><td>The truck has checked in at the job and its hours are counting.</td></tr>
+    <tr><td><b>Cycle time</b></td><td>How long one round trip takes: site to plant and back, including loading and dumping.</td></tr>
+    <tr><td><b>Geofence</b></td><td>An invisible circle around the job site or plant. When a truck crosses it, the app logs the time.</td></tr>
+    <tr><td><b>Grindings / RAP</b></td><td>Old asphalt milled off the road (recycled asphalt pavement).</td></tr>
+    <tr><td><b>COI</b></td><td>Certificate of insurance from the owner's insurance agent.</td></tr>
+    <tr><td><b>USDOT number</b></td><td>The federal number every commercial trucking company must have.</td></tr>
+    <tr><td><b>MVR</b></td><td>Motor vehicle record: the driver's driving history.</td></tr>
+    <tr><td><b>Clearinghouse</b></td><td>The FMCSA database of failed or refused drug and alcohol tests.</td></tr>
+    <tr><td><b>ACH</b></td><td>A bank-to-bank transfer, used for invoices and payouts.</td></tr>
+    <tr><td><b>Tracking link</b></td><td>A web link a contractor can text to a customer to show trucks and ETAs, no login needed.</td></tr>
+  </table>
+</section>
+
+</body>
+</html>
