@@ -49,8 +49,8 @@ body { background: var(--bg); color: var(--fg); font: 15px/1.45 var(--body); }
 .logo { font: italic 800 26px/1 var(--display); letter-spacing: .5px; }
 .logo b { color: #4d94ff; }
 .bar small { font: 600 11px/1.2 var(--body); letter-spacing: 1.5px; text-transform: uppercase; opacity: .7; text-align: right; }
-.roles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
-.roles button { border: 0; background: transparent; color: var(--muted); font: 600 13px/1.2 var(--body); padding: 9px 4px; border-radius: 9px; cursor: pointer; }
+.roles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
+.roles button { border: 0; background: transparent; color: var(--muted); font: 600 13px/1.2 var(--body); padding: 9px 2px; border-radius: 9px; cursor: pointer; }
 .roles button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
 .roles-label { font: 600 11px/1 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; }
 .roles-label button { background: none; border: 0; color: var(--accent); font: inherit; letter-spacing: inherit; cursor: pointer; padding: 0; }
@@ -107,6 +107,7 @@ input, select, textarea { width: 100%; font: 500 15px/1.3 var(--body); color: va
 .stepper { display: flex; align-items: center; gap: 4px; }
 .stepper button { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 700 18px/1 var(--body); cursor: pointer; }
 .stepper output { width: 28px; text-align: center; font: 700 18px/1 var(--display); }
+.trip { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; }
 .sum { display: grid; gap: 6px; font-size: 14px; }
 .sum .row { padding: 2px 0; }
 .sum .total { border-top: 1px solid var(--line); padding-top: 8px; font-weight: 700; }
@@ -128,18 +129,644 @@ input, select, textarea { width: 100%; font: 500 15px/1.3 var(--body); color: va
 .map .place { fill: var(--fg); font: 700 11px var(--body); }
 .map .tk { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
 .map .tk.in { fill: var(--good); }
+.map .tk.off { fill: var(--muted); }
+.gmap .land { fill: var(--surface-2); }
+.gmap .grid { stroke: var(--line); stroke-width: .6; }
+.gmap .city { fill: var(--muted); }
+.gmap .cityl { fill: var(--muted); font: 600 9.5px var(--body); }
+.gmap .plantdot { fill: var(--muted); opacity: .55; }
+.gmap .leg { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 7 5; stroke-linecap: round; }
+.gmap .pinA { fill: var(--good); stroke: var(--surface); stroke-width: 1.5; }
+.gmap .pinB { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; }
+.gmap .pinl { fill: var(--fg); font: 700 10.5px var(--body); paint-order: stroke; stroke: var(--surface-2); stroke-width: 3px; }
+.gmap .scale { stroke: var(--fg); stroke-width: 1.5; }
+.gmap .scalel { fill: var(--fg); font: 600 9px var(--body); }
 .map .tl { fill: var(--fg); font: 700 10px var(--body); }
 .stage { font-size: 12.5px; color: var(--muted); }
 .foot { font-size: 12px; color: var(--muted); text-align: center; }
 @media (prefers-reduced-motion: no-preference) { .card.tap { transition: border-color .15s; } }
+/* Computer view: wider page, tabs move to a left sidebar, cards sit side by side. */
+.seg { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; justify-self: center; }
+.seg button { border: 0; background: transparent; color: var(--muted); font: 600 13px/1.2 var(--body); padding: 8px 18px; border-radius: 9px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--brand); color: var(--brand-fg); }
+.seg button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+:root[data-layout="wide"] .wrap { max-width: 1180px; }
+:root[data-layout="wide"] .app { display: grid; grid-template-columns: 200px minmax(0, 1fr); grid-template-rows: auto 1fr; grid-template-areas: "bar bar" "side main"; min-height: 720px; }
+:root[data-layout="wide"] .bar { grid-area: bar; padding: 16px 22px; }
+:root[data-layout="wide"] main { grid-area: main; padding: 22px; grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); align-items: start; }
+:root[data-layout="wide"] main > * { grid-column: 1 / -1; }
+:root[data-layout="wide"] main > .card { grid-column: auto; }
+:root[data-layout="wide"] main.form { grid-template-columns: minmax(0, 680px); }
+:root[data-layout="wide"] main.form > .card { grid-column: 1 / -1; }
+:root[data-layout="wide"] .tabs { grid-area: side; grid-auto-flow: row; grid-auto-columns: auto; grid-auto-rows: max-content; align-content: start; gap: 2px; border-top: 0; border-right: 1px solid var(--line); padding: 14px 10px; }
+:root[data-layout="wide"] .tabs button { display: flex; align-items: center; gap: 10px; font-size: 14px; padding: 10px 12px; border-radius: 9px; text-align: left; }
+:root[data-layout="wide"] .tabs button[aria-current="page"] { background: var(--accent-soft); }
+:root[data-layout="wide"] .tabs svg { width: 20px; height: 20px; flex: none; }
+@media (max-width: 640px) {
+  :root[data-layout="wide"] .app { grid-template-columns: minmax(0, 1fr); grid-template-areas: "bar" "main" "side"; }
+  :root[data-layout="wide"] .tabs { grid-auto-flow: column; grid-auto-columns: 1fr; border-right: 0; border-top: 1px solid var(--line); padding: 0 0 4px; }
+  :root[data-layout="wide"] .tabs button { display: grid; justify-items: center; gap: 4px; font-size: 11.5px; padding: 10px 2px 8px; }
+}
+/* Leaflet 1.9.4 stylesheet, inlined */
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	}
+.leaflet-container {
+	overflow: hidden;
+	}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+	        user-select: none;
+	  -webkit-user-drag: none;
+	}
+.leaflet-tile::selection {
+	background: transparent;
+}
+.leaflet-safari .leaflet-tile {
+	image-rendering: -webkit-optimize-contrast;
+	}
+.leaflet-safari .leaflet-tile-container {
+	width: 1600px;
+	height: 1600px;
+	-webkit-transform-origin: 0 0;
+	}
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	display: block;
+	}
+.leaflet-container .leaflet-overlay-pane svg {
+	max-width: none !important;
+	max-height: none !important;
+	}
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile {
+	max-width: none !important;
+	max-height: none !important;
+	width: auto;
+	padding: 0;
+	}
+.leaflet-container img.leaflet-tile {
+	mix-blend-mode: plus-lighter;
+}
+.leaflet-container.leaflet-touch-zoom {
+	-ms-touch-action: pan-x pan-y;
+	touch-action: pan-x pan-y;
+	}
+.leaflet-container.leaflet-touch-drag {
+	-ms-touch-action: pinch-zoom;
+	touch-action: none;
+	touch-action: pinch-zoom;
+}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+	-ms-touch-action: none;
+	touch-action: none;
+}
+.leaflet-container {
+	-webkit-tap-highlight-color: transparent;
+}
+.leaflet-container a {
+	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+}
+.leaflet-tile {
+	filter: inherit;
+	visibility: hidden;
+	}
+.leaflet-tile-loaded {
+	visibility: inherit;
+	}
+.leaflet-zoom-box {
+	width: 0;
+	height: 0;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	z-index: 800;
+	}
+.leaflet-overlay-pane svg {
+	-moz-user-select: none;
+	}
+.leaflet-pane         { z-index: 400; }
+.leaflet-tile-pane    { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane  { z-index: 500; }
+.leaflet-marker-pane  { z-index: 600; }
+.leaflet-tooltip-pane   { z-index: 650; }
+.leaflet-popup-pane   { z-index: 700; }
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg    { z-index: 200; }
+.leaflet-vml-shape {
+	width: 1px;
+	height: 1px;
+	}
+.lvml {
+	behavior: url(#default#VML);
+	display: inline-block;
+	position: absolute;
+	}
+.leaflet-control {
+	position: relative;
+	z-index: 800;
+	pointer-events: visiblePainted; 
+	pointer-events: auto;
+	}
+.leaflet-top,
+.leaflet-bottom {
+	position: absolute;
+	z-index: 1000;
+	pointer-events: none;
+	}
+.leaflet-top {
+	top: 0;
+	}
+.leaflet-right {
+	right: 0;
+	}
+.leaflet-bottom {
+	bottom: 0;
+	}
+.leaflet-left {
+	left: 0;
+	}
+.leaflet-control {
+	float: left;
+	clear: both;
+	}
+.leaflet-right .leaflet-control {
+	float: right;
+	}
+.leaflet-top .leaflet-control {
+	margin-top: 10px;
+	}
+.leaflet-bottom .leaflet-control {
+	margin-bottom: 10px;
+	}
+.leaflet-left .leaflet-control {
+	margin-left: 10px;
+	}
+.leaflet-right .leaflet-control {
+	margin-right: 10px;
+	}
+.leaflet-fade-anim .leaflet-popup {
+	opacity: 0;
+	-webkit-transition: opacity 0.2s linear;
+	   -moz-transition: opacity 0.2s linear;
+	        transition: opacity 0.2s linear;
+	}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+	opacity: 1;
+	}
+.leaflet-zoom-animated {
+	-webkit-transform-origin: 0 0;
+	    -ms-transform-origin: 0 0;
+	        transform-origin: 0 0;
+	}
+svg.leaflet-zoom-animated {
+	will-change: transform;
+}
+.leaflet-zoom-anim .leaflet-zoom-animated {
+	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
+	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
+	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
+	}
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+	-webkit-transition: none;
+	   -moz-transition: none;
+	        transition: none;
+	}
+.leaflet-zoom-anim .leaflet-zoom-hide {
+	visibility: hidden;
+	}
+.leaflet-interactive {
+	cursor: pointer;
+	}
+.leaflet-grab {
+	cursor: -webkit-grab;
+	cursor:    -moz-grab;
+	cursor:         grab;
+	}
+.leaflet-crosshair,
+.leaflet-crosshair .leaflet-interactive {
+	cursor: crosshair;
+	}
+.leaflet-popup-pane,
+.leaflet-control {
+	cursor: auto;
+	}
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable {
+	cursor: move;
+	cursor: -webkit-grabbing;
+	cursor:    -moz-grabbing;
+	cursor:         grabbing;
+	}
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-image-layer,
+.leaflet-pane > svg path,
+.leaflet-tile-container {
+	pointer-events: none;
+	}
+.leaflet-marker-icon.leaflet-interactive,
+.leaflet-image-layer.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive,
+svg.leaflet-image-layer.leaflet-interactive path {
+	pointer-events: visiblePainted; 
+	pointer-events: auto;
+	}
+.leaflet-container {
+	background: #ddd;
+	outline-offset: 1px;
+	}
+.leaflet-container a {
+	color: #0078A8;
+	}
+.leaflet-zoom-box {
+	border: 2px dotted #38f;
+	background: rgba(255,255,255,0.5);
+	}
+.leaflet-container {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-size: 0.75rem;
+	line-height: 1.5;
+	}
+.leaflet-bar {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+	border-radius: 4px;
+	}
+.leaflet-bar a {
+	background-color: #fff;
+	border-bottom: 1px solid #ccc;
+	width: 26px;
+	height: 26px;
+	line-height: 26px;
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	color: black;
+	}
+.leaflet-bar a,
+.leaflet-control-layers-toggle {
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	display: block;
+	}
+.leaflet-bar a:hover,
+.leaflet-bar a:focus {
+	background-color: #f4f4f4;
+	}
+.leaflet-bar a:first-child {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	}
+.leaflet-bar a:last-child {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	border-bottom: none;
+	}
+.leaflet-bar a.leaflet-disabled {
+	cursor: default;
+	background-color: #f4f4f4;
+	color: #bbb;
+	}
+.leaflet-touch .leaflet-bar a {
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	}
+.leaflet-touch .leaflet-bar a:first-child {
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	}
+.leaflet-touch .leaflet-bar a:last-child {
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	}
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+	font: bold 18px 'Lucida Console', Monaco, monospace;
+	text-indent: 1px;
+	}
+.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
+	font-size: 22px;
+	}
+.leaflet-control-layers {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+	background: #fff;
+	border-radius: 5px;
+	}
+.leaflet-control-layers-toggle {
+	background-image: url(images/layers.png);
+	width: 36px;
+	height: 36px;
+	}
+.leaflet-retina .leaflet-control-layers-toggle {
+	background-image: url(images/layers-2x.png);
+	background-size: 26px 26px;
+	}
+.leaflet-touch .leaflet-control-layers-toggle {
+	width: 44px;
+	height: 44px;
+	}
+.leaflet-control-layers .leaflet-control-layers-list,
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+	display: none;
+	}
+.leaflet-control-layers-expanded .leaflet-control-layers-list {
+	display: block;
+	position: relative;
+	}
+.leaflet-control-layers-expanded {
+	padding: 6px 10px 6px 6px;
+	color: #333;
+	background: #fff;
+	}
+.leaflet-control-layers-scrollbar {
+	overflow-y: scroll;
+	overflow-x: hidden;
+	padding-right: 5px;
+	}
+.leaflet-control-layers-selector {
+	margin-top: 2px;
+	position: relative;
+	top: 1px;
+	}
+.leaflet-control-layers label {
+	display: block;
+	font-size: 13px;
+	font-size: 1.08333em;
+	}
+.leaflet-control-layers-separator {
+	height: 0;
+	border-top: 1px solid #ddd;
+	margin: 5px -10px 5px -6px;
+	}
+.leaflet-default-icon-path { 
+	background-image: url(images/marker-icon.png);
+	}
+.leaflet-container .leaflet-control-attribution {
+	background: #fff;
+	background: rgba(255, 255, 255, 0.8);
+	margin: 0;
+	}
+.leaflet-control-attribution,
+.leaflet-control-scale-line {
+	padding: 0 5px;
+	color: #333;
+	line-height: 1.4;
+	}
+.leaflet-control-attribution a {
+	text-decoration: none;
+	}
+.leaflet-control-attribution a:hover,
+.leaflet-control-attribution a:focus {
+	text-decoration: underline;
+	}
+.leaflet-attribution-flag {
+	display: inline !important;
+	vertical-align: baseline !important;
+	width: 1em;
+	height: 0.6669em;
+	}
+.leaflet-left .leaflet-control-scale {
+	margin-left: 5px;
+	}
+.leaflet-bottom .leaflet-control-scale {
+	margin-bottom: 5px;
+	}
+.leaflet-control-scale-line {
+	border: 2px solid #777;
+	border-top: none;
+	line-height: 1.1;
+	padding: 2px 5px 1px;
+	white-space: nowrap;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	background: rgba(255, 255, 255, 0.8);
+	text-shadow: 1px 1px #fff;
+	}
+.leaflet-control-scale-line:not(:first-child) {
+	border-top: 2px solid #777;
+	border-bottom: none;
+	margin-top: -2px;
+	}
+.leaflet-control-scale-line:not(:first-child):not(:last-child) {
+	border-bottom: 2px solid #777;
+	}
+.leaflet-touch .leaflet-control-attribution,
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	box-shadow: none;
+	}
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	border: 2px solid rgba(0,0,0,0.2);
+	background-clip: padding-box;
+	}
+.leaflet-popup {
+	position: absolute;
+	text-align: center;
+	margin-bottom: 20px;
+	}
+.leaflet-popup-content-wrapper {
+	padding: 1px;
+	text-align: left;
+	border-radius: 12px;
+	}
+.leaflet-popup-content {
+	margin: 13px 24px 13px 20px;
+	line-height: 1.3;
+	font-size: 13px;
+	font-size: 1.08333em;
+	min-height: 1px;
+	}
+.leaflet-popup-content p {
+	margin: 17px 0;
+	margin: 1.3em 0;
+	}
+.leaflet-popup-tip-container {
+	width: 40px;
+	height: 20px;
+	position: absolute;
+	left: 50%;
+	margin-top: -1px;
+	margin-left: -20px;
+	overflow: hidden;
+	pointer-events: none;
+	}
+.leaflet-popup-tip {
+	width: 17px;
+	height: 17px;
+	padding: 1px;
+	margin: -10px auto 0;
+	pointer-events: auto;
+	-webkit-transform: rotate(45deg);
+	   -moz-transform: rotate(45deg);
+	    -ms-transform: rotate(45deg);
+	        transform: rotate(45deg);
+	}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+	background: white;
+	color: #333;
+	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+	}
+.leaflet-container a.leaflet-popup-close-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: none;
+	text-align: center;
+	width: 24px;
+	height: 24px;
+	font: 16px/24px Tahoma, Verdana, sans-serif;
+	color: #757575;
+	text-decoration: none;
+	background: transparent;
+	}
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+	color: #585858;
+	}
+.leaflet-popup-scrolled {
+	overflow: auto;
+	}
+.leaflet-oldie .leaflet-popup-content-wrapper {
+	-ms-zoom: 1;
+	}
+.leaflet-oldie .leaflet-popup-tip {
+	width: 24px;
+	margin: 0 auto;
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
+	}
+.leaflet-oldie .leaflet-control-zoom,
+.leaflet-oldie .leaflet-control-layers,
+.leaflet-oldie .leaflet-popup-content-wrapper,
+.leaflet-oldie .leaflet-popup-tip {
+	border: 1px solid #999;
+	}
+.leaflet-div-icon {
+	background: #fff;
+	border: 1px solid #666;
+	}
+.leaflet-tooltip {
+	position: absolute;
+	padding: 6px;
+	background-color: #fff;
+	border: 1px solid #fff;
+	border-radius: 3px;
+	color: #222;
+	white-space: nowrap;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+	}
+.leaflet-tooltip.leaflet-interactive {
+	cursor: pointer;
+	pointer-events: auto;
+	}
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	position: absolute;
+	pointer-events: none;
+	border: 6px solid transparent;
+	background: transparent;
+	content: "";
+	}
+.leaflet-tooltip-bottom {
+	margin-top: 6px;
+}
+.leaflet-tooltip-top {
+	margin-top: -6px;
+}
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-top:before {
+	left: 50%;
+	margin-left: -6px;
+	}
+.leaflet-tooltip-top:before {
+	bottom: 0;
+	margin-bottom: -12px;
+	border-top-color: #fff;
+	}
+.leaflet-tooltip-bottom:before {
+	top: 0;
+	margin-top: -12px;
+	margin-left: -6px;
+	border-bottom-color: #fff;
+	}
+.leaflet-tooltip-left {
+	margin-left: -6px;
+}
+.leaflet-tooltip-right {
+	margin-left: 6px;
+}
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	top: 50%;
+	margin-top: -6px;
+	}
+.leaflet-tooltip-left:before {
+	right: 0;
+	margin-right: -12px;
+	border-left-color: #fff;
+	}
+.leaflet-tooltip-right:before {
+	left: 0;
+	margin-left: -12px;
+	border-right-color: #fff;
+	}
+@media print {
+	.leaflet-control {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+		}
+	}
+/* Real street map sits over the drawn map and fades in once its first tile arrives. */
+.mapbox { position: relative; }
+.mapbox .lm { position: absolute; inset: 0; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .3s; background: var(--surface-2); }
+.mapbox.live .lm { opacity: 1; pointer-events: auto; }
+.mapbox.live > svg { visibility: hidden; }
+.mapbox .leaflet-tooltip { font: 700 11px/1.2 var(--body); padding: 3px 6px; }
+.route .dot.site { border-color: var(--good); background: var(--good); }
+.route small { display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; letter-spacing: .3px; }
 </style>
 
 <div class="wrap">
+  <div class="seg" role="group" aria-label="Screen size">
+    <button type="button" data-lay="phone">Phone</button>
+    <button type="button" data-lay="wide">Computer</button>
+  </div>
   <div class="stack" style="gap:6px">
     <div class="roles-label"><span>Viewing as</span><button id="reset" type="button">Reset demo</button></div>
     <div class="roles" role="group" aria-label="Viewing as">
       <button type="button" data-role="contractor">Contractor</button>
       <button type="button" data-role="owner">Truck owner</button>
+      <button type="button" data-role="driver">Driver</button>
       <button type="button" data-role="broker">Broker</button>
       <button type="button" data-role="admin">Admin</button>
     </div>
@@ -149,19 +776,37 @@ input, select, textarea { width: 100%; font: 500 15px/1.3 var(--body); color: va
     <main id="screen"></main>
     <nav class="tabs" id="tabs" aria-label="Sections"></nav>
   </div>
-  <p class="foot">Clickable prototype with sample data. Names, companies and numbers are examples. Changes are kept only until you reload.</p>
+  <p class="foot">Clickable prototype with sample data. Names, companies and numbers are examples. Changes are kept only until you reload. The demo clock starts at 9:30 AM.</p>
 </div>
 <div class="toast" id="toast" hidden></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script>
-const FEE = 0.05;           // Trucks2U platform fee
-const BROKER = 0.11;        // typical broker cut, for comparison
-const TYPES = {
-  w10: { name: "10 wheeler", short: "10W", spec: "3 axle · ~15 t payload" },
-  w12: { name: "12 wheeler", short: "12W", spec: "4 axle · ~19 t payload" },
-  sd:  { name: "Super dumper", short: "SD", spec: "5+ axle · ~26 t payload" }
+// Everything in this block can be changed from Admin > Settings; Reset demo puts it back.
+const SETTINGS_SEED = {
+  fee: 0.05,      // Trucks2U platform fee
+  broker: 0.11,   // typical broker cut, for comparison
+  bfee: 15,       // sample per-truck dispatch fee for brokers, per truck per day
+  types: {        // tons = typical tons per load, rate = default hourly rate on new jobs
+    w10: { name: "10 wheeler", short: "10W", spec: "3 axle · ~15 t payload", tons: 15, rate: 115 },
+    w12: { name: "12 wheeler", short: "12W", spec: "4 axle · ~19 t payload", tons: 19, rate: 130 },
+    sd:  { name: "Super dumper", short: "SD", spec: "5+ axle · ~26 t payload", tons: 26, rate: 150 }
+  },
+  kinds: ["Haul off grindings", "Deliver asphalt", "Round trip: grindings out, asphalt in"]
 };
-const PAYLOAD = { w10: 15, w12: 19, sd: 26 };   // typical tons per load
+let FEE, BROKER, BFEE, TYPES, KINDS;
+function loadSettings() {
+  const c = structuredClone(SETTINGS_SEED);
+  FEE = c.fee; BROKER = c.broker; BFEE = c.bfee; TYPES = c.types; KINDS = c.kinds;
+}
+loadSettings();
+const BUILTIN_KINDS = KINDS.length;   // the first job types drive pickup and drop-off, so they can be renamed but not removed
+const pct = x => +(x * 100).toFixed(2) + "%";
+// Demo clock: the page opens at 9:30 AM "today" and runs in real time, so the sample morning lines up.
+const DEMO_T0 = Date.now(), DEMO_START = new Date(); DEMO_START.setHours(9, 30, 0, 0);
+const demoNow = () => DEMO_START.getTime() + (Date.now() - DEMO_T0);
+const at = (h, m) => { const d = new Date(DEMO_START); d.setHours(h, m, 0, 0); return d.getTime(); };
+const fmtT = ms => new Date(ms).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 // Asphalt plant directory: Caltrans' active Material Plant Quality Program list (Sep 2025) merged with Al's plant list.
 // cal = on the Caltrans list, mine = on Al's list. Map pins are approximate; grindings acceptance still needs confirming.
 const PLANT_SRC = "Caltrans active material plant list (Sep 2025) and your plant list";
@@ -199,12 +844,12 @@ const driveMin = mi => Math.round(mi * 2.2 + 4);   // rough: loaded dump truck, 
 const plantsByDistance = () => PLANTS.map(p => ({ p, mi: miles(SITE, p) })).sort((a, b) => a.mi - b.mi);
 const plant = id => PLANTS.find(p => p.id === id);
 
-const KINDS = ["Haul off grindings", "Deliver asphalt", "Round trip: grindings out, asphalt in"];
 const ME_OWNER = "Delgado Hauling";   // the owner-operator we view as
 const MY_TRUCKS = [
   { id: "T-14", type: "w12", plate: "4XKD218" },
   { id: "T-22", type: "sd",  plate: "7HTR904" }
 ];
+const MY_TRUCKS_SEED = MY_TRUCKS.map(t => t.type);   // so Reset demo puts truck types back
 const MY_DRIVERS = [
   { name: "Ray Delgado (you)", cdl: "Class A", med: "May 2027" },
   { name: "Marco Ruiz", cdl: "Class A", med: "Feb 2027" },
@@ -215,7 +860,7 @@ function seed() {
   return {
     jobs: [
       {
-        id: "J-1042", name: "Main St mill and overlay", kind: KINDS[2],
+        id: "J-1042", name: "Main St mill and overlay", kind: KINDS[2], pts: { pickup: { lat: 37.7985, lng: -122.2575 }, dropoff: { lat: 37.763, lng: -122.213 } },
         pickup: "Job site: Main St, Oak Ave to 5th St", dropoff: "Gallagher & Burk, 344 High St, Oakland",
         date: "Today", start: "6:00 AM", needs: { w10: 2, w12: 3, sd: 1 }, rate: { w10: 115, w12: 130, sd: 150 },
         notes: "Stage on Oak Ave shoulder. Hard hats and vests on site.", approved: false,
@@ -236,7 +881,16 @@ function seed() {
         ]
       },
       {
-        id: "J-1038", name: "Lakeside lot repave", kind: KINDS[0],
+        id: "J-TEST", name: "TEST JOB: practice clock in and out", kind: KINDS[0], test: true, pts: { pickup: { lat: 37.7815, lng: -122.2365 }, dropoff: { lat: 37.744, lng: -122.199 } },
+        pickup: "Job site: Test job site, Oakland", dropoff: "Argent Materials, 8300 Baldwin St, Oakland",
+        date: "Today", start: "9:30 AM", needs: { w10: 0, w12: 0, sd: 1 }, rate: { w10: 115, w12: 130, sd: 150 },
+        notes: "Practice job for trying the time clock. Nothing is billed.", approved: false,
+        dsp: { contact: "Al Perez, Lucas Paving", staging: "Along the curb, north side", ppe: "Hard hat and vest", notes: "Practice job for trying the time clock. Nothing is billed." },
+        updates: [ { time: "9:25 AM", text: "Welcome to the test job. Clock in, add a load ticket, take a break, then clock out.", readBy: [] } ],
+        assignments: [ { truck: "T-22", type: "sd", owner: ME_OWNER, status: "assigned", checkIn: null, hours: null, tickets: [] } ]
+      },
+      {
+        id: "J-1038", name: "Lakeside lot repave", kind: KINDS[0], pts: { pickup: { lat: 37.808, lng: -122.253 }, dropoff: { lat: 37.73, lng: -122.18 } },
         pickup: "Lakeside Plaza, 300 Shore Rd", dropoff: "County recycling yard, 88 Quarry Rd",
         date: "Yesterday", start: "7:00 AM", needs: { w10: 0, w12: 2, sd: 0 }, rate: { w10: 115, w12: 130, sd: 150 },
         notes: "", approved: false,
@@ -248,7 +902,7 @@ function seed() {
         ]
       },
       {
-        id: "J-1047", name: "Route 9 shoulder widening", kind: KINDS[1],
+        id: "J-1047", name: "Route 9 shoulder widening", kind: KINDS[1], pts: { pickup: { lat: 37.763, lng: -122.213 }, dropoff: { lat: 37.705, lng: -122.08 } },
         pickup: "Gallagher & Burk, 344 High St, Oakland", dropoff: "Route 9, mile 14 to 16",
         date: "Tomorrow", start: "5:30 AM", needs: { w10: 1, w12: 2, sd: 2 }, rate: { w10: 115, w12: 135, sd: 155 },
         notes: "Night crew handoff at 5:15 AM. Tarps required.", approved: false,
@@ -290,6 +944,12 @@ function seed() {
     approvedApplicants: [],
     driverOf: { "T-14": "Ray Delgado (you)", "T-22": "Marco Ruiz" },
     insuranceRenewed: false,
+    shifts: { "T-14": { inMs: at(5, 52), where: "at the job site", far: false, breaks: [], outMs: null } },   // driver's day, by truck
+    gpsPaused: {},   // truck id -> true while the driver has paused GPS
+    gpsLog: [ { time: "6:04 AM", text: "B-7 entered the Main St job site. Checked in automatically." },
+      { time: "5:58 AM", text: "R-3 entered the Main St job site. Checked in automatically." },
+      { time: "5:52 AM", text: "T-14 entered the Main St job site. Checked in automatically." } ],
+    insCards: { "T-14": { name: "T-14 insurance card.jpg", url: null, date: "Oct 2, 2026" }, "T-22": { name: "T-22 insurance card.jpg", url: null, date: "Oct 2, 2026" } },
     passed: [],
     broker: {
       name: "Summit Dispatch", dispatchedBefore: 212,
@@ -314,7 +974,7 @@ function seed() {
 }
 
 let S = seed();
-let ui = { role: "contractor", tab: "jobs", view: null, draft: null, applicant: null };
+let ui = { role: "driver", tab: "dtoday", view: null, draft: null, applicant: null };   // opens on the driver's time clock
 
 const $ = (s, el = document) => el.querySelector(s);
 const money = n => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -339,8 +999,75 @@ function statusPill(a) {
   return '<span class="pill warn">Assigned</span>';
 }
 
+// Every job has two places: the job site, and where the truck goes to pick up material or dump.
+const kindIx = j => j.kindIx ?? (j.kindIx = KINDS.indexOf(j.kind));   // remembered, so renaming a job type in Settings keeps old jobs straight
+const delivers = j => kindIx(j) === 1;   // "Deliver asphalt": the truck loads at the plant and brings it to the site
+const siteText = j => (delivers(j) ? j.dropoff : j.pickup).replace(/^Job site: /, "");
+const destText = j => delivers(j) ? j.pickup : j.dropoff;
+const destLabel = j => ["Dump site", "Plant: pick up asphalt", "Plant: dump grindings, load asphalt"][kindIx(j)] || "Destination";
+const siteP = j => delivers(j) ? j.pts.dropoff : j.pts.pickup;
+const destP = j => delivers(j) ? j.pts.pickup : j.pts.dropoff;
 function route(j) {
-  return `<div class="route"><span class="dot"></span><span>${esc(j.pickup)}</span><span class="line"></span><span></span><span class="dot end"></span><span>${esc(j.dropoff)}</span></div>`;
+  return `<div class="route"><span class="dot site"></span><span><small>Job site</small>${esc(siteText(j))}</span><span class="line"></span><span></span><span class="dot end"></span><span><small>${destLabel(j)}</small>${esc(destText(j))}</span></div>`;
+}
+
+/* Project map: drawn from GPS coordinates (the prototype can't load map tiles; the real app uses a street map). */
+const PIN = "M0 0C-5 -7 -8 -10.5 -8 -15A8 8 0 1 1 8 -15C8 -10.5 5 -7 0 0Z";
+function jobMap(j, opts = {}) {
+  if (!j.pts) return "";
+  const A = siteP(j), Bp = destP(j), W = 340, H = opts.h || 200;
+  const k = Math.cos((A.lat + Bp.lat) / 2 * Math.PI / 180);   // longitude shrinks with latitude
+  const cx = (A.lng + Bp.lng) / 2 * k, cy = (A.lat + Bp.lat) / 2;
+  let w = Math.max(Math.abs(A.lng - Bp.lng) * k, 0.02) * 1.7, h = Math.max(Math.abs(A.lat - Bp.lat), 0.02) * 1.7;
+  if (w / h > W / H) h = w * H / W; else w = h * W / H;
+  const P = q => [(q.lng * k - (cx - w / 2)) / w * W, (cy + h / 2 - q.lat) / h * H];
+  const inside = q => { const [x, y] = P(q); return x > 10 && x < W - 10 && y > 10 && y < H - 10; };
+  const [ax, ay] = P(A), [bx, by] = P(Bp), f1 = n => n.toFixed(1);
+  const grid = [1, 2, 3, 4, 5, 6, 7].map(i => `<line class="grid" x1="${i * W / 8}" y1="0" x2="${i * W / 8}" y2="${H}"/>`).join("") + [1, 2, 3, 4].map(i => `<line class="grid" x1="0" y1="${i * H / 5}" x2="${W}" y2="${i * H / 5}"/>`).join("");
+  const cities = Object.entries(FROM).filter(([, q]) => inside(q)).map(([n, q]) => { const [x, y] = P(q); return `<circle class="city" cx="${f1(x)}" cy="${f1(y)}" r="2.5"/><text class="cityl" x="${f1(x + 5)}" y="${f1(y + 3)}">${esc(n)}</text>`; }).join("");
+  const plants = PLANTS.filter(inside).map(q => { const [x, y] = P(q); return `<rect class="plantdot" x="${f1(x - 2.5)}" y="${f1(y - 2.5)}" width="5" height="5"><title>${esc(q.name)}</title></rect>`; }).join("");
+  const pxPerMi = H / h / 69, step = [0.5, 1, 2, 5, 10, 20].find(m => m * pxPerMi >= 40) || 20;
+  const label = (x, y, t) => `<text class="pinl" x="${f1(x > W * 0.6 ? x - 11 : x + 11)}" y="${f1(Math.max(y - 9, 14))}" text-anchor="${x > W * 0.6 ? "end" : "start"}">${esc(t)}</text>`;
+  return `<div class="mapbox" data-lmap="${esc(j.id)}" data-truck="${esc(opts.truck || "")}"><svg class="map gmap" viewBox="0 0 ${W} ${H}" role="img" aria-label="Map: job site to ${esc(short(destText(j)))}, about ${miles(A, Bp).toFixed(0)} miles">
+    <rect class="land" width="${W}" height="${H}"/>${grid}${plants}${cities}
+    <line class="leg" x1="${f1(ax)}" y1="${f1(ay)}" x2="${f1(bx)}" y2="${f1(by)}"/>
+    <path class="pinA" d="${PIN}" transform="translate(${f1(ax)} ${f1(ay)})"/><path class="pinB" d="${PIN}" transform="translate(${f1(bx)} ${f1(by)})"/>
+    ${label(ax, ay, "Job site")}${label(bx, by, short(destText(j)))}
+    ${opts.truck ? `<g data-ptk="${esc(opts.truck)}" data-job="${esc(j.id)}" data-a="${P(j.pts.pickup).map(f1)}" data-b="${P(j.pts.dropoff).map(f1)}" style="display:none"><circle class="tk" r="7"/><text class="tl" text-anchor="middle" dy="-11">${esc(opts.truck)}</text></g>` : ""}
+    <line class="scale" x1="12" y1="${H - 12}" x2="${f1(12 + step * pxPerMi)}" y2="${H - 12}"/><text class="scalel" x="12" y="${H - 17}">${step} mi</text>
+    <text class="scalel" x="${W - 14}" y="18" text-anchor="middle">N ↑</text>
+  </svg><div class="lm"></div></div>`;
+}
+const LMAPS = [];
+function initMaps() {
+  LMAPS.splice(0).forEach(m => { try { m.map.remove(); } catch (e) {} });
+  if (!window.L) return;   // map library didn't load: the drawn map stays
+  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
+  document.querySelectorAll("[data-lmap]").forEach(box => {
+    const j = anyJob(box.dataset.lmap); if (!j || !j.pts) return;
+    const A = siteP(j), Bp = destP(j), truck = box.dataset.truck;
+    const still = !!box.closest("button");   // a map inside a tappable job card stays still, so a tap opens the job
+    const map = L.map(box.querySelector(".lm"), { scrollWheelZoom: false, zoomSnap: 0.25, ...(still ? { dragging: false, zoomControl: false, touchZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false } : {}) });
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19,
+      attribution: 'Tiles &copy; <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> and contributors' })
+      .once("tileload", () => box.classList.add("live")).addTo(map);
+    map.fitBounds([[A.lat, A.lng], [Bp.lat, Bp.lng]], { padding: [40, 40] });
+    L.polyline([[A.lat, A.lng], [Bp.lat, Bp.lng]], { color: col("--accent"), weight: 3, dashArray: "7 6" }).addTo(map);
+    const pin = (q, fill, text) => L.circleMarker([q.lat, q.lng], { radius: 9, color: "#fff", weight: 2, fillColor: fill, fillOpacity: 1 })
+      .bindTooltip(text, { permanent: true, direction: "top", offset: [0, -9] }).addTo(map);
+    pin(A, col("--good"), "Job site"); pin(Bp, col("--accent"), short(destText(j)));
+    const tm = truck ? L.circleMarker([A.lat, A.lng], { radius: 7, color: "#fff", weight: 2, fillColor: col("--accent"), fillOpacity: 1 }).bindTooltip(truck, { permanent: true, direction: "right", offset: [8, 0] }) : null;
+    LMAPS.push({ map, j, truck, tm, off: col("--muted"), on: col("--accent") });
+  });
+  tickMap();
+}
+function directions(j) {
+  if (!j.pts) return "";
+  const A = siteP(j), Bp = destP(j), mi = miles(A, Bp), ll = q => q.lat + "," + q.lng;
+  const go = q => `https://www.google.com/maps/dir/?api=1&destination=${ll(q)}&travelmode=driving`;
+  return `<div class="row muted num" style="font-size:13px"><span><span style="color:var(--good)">●</span> Job site ↔ <span style="color:var(--accent)">●</span> ${esc(short(destText(j)))}</span><span style="flex:none">${mi.toFixed(1)} mi · ~${driveMin(mi)} min</span></div>
+    <div class="row" style="gap:8px"><a class="btn small ghost" href="${go(A)}" target="_blank" rel="noopener" style="flex:1;text-align:center;text-decoration:none">Directions to job site</a><a class="btn small ghost" href="${go(Bp)}" target="_blank" rel="noopener" style="flex:1;text-align:center;text-decoration:none">Directions to ${esc(short(destText(j)))}</a></div>
+    <a class="back" href="https://www.google.com/maps/dir/?api=1&origin=${ll(A)}&destination=${ll(Bp)}&travelmode=driving" target="_blank" rel="noopener" style="text-decoration:none">See the whole route on Google Maps ›</a>`;
 }
 
 function jobFillChips(j) {
@@ -361,7 +1088,7 @@ function dspList(j) {
 }
 function dspEditor(j, drivers) {
   if (ui.dspEdit === j.id) return `<div class="card"><h2>Edit dispatch info</h2>
-    ${DSP_FIELDS.map(([k, label]) => `<label class="field">${label}${k === "notes" ? `<textarea id="d-${k}" rows="3">${esc(dsp(j)[k] || "")}</textarea>` : `<input id="d-${k}" value="${esc(dsp(j)[k] || "")}">`}</label>`).join("")}
+    ${DSP_FIELDS.map(([k, label]) => `<label class="field">${label}${k === "notes" ? `<textarea id="d-${k}" rows="3">${esc(dsp(j)[k] || "")}</textarea>` : `<input id="d-${k}" value="${esc(dsp(j)[k] || "")}"${k === "phone" ? ' type="tel" inputmode="tel" data-phone placeholder="(510) 555-0142"' : ""}>`}</label>`).join("")}
     <div class="row" style="gap:8px"><button class="btn small" type="button" data-act="dsp-save:${j.id}" style="flex:1">Save and notify drivers</button><button class="btn small ghost" type="button" data-act="dsp-cancel" style="flex:1">Cancel</button></div></div>`;
   const ups = updatesOf(j);
   return `<div class="card"><div class="row"><h2>Dispatch info for drivers</h2><button class="btn small ghost" type="button" data-act="dsp-edit:${j.id}">Edit</button></div>
@@ -409,13 +1136,14 @@ function contractorJob(j) {
       <div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[a.type].short}</span>
         <div><strong>${esc(a.truck)} · ${esc(a.owner)}</strong><div class="muted" style="font-size:13px">${TYPES[a.type].name}${a.checkIn ? " · in at " + esc(a.checkIn) : ""}</div></div></div>
         ${statusPill(a)}</div>
+      ${j.date === "Today" ? shiftLine(a.truck) : ""}
       ${a.tickets.length ? `<div class="muted num" style="font-size:13px">${a.tickets.length} load ticket${a.tickets.length > 1 ? "s" : ""} · ${tons(a).toFixed(1)} t${a.hours ? " · " + a.hours + " hrs" : ""}</div>` : ""}
     </div>`).join("");
   const tickets = j.assignments.flatMap(a => a.tickets.map(t => ({ ...t, truck: a.truck })));
   const open = Object.keys(TYPES).filter(t => j.needs[t] > filled(j, t)).map(t => `${j.needs[t] - filled(j, t)} × ${TYPES[t].name}`);
   return `<button class="back" type="button" data-go="back">‹ All jobs</button>
     <div class="stack" style="gap:4px"><span class="eyebrow">${esc(j.id)} · ${esc(j.date)} · start ${esc(j.start)}</span><h1>${esc(j.name)}</h1><p class="muted">${esc(j.kind)}</p></div>
-    <div class="card">${route(j)}</div>
+    <div class="card">${jobMap(j)}${route(j)}${directions(j)}</div>
     ${dspEditor(j, j.assignments.length)}
     ${j.assignments.length ? (() => { const loads = j.assignments.reduce((s, a) => s + a.tickets.length, 0), tn = j.assignments.reduce((s, a) => s + tons(a), 0), on = j.assignments.filter(a => a.status === "onsite").length;
       return `<div class="stats"><div class="stat"><span>Loads</span><div class="big">${loads}</div></div><div class="stat"><span>Tons hauled</span><div class="big">${tn.toFixed(0)}</div></div><div class="stat"><span>On the clock</span><div class="big">${on}</div></div></div>`; })() : ""}
@@ -429,55 +1157,37 @@ function contractorJob(j) {
     ${ready || j.approved ? `<div class="card"><h2>${j.approved ? "Invoice" : "Approve the day"}</h2>
       <div class="sum">${j.assignments.map(a => `<div class="row"><span>${esc(a.truck)} · ${a.hours} hrs × $${j.rate[a.type]}</span><span class="num">${money(billOf(j, a))}</span></div>`).join("")}
       <div class="row total"><span>Total, billed by bank transfer</span><span class="num">${money(bill)}</span></div></div>
-      <p class="muted" style="font-size:13px">Includes the Trucks2U fee of ${money(bill * FEE)} (5%). Through a broker at 11% the cut would be about ${money(bill * BROKER)}.</p>
+      <p class="muted" style="font-size:13px">Includes the Trucks2U fee of ${money(bill * FEE)} (${pct(FEE)}). Through a broker at ${pct(BROKER)} the cut would be about ${money(bill * BROKER)}.</p>
       ${j.approved ? '<span class="pill good" style="justify-self:start">Approved · owners paid within 2 business days</span>' : `<button class="btn good" type="button" data-act="approve:${j.id}">Approve hours and tickets</button>`}</div>`
     : `<div class="note">When every truck checks out, you approve hours and tickets here, and the invoice goes out automatically.</div>`}`;
 }
 
+// What the trucks do, step by step, for each job type.
+function tripSteps(k, place) {
+  const p = esc(place);
+  return [["Load grindings at the job site", `Dump them at ${p}`],
+    [`Load asphalt at ${p}`, "Deliver it to the job site"],
+    ["Load grindings at the job site", `Dump them at ${p}`, `Load asphalt at ${p}`, "Bring it back to the job site"]][k] || [`Run between the job site and ${p}`];
+}
 function newJobForm() {
-  const d = ui.draft;
-  const stepBar = `<div class="steps">${[1, 2, 3].map(n => `<i class="${n <= d.step ? "on" : ""}"></i>`).join("")}</div>`;
-  let body = "";
-  if (d.step === 1) {
-    body = `<label class="field">Job name<input id="f-name" value="${esc(d.name)}" placeholder="e.g. Elm St mill and pave"></label>
-      <label class="field">What are the trucks doing?<select id="f-kind">${KINDS.map(k => `<option ${k === d.kind ? "selected" : ""}>${k}</option>`).join("")}</select></label>
-      <label class="field">Job site address<input id="f-site" value="${esc(d.site)}" placeholder="Street and cross streets"></label>
-      <label class="field">Asphalt plant (closest first)<select id="f-plant">${plantsByDistance().map(({ p, mi }) => `<option value="${p.id}" ${p.id === d.plant ? "selected" : ""}>${esc(p.name)} · ${mi.toFixed(1)} mi · ${driveMin(mi)} min${p.recycle ? " · recycling yard" : ""}</option>`).join("")}</select></label>
-      <p class="muted" style="font-size:12.5px">Drive times are rough estimates from ${esc(ui.from || "Oakland")}. In the full app they come from the job's map pin.</p>
-      <label class="field">Notes for drivers<input id="f-notes" value="${esc(d.notes)}" placeholder="Staging spot, gear, gate codes"></label>`;
-  } else if (d.step === 2) {
-    const pl = d.plan;
-    const cycle = 2 * pl.drive + pl.loadDump;
-    const perTruck = Math.max(1, Math.floor(pl.hours * 60 / cycle));
-    const need = t => Math.ceil(pl.tons / (PAYLOAD[t] * perTruck));
-    body = `<div class="card"><span class="eyebrow">Load planner</span><h2>How many trucks do I need?</h2>
-      <div class="grid2"><label class="field">Tons to move<input id="p-tons" type="number" inputmode="numeric" value="${pl.tons}"></label>
-        <label class="field">Hours of work<input id="p-hours" type="number" inputmode="decimal" value="${pl.hours}"></label>
-        <label class="field">One-way drive (min)<input id="p-drive" type="number" inputmode="numeric" value="${pl.drive}"></label>
-        <label class="field">Load + dump time (min)<input id="p-ld" type="number" inputmode="numeric" value="${pl.loadDump}"></label></div>
-      <p class="muted num" style="font-size:13.5px">A round trip takes about ${cycle} min, so each truck can do <strong>${perTruck} loads</strong> in ${pl.hours} hours.</p>
-      <div class="stack" style="gap:6px">${Object.keys(TYPES).map(t => `<div class="row"><span class="num">${need(t)} × ${TYPES[t].name} <span class="muted">(${PAYLOAD[t]} t a load)</span></span><button class="btn small ghost" type="button" data-act="plan:${t}:${need(t)}">Use</button></div>`).join("")}</div>
-      <button class="btn small ghost" type="button" data-act="replan" style="justify-self:start">Recalculate</button></div>` + Object.keys(TYPES).map(t => `<div class="card"><div class="typecount">
-        <div><strong>${TYPES[t].name}</strong><div class="muted" style="font-size:13px">${TYPES[t].spec}</div></div>
-        <div class="stepper"><button type="button" data-act="dec:${t}" aria-label="Fewer ${TYPES[t].name}s">−</button><output class="num">${d.needs[t]}</output><button type="button" data-act="inc:${t}" aria-label="More ${TYPES[t].name}s">+</button></div></div>
-        <label class="field">Hourly rate ($/hr)<input id="f-rate-${t}" type="number" inputmode="numeric" min="0" value="${d.rate[t]}"></label></div>`).join("");
-  } else {
-    const n = Object.values(d.needs).reduce((a, b) => a + b, 0);
-    const est = Object.keys(TYPES).reduce((s, t) => s + d.needs[t] * d.rate[t] * 10, 0);
-    body = `<div class="grid2"><label class="field">Date<select id="f-date">${["Today", "Tomorrow", "Mon, Oct 26", "Tue, Oct 27"].map(x => `<option ${x === d.date ? "selected" : ""}>${x}</option>`).join("")}</select></label>
-      <label class="field">Start time<input id="f-start" value="${esc(d.start)}"></label></div>
-      <div class="card"><span class="eyebrow">Review</span><h2>${esc(d.name || "Untitled job")}</h2><p class="muted" style="font-size:14px">${esc(d.kind)}</p>
-        <div class="chips">${Object.keys(TYPES).filter(t => d.needs[t]).map(t => `<span class="chip">${d.needs[t]} × ${TYPES[t].name} @ $${d.rate[t]}/hr</span>`).join("")}</div>
-        <div class="sum"><div class="row"><span>Estimate for a 10-hour day, ${n} trucks</span><span class="num">${money0(est)}</span></div>
-        <div class="row"><span>Trucks2U fee inside that (5%)</span><span class="num">${money0(est * FEE)}</span></div>
-        <div class="row"><span>What a broker would take (11%)</span><span class="num">${money0(est * BROKER)}</span></div></div></div>`;
-  }
-  const n = Object.values(d.needs).reduce((a, b) => a + b, 0);
-  const canNext = d.step === 1 ? d.name.trim().length > 0 : d.step === 2 ? n > 0 : true;
-  return `<button class="back" type="button" data-act="${d.step === 1 ? "cancel-job" : "prev"}">‹ ${d.step === 1 ? "Cancel" : "Back"}</button>
-    <div class="stack" style="gap:6px"><span class="eyebrow">Post a job · step ${d.step} of 3</span>${stepBar}<h1>${["Job details", "Trucks needed", "Schedule and review"][d.step - 1]}</h1></div>
-    ${body}
-    <button class="btn" type="button" data-act="${d.step < 3 ? "next" : "post"}" ${canNext ? "" : "disabled"}>${d.step < 3 ? "Next" : "Post job to vetted owners"}</button>`;
+  const d = ui.draft, pl = plant(d.plant), n = Object.values(d.needs).reduce((a, b) => a + b, 0);
+  const days = Array.from({ length: 7 }, (_, i) => i === 0 ? "Today" : i === 1 ? "Tomorrow" : new Date(at(12, 0) + i * 864e5).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }));
+  return `<button class="back" type="button" data-act="cancel-job">‹ Cancel</button>
+    <div class="stack" style="gap:4px"><span class="eyebrow">Post a job</span><h1>New job</h1></div>
+    <div class="card"><h2>Where is the job?</h2>
+      <label class="field">Job site address<input id="f-site" value="${esc(d.site)}" placeholder="e.g. 1200 Elm St, Hayward" autocomplete="street-address"></label></div>
+    <div class="card"><h2>What are the trucks doing?</h2>
+      <label class="field">Job type<select id="f-kind">${KINDS.map((k, i) => `<option value="${i}" ${i === d.kind ? "selected" : ""}>${esc(k)}</option>`).join("")}</select></label>
+      <label class="field">${d.kind === 0 ? "Dump site" : "Asphalt plant"} (closest first)<select id="f-plant">${plantsByDistance().map(({ p, mi }) => `<option value="${p.id}" ${p.id === d.plant ? "selected" : ""}>${esc(p.name)} · ${mi.toFixed(1)} mi${p.recycle ? " · recycling yard" : ""}</option>`).join("")}</select></label>
+      <ol class="trip">${tripSteps(d.kind, pl.name).map(t => `<li>${t}</li>`).join("")}</ol></div>
+    <div class="card"><h2>When do they start?</h2>
+      <div class="grid2"><label class="field">Day<select id="f-date">${days.map(x => `<option ${x === d.date ? "selected" : ""}>${x}</option>`).join("")}</select></label>
+        <label class="field">Start time<input id="f-start" type="time" value="${d.startT}"></label></div></div>
+    <div class="card"><div class="row"><h2>How many trucks?</h2><span class="muted num">${n} total</span></div>
+      ${Object.keys(TYPES).map(t => `<div class="typecount"><div><strong>${esc(TYPES[t].name)}</strong><div class="muted" style="font-size:13px">${esc(TYPES[t].spec)}</div></div>
+        <div class="stepper"><button type="button" data-act="dec:${t}" aria-label="Fewer ${esc(TYPES[t].name)}s">−</button><output class="num">${d.needs[t]}</output><button type="button" data-act="inc:${t}" aria-label="More ${esc(TYPES[t].name)}s">+</button></div></div>`).join("")}</div>
+    <button class="btn" type="button" data-act="post" ${d.site.trim() && n ? "" : "disabled"}>Post job</button>
+    <p class="muted" style="font-size:12.5px;text-align:center">${d.site.trim() ? (n ? "" : "Add at least one truck. ") : "Enter the job site address. "}Hourly rates come from Settings. Add gate codes, contacts and notes for drivers on the job page after posting.</p>`;
 }
 
 function contractorBilling() {
@@ -486,7 +1196,7 @@ function contractorBilling() {
   const total = approved.reduce((s, j) => s + jobBill(j), 0);
   return `<h1>Billing</h1>
     <div class="card"><span class="eyebrow">Approved this month</span><div class="big">${money(total)}</div>
-      <p class="muted" style="font-size:13px">Trucks2U fee inside that: ${money(total * FEE)}. A broker at 11% would have taken about ${money(total * BROKER)}, so you kept ${money(total * (BROKER - FEE))}.</p></div>
+      <p class="muted" style="font-size:13px">Trucks2U fee inside that: ${money(total * FEE)}. A broker at ${pct(BROKER)} would have taken about ${money(total * BROKER)}, so you kept ${money(total * (BROKER - FEE))}.</p></div>
     ${pending.length ? `<p class="eyebrow">Waiting on your approval</p>${pending.map(j => `<button type="button" class="card tap" data-go="job:${j.id}"><div class="row"><strong>${esc(j.name)}</strong><span class="num">${money(jobBill(j))}</span></div><span class="pill info" style="justify-self:start">Review and approve</span></button>`).join("")}` : ""}
     ${approved.length ? `<p class="eyebrow">Invoices</p>${approved.map(j => `<button type="button" class="card tap" data-go="job:${j.id}"><div class="row"><strong>${esc(j.name)}</strong><span class="num">${money(jobBill(j))}</span></div><span class="muted" style="font-size:13px">${esc(j.id)} · paid by bank transfer</span></button>`).join("")}` : '<div class="note">Approve a finished job and its invoice shows up here.</div>'}`;
 }
@@ -558,17 +1268,68 @@ function contractorLive() {
     <div class="card"><div class="row"><h2>${esc(j.name)}</h2><span class="muted num">avg cycle ${CYCLE} min</span></div>
       <div class="list">${lt.map(({ j, a }) => `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[a.type].short}</span><div><strong>${esc(a.truck)} · ${esc(a.owner)}</strong><div class="stage" data-stage="${esc(a.truck)}">…</div></div></div><span class="muted num" style="font-size:13px">${a.tickets.length} load${a.tickets.length === 1 ? "" : "s"}</span></div>`).join("")}
       ${waiting.map(a => `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[a.type].short}</span><div><strong>${esc(a.truck)} · ${esc(a.owner)}</strong><div class="stage">Not checked in yet</div></div></div><span class="pill warn">Late?</span></div>`).join("")}</div></div>
-    <div class="note">Simulated for the prototype. In the real app each truck's position comes from the driver's phone every 30 seconds.</div>`;
+    <div class="card"><div class="row"><h2>GPS log</h2><span class="pill info">Live</span></div>
+      <div class="list" id="gpslog">${gpsLogHtml()}</div>
+      <p class="muted" style="font-size:12.5px">Arrivals and departures are logged when a truck crosses a green geofence, so check-in times, cycle times and plant waits fill in by themselves.</p></div>
+    <div class="note">Simulated for the prototype. In the real app each truck's position comes from the driver's phone every 30 seconds while they're on the clock.</div>`;
+}
+/* ---------- GPS (simulated; the real app reads the driver's phone) ---------- */
+const gpsStage = {};   // last stage seen per truck, to spot geofence crossings
+function logGps(text) {
+  S.gpsLog.unshift({ time: nowTime(), text }); S.gpsLog.length = Math.min(S.gpsLog.length, 30);
+  const el = document.getElementById("gpslog"); if (el) el.innerHTML = gpsLogHtml();
+}
+function gpsLogHtml() {
+  return S.gpsLog.slice(0, 8).map(e => `<div class="row" style="align-items:flex-start"><span style="font-size:14px">${esc(e.text)}</span><span class="muted num" style="font-size:12px;flex:none">${esc(e.time)}</span></div>`).join("") || '<div class="muted">No GPS events yet.</div>';
+}
+function gpsText(truck) {
+  if (S.gpsPaused[truck]) return "Paused. Dispatch and the contractor can't see your truck.";
+  const lt = liveTrucks().find(x => x.a.truck === truck);
+  return lt ? stageText(lt.j, truckState(lt.i)) + " · updated just now" : "Sharing location · updated just now";
 }
 function tickMap() {
-  const road = document.getElementById("road"); if (!road) return;
-  const len = road.getTotalLength();
+  const road = document.getElementById("road"), len = road ? road.getTotalLength() : 0;
   liveTrucks().forEach(({ j, a, i }) => {
-    const st = truckState(i), pt = road.getPointAtLength(st.f * len);
-    const g = document.querySelector(`[data-tk="${a.truck}"]`);
-    if (g) { g.setAttribute("transform", `translate(${pt.x.toFixed(1)} ${pt.y.toFixed(1)})`); g.firstElementChild.classList.toggle("in", st.stage === 0 || st.stage === 2); }
-    const s = document.querySelector(`[data-stage="${a.truck}"]`); if (s) s.textContent = stageText(j, st);
+    const st = truckState(i), off = !!S.gpsPaused[a.truck];
+    if (!off) {
+      const prev = gpsStage[a.truck]; gpsStage[a.truck] = st.stage;
+      if (prev !== undefined && prev !== st.stage) logGps(`${a.truck} ${["arrived at " + short(j.pickup), "left " + short(j.pickup), "arrived at " + short(j.dropoff), "left " + short(j.dropoff)][st.stage]}.`);
+    }
+    const g = road && document.querySelector(`[data-tk="${a.truck}"]`);
+    if (g) {
+      if (!off) { const pt = road.getPointAtLength(st.f * len); g.setAttribute("transform", `translate(${pt.x.toFixed(1)} ${pt.y.toFixed(1)})`); }
+      g.firstElementChild.classList.toggle("in", !off && (st.stage === 0 || st.stage === 2)); g.firstElementChild.classList.toggle("off", off);
+    }
+    const s = document.querySelector(`[data-stage="${a.truck}"]`); if (s) s.textContent = off ? "GPS paused by driver" : stageText(j, st);
   });
+  document.querySelectorAll("[data-ptk]").forEach(g => {
+    const lt = liveTrucks().find(x => x.a.truck === g.dataset.ptk && x.j.id === g.dataset.job), off = !!S.gpsPaused[g.dataset.ptk];
+    if (!lt) { g.style.display = "none"; return; }
+    const st = truckState(lt.i), [ax, ay] = g.dataset.a.split(",").map(Number), [bx, by] = g.dataset.b.split(",").map(Number);
+    if (!off || g.style.display === "none") g.setAttribute("transform", `translate(${(ax + (bx - ax) * st.f).toFixed(1)} ${(ay + (by - ay) * st.f).toFixed(1)})`);
+    g.style.display = ""; g.firstElementChild.classList.toggle("off", off); g.firstElementChild.classList.toggle("in", !off && (st.stage === 0 || st.stage === 2));
+  });
+  LMAPS.forEach(m => {
+    if (!m.tm) return;
+    const lt = liveTrucks().find(x => x.a.truck === m.truck && x.j.id === m.j.id), off = !!S.gpsPaused[m.truck];
+    if (!lt) { if (m.map.hasLayer(m.tm)) m.tm.remove(); return; }
+    if (!off || !m.map.hasLayer(m.tm)) { const f = truckState(lt.i).f, a = m.j.pts.pickup, b = m.j.pts.dropoff; m.tm.setLatLng([a.lat + (b.lat - a.lat) * f, a.lng + (b.lng - a.lng) * f]); }
+    m.tm.setStyle({ fillColor: off ? m.off : m.on }); if (!m.map.hasLayer(m.tm)) m.tm.addTo(m.map);
+  });
+  document.querySelectorAll("[data-clock]").forEach(el => { const sh = S.shifts[el.dataset.clock]; if (sh) el.textContent = dur(workMs(sh)); });
+  document.querySelectorAll("[data-gps]").forEach(el => { el.textContent = gpsText(el.dataset.gps); });
+}
+function gpsCard(j, a) {
+  const t = a.truck, off = !!S.gpsPaused[t];
+  if (a.status === "assigned") return `<div class="card"><div class="row"><h2>GPS check-in</h2><span class="pill info">Automatic</span></div>
+    <p style="font-size:14px">When ${esc(t)} drives into the job site, GPS checks it in and starts the clock. Nothing to remember.</p>
+    <button class="btn small" type="button" data-act="gps-arrive:${j.id}:${t}" style="justify-self:start">Simulate arriving at the site</button></div>`;
+  if (a.status === "onsite") return `<div class="card"><div class="row"><h2>GPS tracking</h2>${off ? '<span class="pill warn">Paused</span>' : '<span class="pill good">On</span>'}</div>
+    <p style="font-size:14px;font-weight:600" data-gps="${esc(t)}">${esc(gpsText(t))}</p>
+    <p class="muted" style="font-size:12.5px">Shared with dispatch and the contractor only while you're on the clock. It turns off when you check out.</p>
+    <div class="row" style="gap:8px;justify-content:flex-start;flex-wrap:wrap"><button class="btn small ghost" type="button" data-act="gps-pause:${t}">${off ? "Resume GPS" : "Pause GPS"}</button><button class="btn small ghost" type="button" data-act="gps-real">Use my phone's location</button></div>
+    <p class="muted num" id="gps-real" style="font-size:12.5px" hidden></p></div>`;
+  return `<div class="card"><div class="row"><h2>GPS</h2><span class="chip">Off</span></div><p class="muted" style="font-size:13px">Tracking stopped when ${esc(t)} checked out.</p></div>`;
 }
 setInterval(tickMap, 250);
 
@@ -617,7 +1378,7 @@ function ownerFind() {
     const fits = MY_TRUCKS.filter(t => !busy.has(t.id) && j.needs[t.type] > filled(j, t.type));
     return { j, fits };
   }).filter(x => x.fits.length);
-  return `<h1>Find work</h1><p class="muted">Jobs that need one of your trucks. Rates are set by the contractor; you keep 95%.</p>
+  return `<h1>Find work</h1><p class="muted">Jobs that need one of your trucks. Rates are set by the contractor; you keep ${pct(1 - FEE)}.</p>
     ${open.length ? open.map(({ j, fits }) => `<div class="card">
       <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span><span class="chip">${esc(j.kind.split(":")[0])}</span></div>
       <h2>${esc(j.name)}</h2>${route(j)}
@@ -627,28 +1388,33 @@ function ownerFind() {
     </div>`).join("") : '<div class="note">All of your trucks are booked for the open jobs. New jobs show up here and by text.</div>'}`;
 }
 
-function ownerWork(j, a) {
+function ownerWork(j, a, driver = false) {
   const truck = a.truck;
   let action = "";
-  if (a.status === "assigned") action = `<button class="btn" type="button" data-act="checkin:${j.id}:${truck}">Check in at site</button><p class="muted" style="font-size:12.5px">Check-in records your location and time. In the full app this happens automatically when the truck enters the job site.</p>`;
+  if (a.status === "assigned") action = `<button class="btn ghost" type="button" data-act="checkin:${j.id}:${truck}">Check in by hand</button><p class="muted" style="font-size:12.5px">Only needed if the phone has no GPS signal at the site.</p>`;
   else if (a.status === "onsite") action = `
     <div class="card"><h2>Add a load ticket</h2>
       <div class="grid2"><label class="field">Ticket #<input id="t-no" inputmode="numeric" placeholder="448801"></label><label class="field">Tons<input id="t-tons" type="number" step="0.1" inputmode="decimal" placeholder="18.5"></label></div>
       <label class="field">Photo of ticket<input id="t-photo" type="file" accept="image/*" capture="environment"></label>
       <button class="btn" type="button" data-act="ticket:${j.id}:${truck}">Save ticket</button></div>
-    <div class="card"><h2>End of day</h2>
+    ${driver ? `<div class="card"><h2>End of day</h2><p class="muted" style="font-size:13px">Done hauling? Clock out and your hours come straight from the clock.</p>
+      <button class="btn ghost" type="button" data-go="clockout">Clock out for the day</button></div>` : `<div class="card"><h2>End of day</h2>
       <label class="field">Hours on the clock<input id="t-hours" type="number" step="0.25" inputmode="decimal" value="10"></label>
       <button class="btn ghost" type="button" data-act="checkout:${j.id}:${truck}">Check out</button>
-      <p class="muted" style="font-size:12.5px">In the full app hours come from check-in and check-out times.</p></div>`;
+      <p class="muted" style="font-size:12.5px">Drivers you assign clock in and out on their own phone; their hours fill in here.</p></div>`}`;
+  else if (driver) action = `<div class="card"><h2>Checked out</h2><p>${a.hours} hours, ${a.tickets.length} load${a.tickets.length === 1 ? "" : "s"}, ${tons(a).toFixed(1)} t. Sent to ${ME_OWNER} and the contractor.</p>
+      ${j.approved ? '<span class="pill good" style="justify-self:start">Approved by the contractor</span>' : '<span class="pill warn" style="justify-self:start">Waiting on contractor approval</span>'}</div>`;
   else action = `<div class="card"><div class="sum">
       <div class="row"><span>${a.hours} hrs × $${j.rate[a.type]}</span><span class="num">${money(billOf(j, a))}</span></div>
-      <div class="row"><span>Trucks2U fee (5%)</span><span class="num">−${money(billOf(j, a) * FEE)}</span></div>
+      <div class="row"><span>Trucks2U fee (${pct(FEE)})</span><span class="num">−${money(billOf(j, a) * FEE)}</span></div>
       <div class="row total"><span>Your payout</span><span class="num">${money(billOf(j, a) * (1 - FEE))}</span></div></div>
       ${j.approved ? '<span class="pill good" style="justify-self:start">Approved · paying out</span>' : '<span class="pill warn" style="justify-self:start">Waiting on contractor approval</span>'}</div>`;
   return `<button class="back" type="button" data-go="back">‹ Today</button>
     <div class="stack" style="gap:4px"><span class="eyebrow">${esc(truck)} · ${esc(j.date)} · start ${esc(j.start)}</span><h1>${esc(j.name)}</h1><p class="muted">${esc(j.kind)}</p><div>${statusPill(a)}</div></div>
-    <div class="card">${route(j)}</div>
+    <div class="card">${jobMap(j, { truck })}${route(j)}${directions(j)}</div>
+    ${!driver && j.date === "Today" && S.shifts[truck] ? `<div class="card"><h2>Driver's time</h2><span class="muted" style="font-size:13px">${esc(S.driverOf[truck] || "Driver")}</span>${shiftLine(truck)}</div>` : ""}
     ${dspDriverCard(j, truck)}
+    ${gpsCard(j, a)}
     ${action}
     <div class="card"><div class="row"><h2>Your tickets</h2><span class="muted num">${tons(a).toFixed(1)} t</span></div>
       <div class="list">${a.tickets.length ? a.tickets.map(t => `<div class="row"><div class="row" style="justify-content:flex-start">${t.photo ? `<img class="thumb" src="${t.photo}" alt="Ticket ${esc(t.no)}">` : '<span class="thumb">photo</span>'}<div><strong class="num">#${esc(t.no)}</strong><div class="muted" style="font-size:13px">${esc(t.time)}</div></div></div><span class="num">${t.tons.toFixed(1)} t</span></div>`).join("") : '<div class="muted">No tickets yet.</div>'}</div></div>`;
@@ -671,9 +1437,11 @@ function ownerPay() {
 }
 
 function ownerFleet() {
-  return `<h1>Fleet</h1><p class="muted">Pick who drives each truck. The driver gets job texts and checks in from their own phone; you see every load and get paid for the truck.</p>
+  return `<h1>Fleet</h1><p class="muted">Set each truck's type and pick who drives it. The driver gets job texts and checks in from their own phone; you see every load and get paid for the truck.</p>
     ${MY_TRUCKS.map(t => `<div class="card"><div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[t.type].short}</span><div><strong>${t.id} · ${TYPES[t.type].name}</strong><div class="muted" style="font-size:13px">plate ${t.plate}</div></div></div><span class="pill good">Active</span></div>
-      <div class="row" style="gap:8px"><select id="drv-${t.id}" aria-label="Driver for ${t.id}" style="flex:1;min-width:0">${MY_DRIVERS.map(d => `<option ${S.driverOf[t.id] === d.name ? "selected" : ""}>${esc(d.name)}</option>`).join("")}</select><button class="btn small" type="button" data-act="driver:${t.id}" data-pick="drv-${t.id}" style="flex:none">Save</button></div></div>`).join("")}
+      <div class="grid2"><label class="field">Truck type<select id="typ-${t.id}">${Object.keys(TYPES).map(k => `<option value="${k}" ${t.type === k ? "selected" : ""}>${TYPES[k].name}</option>`).join("")}</select></label>
+        <label class="field">Driver<select id="drv-${t.id}">${MY_DRIVERS.map(d => `<option ${S.driverOf[t.id] === d.name ? "selected" : ""}>${esc(d.name)}</option>`).join("")}</select></label></div>
+      <button class="btn small" type="button" data-act="driver:${t.id}" data-pick="drv-${t.id}" style="justify-self:start">Save</button></div>`).join("")}
     <div class="card"><h2>Drivers</h2><div class="list">${MY_DRIVERS.map(d => `<div class="row"><div><strong>${esc(d.name)}</strong><div class="muted" style="font-size:13px">CDL ${d.cdl} · medical card to ${d.med}</div></div><span class="pill good">Verified</span></div>`).join("")}</div>
       <p class="muted" style="font-size:12.5px">Each driver goes through the CDL, medical card, MVR and drug testing checks.</p></div>`;
 }
@@ -682,6 +1450,8 @@ function ownerDocs() {
   const items = [
     ["USDOT 2290183 active", "good", "Checked automatically · last checked Oct 1"],
     ["Commercial auto liability, $1M", S.insuranceRenewed ? "warn" : "warn", S.insuranceRenewed ? "New certificate uploaded, under review" : "Expires Nov 17, 2026"],
+    (() => { const miss = MY_TRUCKS.filter(t => !S.insCards[t.id]).map(t => t.id);
+      return ["Insurance ID card in each truck", miss.length ? "warn" : "good", miss.length ? "Still needed for " + miss.join(", ") : "On file for " + MY_TRUCKS.map(t => t.id).join(" and ")]; })(),
     ["General liability and workers' comp", "good", "Expires Mar 2027"],
     ["CDL Class A, MVR clean", "good", "Rechecked yearly"],
     ["DOT medical card", "good", "Expires May 2027"],
@@ -694,11 +1464,108 @@ function ownerDocs() {
     <h1>Documents</h1><p class="muted">Every item has to stay green for your trucks to see jobs. We remind you 30 days before anything expires.</p>
     <div class="card"><div class="list">${items.map(([t, s, d]) => `<div class="check"><span class="mark ${s}">${s === "good" ? "✓" : "!"}</span><div><strong style="font-size:14px">${t}</strong><div class="muted" style="font-size:13px">${d}</div></div><span></span></div>`).join("")}</div></div>
     ${S.insuranceRenewed ? "" : `<div class="card"><h2>Renew insurance certificate</h2><label class="field">Certificate of insurance (PDF or photo)<input id="coi" type="file" accept="image/*,application/pdf"></label><button class="btn" type="button" data-act="coi">Upload</button></div>`}
+    <div class="card"><h2>Insurance cards</h2><p class="muted" style="font-size:13px">A photo of the insurance ID card you keep in each truck. Upload a new one whenever your policy renews.</p>
+      <div class="list">${MY_TRUCKS.map(t => { const c = S.insCards[t.id]; return `<div class="stack" style="gap:8px">
+        <div class="row"><div class="row" style="justify-content:flex-start">${c && c.url ? `<img class="thumb" src="${c.url}" alt="Insurance card for ${t.id}">` : '<span class="thumb">card</span>'}<div><strong>${t.id} · ${TYPES[t.type].name}</strong><div class="muted" style="font-size:13px">${c ? esc(c.name) + " · added " + esc(c.date) : "No card yet"}</div></div></div>${c ? '<span class="pill good">On file</span>' : '<span class="pill warn">Needed</span>'}</div>
+        <div class="row" style="gap:8px"><input id="ic-${t.id}" type="file" accept="image/*,application/pdf" capture="environment" aria-label="Insurance card for ${t.id}" style="flex:1;min-width:0"><button class="btn small" type="button" data-act="inscard:${t.id}" style="flex:none">${c ? "Replace" : "Upload"}</button></div></div>`; }).join("")}</div></div>
     <div class="card"><h2>Your trucks</h2><div class="list">${MY_TRUCKS.map(t => `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[t.type].short}</span><div><strong>${t.id} · ${TYPES[t.type].name}</strong><div class="muted" style="font-size:13px">${TYPES[t.type].spec} · plate ${t.plate}</div></div></div><span class="pill good">Active</span></div>`).join("")}</div></div>`;
 }
 
+/* ---------- Driver (drives a truck for an owner) ---------- */
+const ME_DRIVER = "Marco Ruiz";   // the driver we view as; their truck follows the owner's Fleet tab
+const myDriverTruck = () => MY_TRUCKS.find(t => S.driverOf[t.id] === ME_DRIVER);
+const driverAssignments = () => { const t = myDriverTruck(); return t ? S.jobs.flatMap(j => j.assignments.filter(a => a.truck === t.id).map(a => ({ j, a }))) : []; };
+function driverHead(title) {
+  const t = myDriverTruck();
+  return `<div class="stack" style="gap:4px"><span class="eyebrow">${ME_DRIVER} · driving for ${ME_OWNER}${t ? " · " + t.id : ""}</span><h1>${title}</h1></div>`;
+}
+/* Clock in / clock out: the driver's paid day. Hours go to the job when they clock out. */
+const breakMs = (sh, until) => sh.breaks.reduce((s, b) => s + ((b.e || until) - b.s), 0);
+const workMs = sh => { const end = sh.outMs || demoNow(); return Math.max(0, end - sh.inMs - breakMs(sh, end)); };
+const dur = ms => `${Math.floor(ms / 3.6e6)} h ${String(Math.floor(ms / 60000) % 60).padStart(2, "0")} m`;
+const onBreak = sh => sh.breaks.length > 0 && !sh.breaks[sh.breaks.length - 1].e;
+const shiftHours = sh => Math.max(0.25, Math.round(workMs(sh) / 900000) / 4);   // nearest quarter hour
+const todayFor = truck => S.jobs.filter(j => j.date === "Today").flatMap(j => j.assignments.filter(a => a.truck === truck).map(a => ({ j, a })));
+function shiftSum(sh) {
+  const end = sh.outMs || demoNow();
+  return `<div class="sum"><div class="row"><span>Clocked in</span><span class="num">${fmtT(sh.inMs)}</span></div>
+    <div class="row"><span>Clocked out</span><span class="num">${sh.outMs ? fmtT(sh.outMs) : fmtT(end) + " (now)"}</span></div>
+    <div class="row"><span>Breaks, unpaid</span><span class="num">${dur(breakMs(sh, end))}</span></div>
+    <div class="row total"><span>Paid time</span><span class="num">${dur(workMs(sh))} · ${shiftHours(sh)} hrs</span></div></div>`;
+}
+function shiftLine(truck) {
+  const sh = S.shifts[truck]; if (!sh) return "";
+  const parts = [`Clocked in ${fmtT(sh.inMs)}`, sh.breaks.length ? `breaks ${dur(breakMs(sh, sh.outMs || demoNow()))}` : "", sh.outMs ? `out ${fmtT(sh.outMs)} · signed by ${esc(sh.sign)}` : "still on the clock"].filter(Boolean);
+  return `<div class="muted num" style="font-size:13px">${parts.join(" · ")}</div>${sh.far ? `<span class="pill warn" style="justify-self:start">Clocked in ${esc(sh.where)}</span>` : ""}${sh.correction ? `<div class="note">Correction asked: "${esc(sh.correction.text)}"</div>` : ""}`;
+}
+function clockCard(t) {
+  const sh = S.shifts[t.id];
+  if (!sh) return `<div class="card" style="border:2px solid var(--good)"><span class="eyebrow">Start your day</span><h2>You're not clocked in</h2>
+    <button class="btn good" type="button" data-act="clock-in:${t.id}">Clock in</button>
+    <p class="muted" style="font-size:12.5px">Saves the time and your GPS location, and turns GPS on for the day.</p>
+    <button class="btn small ghost" type="button" data-act="clock-in:${t.id}:far" style="justify-self:start">Demo: clock in from home</button></div>`;
+  if (sh.outMs) {
+    const corr = sh.correction;
+    return `<div class="card"><div class="row"><span class="eyebrow">Day done · signed by ${esc(sh.sign)}</span>${corr ? '<span class="pill warn">Correction asked</span>' : '<span class="pill good">Clocked out</span>'}</div>
+      ${shiftSum(sh)}
+      ${corr ? `<div class="note">You asked: "${esc(corr.text)}" (${esc(corr.time)}). ${ME_OWNER} and the contractor will fix it and approve.</div>`
+        : ui.corr ? `<label class="field">What needs fixing?<textarea id="corr-text" rows="2" placeholder="e.g. I forgot to clock out. I left the site at 2:30 PM."></textarea></label>
+          <div class="row" style="gap:8px"><button class="btn small" type="button" data-act="corr-send:${t.id}" style="flex:1">Send</button><button class="btn small ghost" type="button" data-act="corr-cancel" style="flex:1">Cancel</button></div>`
+        : `<button class="btn small ghost" type="button" data-act="corr-open" style="justify-self:start">Ask for a correction</button>`}
+      <p class="muted" style="font-size:12.5px">Times can't be changed after you clock out. Corrections go to ${ME_OWNER} and the contractor.</p>
+      <button class="btn small ghost" type="button" data-act="clock-reset:${t.id}" style="justify-self:start">Demo: start a new day</button></div>`;
+  }
+  const brk = onBreak(sh);
+  return `<div class="card" style="border:2px solid ${brk ? "var(--warn)" : "var(--good)"}">
+    <div class="row"><span class="eyebrow">Clocked in ${fmtT(sh.inMs)} · ${esc(sh.where)}</span>${brk ? '<span class="pill warn">On break</span>' : '<span class="pill good">On the clock</span>'}</div>
+    <div class="big" data-clock="${t.id}">${dur(workMs(sh))}</div>
+    ${sh.far ? `<div class="note" style="color:var(--warn)">You clocked in ${esc(sh.where)}, so your time is flagged for the contractor.</div>` : ""}
+    ${brk ? `<p class="muted" style="font-size:13px">Break started at ${fmtT(sh.breaks[sh.breaks.length - 1].s)}. Break time isn't paid.</p>` : ""}
+    <div class="grid2"><button class="btn ${brk ? "" : "ghost"}" type="button" data-act="${brk ? "break-end" : "break-start"}:${t.id}">${brk ? "End break" : "Start break"}</button><button class="btn ghost" type="button" data-go="clockout">Clock out</button></div></div>`;
+}
+function driverClockOut() {
+  const t = myDriverTruck(), sh = t && S.shifts[t.id];
+  if (!sh || sh.outMs) { ui.view = null; return driverToday(); }
+  const today = todayFor(t.id), loads = today.reduce((s, x) => s + x.a.tickets.length, 0), tn = today.reduce((s, x) => s + tons(x.a), 0);
+  return `<button class="back" type="button" data-go="back">‹ Today</button>
+    ${driverHead("End your day")}
+    <div class="card">${shiftSum(sh)}</div>
+    <div class="stats"><div class="stat"><span>Loads</span><div class="big">${loads}</div></div><div class="stat"><span>Tons</span><div class="big">${tn.toFixed(1)}</div></div><div class="stat"><span>Truck</span><div class="big">${t.id}</div></div></div>
+    ${today.length ? `<div class="note">Did you add every load ticket? ${today.map(({ j, a }) => `<button class="back" type="button" data-go="work:${j.id}:${a.truck}" style="display:inline;font-size:12.5px">Add one to ${esc(j.name)}</button>`).join(" ")}</div>` : ""}
+    <label class="field">Type your name to sign for today's time<input id="co-sign" autocomplete="name" placeholder="${esc(ME_DRIVER)}"></label>
+    <button class="btn good" type="button" data-act="clock-out:${t.id}">Clock out and sign</button>
+    <p class="muted" style="font-size:12.5px">${onBreak(sh) ? "Your break ends when you clock out. " : ""}GPS turns off when you clock out.</p>`;
+}
+function driverToday() {
+  if (!myDriverTruck()) return driverHead("Today") + `<div class="note">${ME_OWNER} hasn't put you on a truck yet. When they do, your jobs show up here and by text.</div>`;
+  const mine = driverAssignments().filter(x => x.j.date !== "Yesterday");
+  return driverHead("Today") + clockCard(myDriverTruck()) + (mine.length ? mine.map(({ j, a }) => { const n = unreadFor(j, a.truck).length; return `<button type="button" class="card tap" data-go="work:${j.id}:${a.truck}">
+      <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)} · ${esc(a.truck)}</span>${statusPill(a)}</div>
+      <h2>${esc(j.name)}</h2>${n ? `<span class="pill warn" style="justify-self:start">${n} new dispatch note${n > 1 ? "s" : ""}</span>` : ""}${jobMap(j, { truck: a.truck, h: 160 })}${route(j)}
+      <div class="row"><span class="muted" style="font-size:13px">${esc(j.kind)}</span><span class="muted num" style="font-size:13px">${a.tickets.length} ticket${a.tickets.length === 1 ? "" : "s"}</span></div></button>`; }).join("") : '<div class="note">No jobs on your truck right now.</div>')
+    + `<div class="note">${ME_OWNER} picks which jobs your truck takes. You get a text when you're booked, and dispatch updates show up here.</div>`;
+}
+function driverHours() {
+  const all = driverAssignments(), today = all.filter(x => x.j.date === "Today"), done = all.filter(x => x.a.status === "done");
+  return driverHead("Hours and loads") + `<div class="stats"><div class="stat"><span>Loads today</span><div class="big">${today.reduce((s, x) => s + x.a.tickets.length, 0)}</div></div>
+      <div class="stat"><span>Tons today</span><div class="big">${today.reduce((s, x) => s + tons(x.a), 0).toFixed(0)}</div></div>
+      <div class="stat"><span>Hours logged</span><div class="big">${done.reduce((s, x) => s + x.a.hours, 0)}</div></div></div>
+    <div class="card"><h2>Recent days</h2><div class="list">${all.map(({ j, a }) => `<div class="row"><div><strong>${esc(j.name)}</strong><div class="muted" style="font-size:13px">${esc(j.date)} · ${esc(a.truck)} · ${a.tickets.length} load${a.tickets.length === 1 ? "" : "s"}, ${tons(a).toFixed(1)} t</div></div>${a.status === "done" ? `<span class="num">${a.hours} hrs</span>` : statusPill(a)}</div>`).join("") || '<div class="muted">Nothing yet.</div>'}</div></div>
+    <div class="note">Your pay comes from ${ME_OWNER}. Hours here come from your check-in and check-out.</div>`;
+}
+function driverMe() {
+  const d = MY_DRIVERS.find(x => x.name === ME_DRIVER), t = myDriverTruck(), c = t && S.insCards[t.id];
+  const doc = (title, sub) => `<div class="check"><span class="mark good">✓</span><div><strong style="font-size:14px">${title}</strong><div class="muted" style="font-size:13px">${sub}</div></div><span></span></div>`;
+  return driverHead("My info") + `<div class="card"><h2>Your documents</h2><div class="list">
+      ${doc("CDL " + esc(d.cdl), "Driving record checked yearly")}${doc("DOT medical card", "Good until " + esc(d.med))}${doc("Drug testing and Clearinghouse", "Clear")}</div>
+      <p class="muted" style="font-size:12.5px">We text you 30 days before anything expires.</p></div>
+    ${t ? `<div class="card"><h2>Your truck</h2><div class="row" style="justify-content:flex-start"><span class="truck-ic">${TYPES[t.type].short}</span><div><strong>${t.id} · ${TYPES[t.type].name}</strong><div class="muted" style="font-size:13px">plate ${t.plate} · owned by ${ME_OWNER}</div></div></div>
+      <strong style="font-size:14px">Insurance card</strong>
+      ${c ? (c.url ? `<img src="${c.url}" alt="Insurance card for ${t.id}" style="max-width:100%;border-radius:10px;border:1px solid var(--line)">` : `<div class="note">${esc(c.name)} · added ${esc(c.date)}. This sample card has no picture; upload one on the truck owner's Docs tab and it shows here.</div>`) : `<div class="note">No insurance card on file for ${t.id}. Ask ${ME_OWNER} to upload it.</div>`}
+      <p class="muted" style="font-size:12.5px">Show this at a scale house or a traffic stop.</p></div>` : ""}`;
+}
+
 /* ---------- Broker ---------- */
-const BFEE = 15;   // sample per-truck dispatch fee, per truck per day
 const B = () => S.broker;
 const bTruck = id => B().roster.find(t => t.id === id);
 const bNeed = j => Object.values(j.needs).reduce((a, b) => a + b, 0);
@@ -755,8 +1622,8 @@ function brokerT2Job(j) {
   const sections = Object.keys(TYPES).filter(t => j.needs[t] > filled(j, t)).map(t => `<div class="card"><div class="row"><h2>${TYPES[t].name}</h2><span class="muted num">$${j.rate[t]}/hr · ${j.needs[t] - filled(j, t)} open</span></div>${slotPicker(j.date, t, `tdis:${j.id}:${t}`)}</div>`).join("");
   return `<button class="back" type="button" data-go="back">‹ Dispatch board</button>
     <div class="stack" style="gap:4px"><span class="eyebrow">Trucks2U contractor job · ${esc(j.date)} · ${esc(j.start)}</span><h1>${esc(j.name)}</h1><p class="muted">${esc(j.kind)}</p></div>
-    <div class="card">${route(j)}</div>${sections || '<div class="note">This job is fully booked.</div>'}
-    <div class="note">On Trucks2U contractor jobs the usual 5% fee applies instead of the per-truck fee, and the contractor pays through the app.</div>`;
+    <div class="card">${jobMap(j)}${route(j)}</div>${sections || '<div class="note">This job is fully booked.</div>'}
+    <div class="note">On Trucks2U contractor jobs the usual ${pct(FEE)} fee applies instead of the per-truck fee, and the contractor pays through the app.</div>`;
 }
 
 function brokerTrucks() {
@@ -787,13 +1654,13 @@ function fileFld(k, label, hint = "") {
 }
 const SU_REQ = [
   ["biz", "Business name"], ["phone", "Mobile phone"], ["usdot", "USDOT number"], ["file:cdlFront", "Photo of license (front)"], ["cdlExp", "License expiration date"],
-  ["file:med", "DOT medical card"], ["file:coi", "Certificate of insurance"], ["coiExp", "Insurance expiration date"],
+  ["file:med", "DOT medical card"], ["file:coi", "Certificate of insurance"], ["file:insCard", "Insurance ID card"], ["coiExp", "Insurance expiration date"],
   ["plate", "License plate"], ["file:reg", "Truck registration"], ["file:insp", "Annual DOT inspection"], ["file:drug", "Drug testing program letter"],
   ["chk:consent", "Consent to background checks"], ["chk:terms", "Agree to terms"]
 ];
 function suMissing() {
   const su = ui.signup;
-  return SU_REQ.filter(([k]) => k.startsWith("file:") ? !su.files[k.slice(5)] : k.startsWith("chk:") ? !su.f[k.slice(4)] : !(su.f[k] || "").trim()).map(x => x[1]);
+  return SU_REQ.filter(([k]) => k === "phone" ? (su.f.phone || "").replace(/\D/g, "").length !== 10 : k.startsWith("file:") ? !su.files[k.slice(5)] : k.startsWith("chk:") ? !su.f[k.slice(4)] : !(su.f[k] || "").trim()).map(x => x[1]);
 }
 function signupScreen() {
   const su = ui.signup, st = su.step;
@@ -803,7 +1670,7 @@ function signupScreen() {
     <button class="btn ghost" type="button" data-act="su-close">Close</button>`;
   let body = "";
   if (st === 1) body = `${fld("biz", "Business name", 'placeholder="e.g. Delgado Hauling LLC"')}${fld("name", "Your name")}
-    <div class="grid2">${fld("phone", "Mobile phone", 'inputmode="tel" placeholder="(510) 555-0142"')}${fld("email", "Email", 'type="email"')}</div>
+    <div class="grid2">${fld("phone", "Mobile phone", 'type="tel" inputmode="tel" data-phone placeholder="(510) 555-0142"')}${fld("email", "Email", 'type="email"')}</div>
     <div class="row" style="gap:8px;align-items:end"><div style="flex:1">${fld("usdot", "USDOT number", 'inputmode="numeric" placeholder="7 digits"')}</div><button class="btn small ghost" type="button" data-act="su-dot" style="flex:none">Check</button></div>
     ${su.dot ? `<div class="note" style="color:var(--good)">${su.dot}</div>` : '<p class="muted" style="font-size:12.5px">We look this up in the federal FMCSA database to confirm it is active with no out-of-service order.</p>'}
     ${fld("mc", "MC or CA number (if you have one)")}`;
@@ -813,6 +1680,7 @@ function signupScreen() {
     ${fileFld("med", "DOT medical card", "The card from your DOT physical")}
     <p class="muted" style="font-size:12.5px">Adding more drivers? You can add them from the Fleet tab after you're approved. Each driver uploads their own license and medical card.</p>`;
   if (st === 3) body = `${fileFld("coi", "Certificate of insurance (COI)", "Ask your agent to list Trucks2U as additional insured")}
+    ${fileFld("insCard", "Insurance ID card, front", "The card you keep in the truck")}${fileFld("insCardBack", "Insurance ID card, back", "Optional")}
     <div class="grid2"><label class="field">Auto liability limit<select data-f="liab">${["$750,000", "$1,000,000", "$2,000,000"].map(x => `<option ${su.f.liab === x ? "selected" : ""}>${x}</option>`).join("")}</select></label>${fld("coiExp", "Policy expires", 'type="date"')}</div>
     ${fileFld("wc", "Workers' comp certificate", "Skip if you are a sole owner with no employees")}
     <label class="row" style="justify-content:flex-start;gap:8px;font-size:14px"><input type="checkbox" data-f="wcExempt" style="width:auto" ${su.f.wcExempt ? "checked" : ""}> I'm a sole owner with no employees</label>`;
@@ -840,6 +1708,7 @@ function submitSignup() {
   S.applicants.unshift({ id, name: f.biz, trucks: "one " + TYPES[f.ttype].name.toLowerCase(), fresh: true, checks: [
     [`USDOT ${f.usdot} active, no out-of-service order`, su.dot ? "good" : "warn", su.dot ? "Checked automatically" : "Not checked yet", null],
     [`Commercial auto liability, ${f.liab}`, "warn", `Expires ${f.coiExp} · needs review`, F.coi],
+    ["Insurance ID card", "warn", fileNote("insCard") + (F.insCardBack ? " (front and back)" : ""), F.insCard],
     ["Workers' comp", "warn", f.wcExempt ? "Sole-owner exemption, needs review" : fileNote("wc"), F.wc],
     [`CDL ${f.cdlClass}, expires ${f.cdlExp}`, "warn", "License photo uploaded · MVR check running", F.cdlFront],
     ["DOT medical card", "warn", fileNote("med"), F.med],
@@ -887,6 +1756,42 @@ function adminOverview() {
     <div class="note">Coming after the pilot: live map of every truck, geofence arrival alerts, and utilization reports.</div>`;
 }
 
+function adminSettings() {
+  const num = (id, v, step = "1") => `<input id="${id}" type="number" inputmode="decimal" min="0" step="${step}" value="${v}">`;
+  return `<div class="stack" style="gap:4px"><span class="eyebrow">Trucks2U admin</span><h1>Settings</h1></div>
+    <p class="muted">Changes apply across the whole demo as soon as you save. Reset demo puts everything back.</p>
+    <div class="card"><div class="row"><h2>Truck types</h2><span class="muted num">${Object.keys(TYPES).length}</span></div>
+      <div class="list">${Object.keys(TYPES).map(t => `<div class="stack">
+        <div class="grid2"><label class="field">Name<input id="st-name-${t}" value="${esc(TYPES[t].name)}"></label><label class="field">Short label<input id="st-short-${t}" maxlength="4" value="${esc(TYPES[t].short)}"></label></div>
+        <label class="field">Description<input id="st-spec-${t}" value="${esc(TYPES[t].spec)}" placeholder="e.g. 3 axle · ~15 t payload"></label>
+        <div class="grid2"><label class="field">Tons per load${num("st-tons-" + t, TYPES[t].tons, "0.5")}</label><label class="field">Default rate ($/hr)${num("st-rate-" + t, TYPES[t].rate)}</label></div>
+        <button class="btn small ghost" type="button" data-act="st-del:${t}" style="justify-self:start;color:var(--bad)">Remove ${esc(TYPES[t].name)}</button></div>`).join("")}</div>
+      <button class="btn small ghost" type="button" data-act="st-add" style="justify-self:start">+ Add a truck type</button>
+      <p class="muted" style="font-size:12.5px">Tons per load feeds the load planner. The default rate fills in when a contractor posts a job; they can still change it.</p></div>
+    <div class="card"><h2>Fees</h2>
+      <div class="grid2"><label class="field">Trucks2U fee (%)${num("st-fee", +(FEE * 100).toFixed(2), "0.5")}</label><label class="field">Broker fee per truck ($/day)${num("st-bfee", BFEE)}</label></div>
+      <label class="field">Typical broker cut, for comparison (%)${num("st-broker", +(BROKER * 100).toFixed(2), "0.5")}</label></div>
+    <div class="card"><h2>Job types</h2>
+      <div class="list">${KINDS.map((k, i) => `<div class="row" style="gap:8px"><input id="st-kind-${i}" value="${esc(k)}" aria-label="Job type ${i + 1}" style="flex:1">${i < BUILTIN_KINDS ? '<span class="chip" style="flex:none">Built in</span>' : `<button class="btn small ghost" type="button" data-act="st-kdel:${i}" style="flex:none;color:var(--bad)">Remove</button>`}</div>`).join("")}</div>
+      <div class="row" style="gap:8px"><input id="st-kind-new" placeholder="New job type, e.g. Haul off base rock" style="flex:1"><button class="btn small" type="button" data-act="st-kadd" style="flex:none">Add</button></div></div>
+    <button class="btn" type="button" data-act="st-save">Save settings</button>`;
+}
+function syncSettings() {
+  const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ""; };
+  const pos = (id, old) => { const x = parseFloat(val(id)); return isNaN(x) || x < 0 ? old : x; };
+  Object.keys(TYPES).forEach(t => {
+    const ty = TYPES[t];
+    ty.name = val("st-name-" + t) || ty.name; ty.short = (val("st-short-" + t) || ty.short).toUpperCase(); ty.spec = val("st-spec-" + t);
+    ty.tons = pos("st-tons-" + t, ty.tons) || ty.tons; ty.rate = pos("st-rate-" + t, ty.rate);
+  });
+  FEE = pos("st-fee", FEE * 100) / 100; BROKER = pos("st-broker", BROKER * 100) / 100; BFEE = pos("st-bfee", BFEE);
+  KINDS.forEach((k, i) => { const v = val("st-kind-" + i); if (v) KINDS[i] = v; });
+}
+function typeInUse(t) {
+  const inJob = j => (j.needs[t] || 0) > 0 || (j.assignments || []).some(a => a.type === t);
+  return S.jobs.some(inJob) || B().jobs.some(inJob) || MY_TRUCKS.some(x => x.type === t) || B().roster.some(x => x.type === t);
+}
+
 /* ---------- Shell ---------- */
 const ICONS = {
   jobs: '<path d="M3 7h18v12H3zM8 7V5h8v2" fill="none" stroke="currentColor" stroke-width="2"/>',
@@ -902,13 +1807,18 @@ const ICONS = {
   live: '<path d="M12 21s-6-5.5-6-11a6 6 0 0112 0c0 5.5-6 11-6 11z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2" fill="currentColor"/>',
   plants: '<path d="M3 21V11l5 3V11l5 3V5h4v16zM2 21h20M17 5V2" fill="none" stroke="currentColor" stroke-width="2"/>',
   fleet: '<circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 010 6M18 15c2 .5 3 2.5 3 5" fill="none" stroke="currentColor" stroke-width="2"/>',
-  over: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2"/>'
+  over: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="2"/>',
+  set: '<circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" fill="none" stroke="currentColor" stroke-width="2"/>'
 };
+ICONS.dtoday = ICONS.today;
+ICONS.dhours = '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="2"/>';
+ICONS.dme = '<circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6" fill="none" stroke="currentColor" stroke-width="2"/>';
 const TABS = {
   contractor: [["jobs", "Jobs"], ["live", "Live map"], ["plants", "Plants"], ["bill", "Billing"]],
   owner: [["today", "Today"], ["find", "Find work"], ["fleet", "Fleet"], ["pay", "Pay"], ["docs", "Docs"]],
+  driver: [["dtoday", "Today"], ["dhours", "Hours"], ["dme", "My info"]],
   broker: [["board", "Dispatch"], ["trucks", "Trucks"], ["bfee", "Billing"]],
-  admin: [["vet", "Vetting"], ["over", "Overview"]]
+  admin: [["vet", "Vetting"], ["over", "Overview"], ["set", "Settings"]]
 };
 
 function screen() {
@@ -924,18 +1834,25 @@ function screen() {
     if (v && v.startsWith("work:")) { const [, jid, t] = v.split(":"); const j = job(jid); return ownerWork(j, j.assignments.find(a => a.truck === t)); }
     return { today: ownerToday, find: ownerFind, fleet: ownerFleet, pay: ownerPay, docs: ownerDocs }[ui.tab]();
   }
+  if (ui.role === "driver") {
+    if (v === "clockout") return driverClockOut();
+    if (v && v.startsWith("work:")) { const [, jid, t] = v.split(":"); const j = job(jid); return ownerWork(j, j.assignments.find(a => a.truck === t), true); }
+    return { dtoday: driverToday, dhours: driverHours, dme: driverMe }[ui.tab]();
+  }
   if (ui.role === "broker") {
     if (v && v.startsWith("bjob:")) return brokerJob(B().jobs.find(j => j.id === v.slice(5)));
     if (v && v.startsWith("tjob:")) return brokerT2Job(job(v.slice(5)));
     return { board: brokerBoard, trucks: brokerTrucks, bfee: brokerBilling }[ui.tab]();
   }
   if (v && v.startsWith("app:")) return adminApplicant(S.applicants.find(a => a.id === v.slice(4)));
-  return ui.tab === "over" ? adminOverview() : adminVetting();
+  return ui.tab === "over" ? adminOverview() : ui.tab === "set" ? adminSettings() : adminVetting();
 }
 
 function render() {
   document.querySelectorAll("[data-role]").forEach(b => b.setAttribute("aria-pressed", b.dataset.role === ui.role));
   $("#screen").innerHTML = screen();
+  $("#screen").classList.toggle("form", !!(ui.signup || ui.draft));   // forms stay one readable column in computer view
+  initMaps();
   $("#tabs").innerHTML = TABS[ui.role].map(([k, label]) => `<button type="button" data-tab="${k}" ${ui.tab === k && !ui.view && !ui.draft ? 'aria-current="page"' : ""}><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[k]}</svg>${label}</button>`).join("");
   tickMap();
 }
@@ -943,15 +1860,8 @@ function render() {
 function syncDraft() {
   const d = ui.draft; if (!d) return;
   const val = id => { const el = document.getElementById(id); return el ? el.value : null; };
-  if (d.step === 1) {
-    d.name = val("f-name") ?? d.name; d.kind = val("f-kind") ?? d.kind; d.site = val("f-site") ?? d.site; d.notes = val("f-notes") ?? d.notes;
-    const np = val("f-plant"); if (np && np !== d.plant) { d.plant = np; d.plan.drive = driveMin(miles(SITE, plant(np))); }
-  }
-  if (d.step === 2) {
-    Object.keys(TYPES).forEach(t => { const r = parseFloat(val("f-rate-" + t)); if (!isNaN(r)) d.rate[t] = r; });
-    [["p-tons", "tons"], ["p-hours", "hours"], ["p-drive", "drive"], ["p-ld", "loadDump"]].forEach(([id, k]) => { const x = parseFloat(val(id)); if (x > 0) d.plan[k] = x; });
-  }
-  if (d.step === 3) { d.date = val("f-date") ?? d.date; d.start = val("f-start") ?? d.start; }
+  d.site = val("f-site") ?? d.site; d.plant = val("f-plant") ?? d.plant; d.date = val("f-date") ?? d.date; d.startT = val("f-start") || d.startT;
+  const k = val("f-kind"); if (k !== null) d.kind = +k;
 }
 
 // Prototype only: other drivers on the app accept a new job one by one, leaving a spot for you to try.
@@ -972,25 +1882,25 @@ function simulateAccepts(id) {
   setTimeout(step, 3000);
 }
 
-function nowTime() { return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }); }
+function nowTime() { return fmtT(demoNow()); }
 
 function act(name, arg1, arg2, arg3, pick) {
   const d = ui.draft;
   switch (name) {
     case "new-job":
-      ui.draft = { step: 1, name: "", kind: KINDS[2], site: "", plant: plantsByDistance()[0].p.id, notes: "", needs: { w10: 0, w12: 2, sd: 0 }, rate: { w10: 115, w12: 130, sd: 150 }, date: "Tomorrow", start: "6:00 AM", plan: { tons: 600, hours: 10, drive: driveMin(plantsByDistance()[0].mi), loadDump: 20 } }; break;
-    case "replan": syncDraft(); break;
-    case "plan": syncDraft(); Object.keys(TYPES).forEach(t => d.needs[t] = 0); d.needs[arg1] = +arg2; toast(`Set to ${arg2} × ${TYPES[arg1].name}.`); break;
+      ui.draft = { site: "", kind: 2, plant: plantsByDistance()[0].p.id, date: "Tomorrow", startT: "06:00", needs: Object.fromEntries(Object.keys(TYPES).map((t, i) => [t, i === 1 ? 2 : 0])) }; break;
     case "cancel-job": ui.draft = null; break;
-    case "next": syncDraft(); d.step++; break;
-    case "prev": syncDraft(); d.step--; break;
     case "inc": syncDraft(); d.needs[arg1] = Math.min(20, d.needs[arg1] + 1); break;
     case "dec": syncDraft(); d.needs[arg1] = Math.max(0, d.needs[arg1] - 1); break;
     case "post": {
       syncDraft();
-      const id = "J-" + (1048 + S.jobs.length);
-      const pl = plant(d.plant), siteTxt = "Job site: " + (d.site.trim() || d.name.trim()), plTxt = `${pl.name}, ${pl.addr}`;
-      S.jobs.unshift({ id, name: d.name.trim(), kind: d.kind, pickup: d.kind === KINDS[1] ? plTxt : siteTxt, dropoff: d.kind === KINDS[1] ? siteTxt : plTxt, date: d.date, start: d.start, needs: { ...d.needs }, rate: { ...d.rate }, notes: d.notes, approved: false, assignments: [] });
+      const id = "J-" + (1048 + S.jobs.length), pl = plant(d.plant), site = d.site.trim(), del = d.kind === 1;
+      const siteTxt = "Job site: " + site, plTxt = `${pl.name}, ${pl.addr}`;
+      const sitePt = { lat: SITE.lat + 0.008, lng: SITE.lng + 0.008 }, plPt = { lat: pl.lat, lng: pl.lng };   // site pin: near the chosen city until the real app geocodes the address
+      const [hh, mm] = d.startT.split(":").map(Number), start = new Date(2000, 0, 1, hh, mm).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+      S.jobs.unshift({ id, name: site.split(",")[0], kind: KINDS[d.kind], kindIx: d.kind, pts: { pickup: del ? plPt : sitePt, dropoff: del ? sitePt : plPt },
+        pickup: del ? plTxt : siteTxt, dropoff: del ? siteTxt : plTxt, date: d.date, start, needs: { ...d.needs },
+        rate: Object.fromEntries(Object.keys(TYPES).map(t => [t, TYPES[t].rate])), notes: "", approved: false, assignments: [] });
       S.jobs[0].sentTo = 38 + Math.floor(Math.random() * 20);
       ui.draft = null; ui.view = "job:" + id; toast(`Sent to ${S.jobs[0].sentTo} vetted drivers. Watch the spots fill.`); simulateAccepts(id); break;
     }
@@ -1010,7 +1920,42 @@ function act(name, arg1, arg2, arg3, pick) {
       j.assignments.push({ truck: t.id, type: t.type, owner: ME_OWNER, status: "assigned", checkIn: null, hours: null, tickets: [] });
       toast(`${t.id} booked on ${j.name}.`); break;
     }
-    case "checkin": { const a = job(arg1).assignments.find(x => x.truck === arg2); a.status = "onsite"; a.checkIn = nowTime(); toast("Checked in."); break; }
+    case "checkin": { const a = job(arg1).assignments.find(x => x.truck === arg2); a.status = "onsite"; a.checkIn = nowTime(); logGps(`${arg2} checked in by hand at the job site.`); toast("Checked in."); break; }
+    case "clock-in": {
+      const far = arg2 === "far", today = todayFor(arg1);
+      S.shifts[arg1] = { inMs: demoNow(), far, breaks: [], outMs: null,
+        where: today.length ? (far ? "4.2 mi from the job site" : "at the job site") : (far ? "away from any job" : "with no job booked yet") };
+      if (!far) today.forEach(({ a }) => { if (a.status === "assigned") { a.status = "onsite"; a.checkIn = nowTime(); } });
+      logGps(`${arg1} clocked in ${S.shifts[arg1].where}.${far ? " Flagged: not at the job or plant." : ""}`);
+      toast(far ? "Clocked in. You're 4.2 mi from the job, so your time is flagged." : "Clocked in. GPS is on. Have a safe day."); break;
+    }
+    case "break-start": S.shifts[arg1].breaks.push({ s: demoNow(), e: null }); logGps(`${arg1} started a break.`); toast("Break started. Break time isn't paid."); break;
+    case "break-end": { const b = S.shifts[arg1].breaks[S.shifts[arg1].breaks.length - 1]; b.e = demoNow(); logGps(`${arg1} ended a break.`); toast(`Break over after ${dur(b.e - b.s)}. Back on the clock.`); break; }
+    case "clock-out": {
+      const sh = S.shifts[arg1], name = $("#co-sign").value.trim();
+      if (!name) { toast("Type your name to sign first."); return; }
+      const now = demoNow(); sh.breaks.forEach(b => { if (!b.e) b.e = now; }); sh.outMs = now; sh.sign = name;
+      const hrs = shiftHours(sh), first = todayFor(arg1).find(x => x.a.status !== "done");   // the day's hours go on the day's job
+      if (first) { first.a.status = "done"; first.a.hours = hrs; if (!first.a.checkIn) first.a.checkIn = fmtT(sh.inMs); }
+      delete S.gpsPaused[arg1]; logGps(`${arg1} clocked out after ${hrs} hrs. GPS off.`);
+      ui.view = null; toast(`Clocked out. ${hrs} hours sent to ${ME_OWNER} and the contractor.`); break;
+    }
+    case "corr-open": ui.corr = true; break;
+    case "corr-cancel": ui.corr = false; break;
+    case "corr-send": { const t = $("#corr-text").value.trim(); if (!t) { toast("Say what needs fixing first."); return; }
+      S.shifts[arg1].correction = { text: t, time: nowTime() }; ui.corr = false; toast(`Sent to ${ME_OWNER} and the contractor.`); break; }
+    case "clock-reset": delete S.shifts[arg1]; todayFor(arg1).forEach(({ a }) => { a.status = "assigned"; a.hours = null; a.checkIn = null; }); ui.corr = false; toast("Demo: a new day. Tap Clock in."); break;
+    case "gps-arrive": { const j = job(arg1), a = j.assignments.find(x => x.truck === arg2); a.status = "onsite"; a.checkIn = nowTime();
+      logGps(`${arg2} arrived at the job site. Checked in automatically.`); toast(`GPS: ${arg2} arrived at ${a.checkIn}. Checked in automatically and the clock started.`); break; }
+    case "gps-pause": S.gpsPaused[arg1] = !S.gpsPaused[arg1]; delete gpsStage[arg1];
+      logGps(`${arg1} GPS ${S.gpsPaused[arg1] ? "paused" : "resumed"} by the driver.`); toast(S.gpsPaused[arg1] ? "GPS paused. Dispatch sees your truck as paused." : "GPS back on."); break;
+    case "gps-real": {
+      const out = $("#gps-real"), fail = () => { out.hidden = false; out.textContent = "This preview can't read your phone's GPS. In the real app the driver allows location once, and it runs only while they're on the clock."; };
+      if (!navigator.geolocation) { fail(); return; }
+      out.hidden = false; out.textContent = "Finding your location…";
+      navigator.geolocation.getCurrentPosition(pos => { const c = pos.coords; out.textContent = `Your phone is at ${c.latitude.toFixed(5)}, ${c.longitude.toFixed(5)} (within ${Math.round(c.accuracy)} m). The real app sends this every 30 seconds.`; }, fail, { timeout: 10000, maximumAge: 60000 });
+      return;
+    }
     case "ticket": {
       const a = job(arg1).assignments.find(x => x.truck === arg2);
       const no = $("#t-no").value.trim(), tn = parseFloat($("#t-tons").value), file = $("#t-photo").files[0];
@@ -1022,7 +1967,13 @@ function act(name, arg1, arg2, arg3, pick) {
     case "checkout": {
       const a = job(arg1).assignments.find(x => x.truck === arg2), h = parseFloat($("#t-hours").value);
       if (isNaN(h) || h <= 0) { toast("Enter the hours worked."); return; }
-      a.status = "done"; a.hours = h; toast("Checked out. Sent to the contractor for approval."); break;
+      a.status = "done"; a.hours = h; delete S.gpsPaused[arg2]; logGps(`${arg2} checked out. GPS off.`); toast("Checked out. GPS is off. Sent to the contractor for approval."); break;
+    }
+    case "inscard": {
+      const file = $("#ic-" + arg1).files[0]; if (!file) { toast("Choose a photo of the card first."); return; }
+      const save = url => { S.insCards[arg1] = { name: file.name, url, date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) }; toast(`Insurance card saved for ${arg1}.`); render(); };
+      if (file.type.startsWith("image/")) { const r = new FileReader(); r.onload = () => save(r.result); r.readAsDataURL(file); } else save(null);
+      return;
     }
     case "coi": if (!$("#coi").files.length) { toast("Choose the certificate file first."); return; } S.insuranceRenewed = true; toast("Uploaded. Trucks2U reviews it within 1 business day."); break;
     case "verify": { const a = S.applicants.find(x => x.id === arg1); a.checks[+arg2][1] = "good"; a.checks[+arg2][2] = "Reviewed and approved by admin"; break; }
@@ -1035,7 +1986,8 @@ function act(name, arg1, arg2, arg3, pick) {
       try { navigator.clipboard.writeText("https://" + link).then(() => toast("Tracking link copied. Your customer sees trucks and ETAs, no login."), () => toast("Tracking link: " + link)); } catch (e) { toast("Tracking link: " + link); }
       return;
     }
-    case "driver": S.driverOf[arg1] = pick; toast(`${pick} is driving ${arg1}. They get the job texts.`); break;
+    case "driver": { const t = MY_TRUCKS.find(x => x.id === arg1); t.type = $("#typ-" + arg1).value; S.driverOf[arg1] = pick;
+      toast(`Saved. ${arg1} is a ${TYPES[t.type].name.toLowerCase()}, driven by ${pick}.`); break; }
     case "suggest": toast("In the full app this sends your correction to Trucks2U to check."); return;
     case "reject": { const a = S.applicants.find(x => x.id === arg1); a.checks[+arg2][1] = "bad"; a.checks[+arg2][2] = "Rejected. The owner got a text asking for a new document."; toast("Rejected. The owner was asked to upload a new one."); break; }
     case "su-start": ui.signup = newSignup(); break;
@@ -1046,6 +1998,16 @@ function act(name, arg1, arg2, arg3, pick) {
     case "su-bank": ui.signup.f.bank = true; toast("Bank connected (sample)."); break;
     case "su-submit": submitSignup(); toast("Sent for review."); break;
     case "su-admin": { const id = S.applicants[0].id; ui = { role: "admin", tab: "vet", view: "app:" + id, draft: null }; break; }
+    case "st-save": syncSettings(); toast("Settings saved."); break;
+    case "st-add": { syncSettings(); const k = "x" + Date.now().toString(36);
+      TYPES[k] = { name: "New truck type", short: "NEW", spec: "", tons: 20, rate: 140 }; toast("Added. Fill in the details and save."); break; }
+    case "st-del": { syncSettings();
+      if (Object.keys(TYPES).length <= 1) { toast("Keep at least one truck type."); return; }
+      if (typeInUse(arg1)) { toast(`${TYPES[arg1].name} is used by trucks or jobs, so it can't be removed.`); return; }
+      const nm = TYPES[arg1].name; delete TYPES[arg1]; toast(`${nm} removed.`); break; }
+    case "st-kadd": { const v = $("#st-kind-new").value.trim(); if (!v) { toast("Type the new job type first."); return; }
+      syncSettings(); KINDS.push(v); toast(`Added "${v}".`); break; }
+    case "st-kdel": syncSettings(); KINDS.splice(+arg1, 1); toast("Job type removed."); break;
     case "approve-app": S.approvedApplicants.push(arg1); ui.view = null; toast("Approved. The owner can now accept jobs."); break;
   }
   render();
@@ -1061,6 +2023,21 @@ document.addEventListener("click", e => {
   const a = e.target.closest("[data-act]");
   if (a) { const [n, x, y, z] = a.dataset.act.split(":"); const pk = a.dataset.pick ? document.getElementById(a.dataset.pick).value : null; act(n, x, y, z, pk); }
 });
+// Phone fields format themselves as (510) 555-0142 while you type.
+function fmtPhone(v) {
+  const d = v.replace(/\D/g, "").replace(/^1/, "").slice(0, 10);   // US numbers; a leading 1 is dropped
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+document.addEventListener("input", e => {
+  const el = e.target; if (!el.hasAttribute || !el.hasAttribute("data-phone")) return;
+  const digitsBefore = el.value.slice(0, el.selectionStart).replace(/\D/g, "").replace(/^1/, "").length;
+  el.value = fmtPhone(el.value);
+  let pos = 0, seen = 0;   // put the cursor back after the same digit
+  while (pos < el.value.length && seen < digitsBefore) { if (/\d/.test(el.value[pos])) seen++; pos++; }
+  el.setSelectionRange(pos, pos);
+}, true);
 document.addEventListener("input", e => {
   const k = e.target.dataset && e.target.dataset.f;
   if (k && ui.signup) ui.signup.f[k] = e.target.type === "checkbox" ? e.target.checked : e.target.value;
@@ -1074,17 +2051,29 @@ document.addEventListener("change", e => {
     if (file.type.startsWith("image/")) { const r = new FileReader(); r.onload = () => { su.files[fk] = { name: file.name, url: r.result }; render(); }; r.readAsDataURL(file); }
     else { su.files[fk] = { name: file.name, url: null }; render(); }
   }
-  if (ui.draft && ui.draft.step === 1 && (e.target.id === "f-plant" || e.target.id === "f-kind")) { syncDraft(); render(); }
+  if (ui.draft && (e.target.id === "f-plant" || e.target.id === "f-kind")) { syncDraft(); render(); }
+  if (e.target.id && e.target.id.startsWith("st-") && e.target.id !== "st-kind-new") syncSettings();   // settings edits stick even without pressing Save
   if (e.target.id === "pl-q") { ui.plq = e.target.value; render(); }
   if (e.target.id === "pl-from") { ui.from = e.target.value; SITE = FROM[ui.from]; render(); }
 });
 document.addEventListener("input", e => {
-  if (ui.draft && ui.draft.step === 1 && e.target.id === "f-name") {
-    ui.draft.name = e.target.value;
-    const b = $("[data-act=next]"); if (b) b.disabled = !e.target.value.trim();
+  if (ui.draft && e.target.id === "f-site") {
+    ui.draft.site = e.target.value;
+    const b = $("[data-act=post]"), n = Object.values(ui.draft.needs).reduce((a, c) => a + c, 0); if (b) b.disabled = !e.target.value.trim() || !n;
   }
+
 });
-$("#reset").addEventListener("click", () => { S = seed(); ui = { role: ui.role, tab: TABS[ui.role][0][0], view: null, draft: null }; render(); toast("Demo reset."); });
+$("#reset").addEventListener("click", () => { loadSettings(); S = seed(); MY_TRUCKS.forEach((t, i) => t.type = MY_TRUCKS_SEED[i]); ui = { role: ui.role, tab: TABS[ui.role][0][0], view: null, draft: null }; render(); toast("Demo reset."); });
+// Phone or computer layout; remembered in this browser only.
+function setLayout(l) {
+  document.documentElement.dataset.layout = l;
+  document.querySelectorAll("[data-lay]").forEach(b => b.setAttribute("aria-pressed", b.dataset.lay === l));
+  try { localStorage.setItem("t2u-layout", l); } catch (e) {}
+}
+document.querySelectorAll("[data-lay]").forEach(b => b.addEventListener("click", () => setLayout(b.dataset.lay)));
+let savedLayout = "phone";
+try { savedLayout = localStorage.getItem("t2u-layout") || "phone"; } catch (e) {}
+setLayout(savedLayout);
 // Direct links: #signup opens the truck owner sign-up, as a new driver would see it.
 function openFromHash() {
   if (location.hash === "#signup") { ui = { role: "owner", tab: "docs", view: null, draft: null, signup: newSignup() }; }
