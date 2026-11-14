@@ -55,7 +55,7 @@ body { background: var(--bg); color: var(--fg); font: 16px/1.4 var(--font); }
 .brand { font: 800 19px/1 var(--font); letter-spacing: -.3px; background: var(--sheet); padding: 11px 16px; border-radius: 999px; box-shadow: 0 2px 10px rgb(0 0 0 / .18); }
 .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; background: var(--sheet); border-radius: 20px 20px 0 0; box-shadow: 0 -4px 24px rgb(0 0 0 / .14); padding: 10px 18px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 14px; max-height: 78%; overflow-y: auto; }
 .sheet::before { content: ""; width: 38px; height: 5px; border-radius: 9px; background: var(--line); justify-self: center; }
-.full { position: absolute; inset: 0; z-index: 6; background: var(--sheet); padding: 18px; display: grid; gap: 14px; align-content: start; overflow-y: auto; }
+.full { position: absolute; inset: 0; z-index: 6; background: var(--sheet); padding: 18px; display: grid; gap: 14px; align-content: start; grid-auto-rows: max-content; overflow-y: auto; }
 h1 { font: 800 26px/1.15 var(--font); margin: 0; letter-spacing: -.4px; text-wrap: balance; }
 h2 { font: 700 20px/1.2 var(--font); margin: 0; letter-spacing: -.2px; }
 p { margin: 0; }
@@ -74,7 +74,8 @@ p { margin: 0; }
 .place .ic { width: 38px; height: 38px; border-radius: 50%; background: var(--chip); display: grid; place-items: center; flex: none; font-size: 16px; }
 .place b { display: block; font-weight: 600; }
 .place span { font-size: 14px; color: var(--muted); }
-.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; flex: none; }
+.full > .chips { min-height: 40px; flex-shrink: 0; overflow-y: hidden; }
 .chip { border: 0; background: var(--chip); color: var(--fg); font: 600 14px var(--font); padding: 10px 14px; border-radius: 999px; white-space: nowrap; cursor: pointer; }
 .chip[aria-pressed="true"] { background: var(--btn); color: var(--btn-fg); }
 .opt { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border: 2px solid transparent; border-radius: 12px; cursor: pointer; }
@@ -180,7 +181,7 @@ const TRUCKS = {
   lb:  { name: "Lowboy", short: "LB", seat: "Moves rollers and pavers", rate: 165 }
 };
 const MAIN = ["w10", "w12", "sd"];   // shown first; the rest sit under "More truck types"
-const MIN_HRS = 6;                     // drivers are paid by the hour, 6-hour minimum
+let MIN_HRS = 6;                       // drivers are paid by the hour, 6-hour minimum (admin > Settings)
 const RADII = [10, 25, 50, 75, 100];   // miles
 // Most jobs are booked for tomorrow or a few days out
 const DAY0 = new Date();
@@ -199,7 +200,10 @@ const dayMin = () => job.dayMin + (Date.now() - job.dayT0) / 1000 * 4;
 const startOf = m => job.crew.indexOf(m) < (job.plantN || 0) ? "plant" : "site";
 const startPt = m => startOf(m) === "plant" ? PLANTS[job.plant] : job.place;
 const TIMES = ["5:00 AM", "5:30 AM", "6:00 AM", "6:30 AM", "7:00 AM", "8:00 AM", "6:00 PM", "7:00 PM", "8:00 PM"];
-const FEE = 0.07;   // taken from the driver's pay, like a broker (brokers take 10 to 12%)
+let FEE = 0.07;          // taken from the driver's pay, like a broker (brokers take 10 to 12%)
+let BROKER_PCT = 0.11;   // what a typical broker keeps, shown to contractors for comparison
+let FLEET_FEE = 15;      // placeholder: $ per truck per day when a fleet dispatches its own trucks
+let PAYDAY = "Friday";   // weekly payout day
 const MATERIALS = ["Haul off grindings", "Bring asphalt", "Both"];
 const PLACES = [
   { name: "Main St & Oak Ave", sub: "Oakland, CA", x: 205, y: 300 },
@@ -209,7 +213,40 @@ const PLACES = [
   { name: "Elm St school lot", sub: "Fremont, CA", x: 300, y: 600 }
 ];
 const NAMES = ["Marco R.", "Luis O.", "Dana K.", "Tam N.", "Ben C.", "Ana R.", "Raj P.", "Mike H.", "Joe S.", "Carlos M.", "Steve B.", "Rosa G.", "Dev P.", "Frank T.", "Lena W.", "Omar A.", "Jim W.", "Tony V.", "Kim L.", "Sal D."];
-const TYPES = Object.keys(TRUCKS);
+let TYPES = Object.keys(TRUCKS);
+
+/* ---------- Business settings (admin > Settings) ---------- */
+// The app has no server yet, so settings are saved in this browser only.
+const SET_KEY = "trucks2u-settings-v1";
+const clone = o => JSON.parse(JSON.stringify(o));
+const pct = n => +(n * 100).toFixed(2) + "%";
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const currentSettings = () => clone({ trucks: TRUCKS, main: MAIN, fee: FEE, minHrs: MIN_HRS, brokerPct: BROKER_PCT, fleetFee: FLEET_FEE, payday: PAYDAY, materials: MATERIALS, times: TIMES, radii: RADII });
+const DEFAULTS = currentSettings();
+function applySettings(st) {
+  st = { ...clone(DEFAULTS), ...clone(st) };
+  // A removed truck type is kept but switched off, so old jobs and sample data still show its name
+  Object.keys(DEFAULTS.trucks).forEach(k => { if (!st.trucks[k]) st.trucks[k] = { ...DEFAULTS.trucks[k], off: true }; });
+  Object.keys(TRUCKS).forEach(k => delete TRUCKS[k]); Object.assign(TRUCKS, st.trucks);
+  MAIN.splice(0, MAIN.length, ...st.main.filter(k => TRUCKS[k]));
+  FEE = st.fee; MIN_HRS = st.minHrs; BROKER_PCT = st.brokerPct; FLEET_FEE = st.fleetFee; PAYDAY = st.payday;
+  MATERIALS.splice(0, MATERIALS.length, ...st.materials);
+  TIMES.splice(0, TIMES.length, ...st.times);
+  RADII.splice(0, RADII.length, ...st.radii);
+  TYPES = Object.keys(TRUCKS).filter(t => !TRUCKS[t].off);
+}
+function saveSettings(st) { applySettings(st); try { localStorage.setItem(SET_KEY, JSON.stringify(currentSettings())); return true; } catch (e) { return false; } }
+try { const saved = JSON.parse(localStorage.getItem(SET_KEY) || "null"); if (saved && saved.trucks) applySettings(saved); } catch (e) {}
+// After settings change, move any choice that no longer exists to one that does
+function syncState() {
+  const near = (v, list) => list.includes(v) ? v : list.reduce((b, x) => Math.abs(x - v) < Math.abs(b - v) ? x : b, list[0]);
+  Object.keys(TRUCKS).forEach(t => { if (C.counts[t] == null || TRUCKS[t].off) C.counts[t] = 0; });
+  if (!TYPES.includes(C.focus)) C.focus = TYPES[0];
+  if (!MATERIALS.includes(C.material)) C.material = MATERIALS[0];
+  if (!TIMES.includes(C.time)) C.time = TIMES.includes("6:00 AM") ? "6:00 AM" : TIMES[0];
+  C.radius = near(C.radius, RADII); D.radius = near(D.radius, RADII);
+  C.hours = Math.max(C.hours, MIN_HRS);
+}
 // Sample drivers spread around the map (positions in map units)
 const DRIVERS = NAMES.map((n, i) => ({
   id: "d" + i, name: n, type: ["w10", "w12", "sd", "w12", "bd", "w10", "tr", "w12", "sd", "wt", "w10", "w12", "lb", "sd", "w12", "sdd", "w10", "fb", "w12", "sd"][i], rating: (4.7 + ((i * 7) % 3) / 10).toFixed(1),
@@ -235,6 +272,7 @@ let F = { tab: "requests", picked: [], menu: false };
 let C = { screen: "home", place: null, material: MATERIALS[0], counts: Object.fromEntries(Object.keys(TRUCKS).map(t => [t, t === "w12" ? 2 : 0])), focus: "w12", note: "", plantN: 0, plant: 0, day: 1, time: "6:00 AM", hours: 8, menu: false, radius: 25, more: false };
 let A = { tab: "review", open: null, menu: false };   // Trucks2U admin
 let D = { page: null, jobTab: "up", openJob: null, radius: 50, avail: ["Weekdays", "Saturdays"], online: false, screen: "home", offerLeft: 0, earnedToday: 0, tickets: [], menu: false, signup: null, approved: true };
+syncState();
 let job = null;   // the one live request, shared by both apps
 let toastTimer, offerTimer, tick;
 
@@ -386,7 +424,7 @@ function cOptions() {
   const shown = C.more ? TYPES : TYPES.filter(t => MAIN.includes(t) || C.counts[t]);
   return `<div class="top"><button class="round" data-act="c-where" aria-label="Back">←</button><span class="pill">${esc(C.place.name)}</span><span style="width:44px"></span></div>
     <div class="sheet">
-      <div class="chips">${MATERIALS.map(m => `<button class="chip" data-act="c-mat:${m}" aria-pressed="${C.material === m}">${m}</button>`).join("")}</div>
+      <div class="chips">${MATERIALS.map(m => `<button class="chip" data-act="c-mat:${esc(m)}" aria-pressed="${C.material === m}">${esc(m)}</button>`).join("")}</div>
       <div class="stack" style="gap:4px">${shown.map(t => `<div class="opt ${C.focus === t ? "on" : ""}" data-act="c-focus:${t}" tabindex="0">
           <svg viewBox="0 0 58 30" width="58" height="30" aria-hidden="true"><rect x="2" y="6" width="34" height="16" rx="2" fill="var(--fg)"/><rect x="38" y="10" width="16" height="12" rx="3" fill="var(--fg)"/><circle cx="12" cy="25" r="4" fill="var(--muted)"/><circle cx="26" cy="25" r="4" fill="var(--muted)"/><circle cx="46" cy="25" r="4" fill="var(--muted)"/></svg>
           <div><div class="name">${TRUCKS[t].name}</div><div class="meta">${nearby(t)} nearby · ${4 + TYPES.indexOf(t) * 3} min · ${TRUCKS[t].seat}</div></div>
@@ -403,7 +441,7 @@ function cOptions() {
       <div class="stack" style="gap:6px"><span class="small"><b>When</b></span>
         <div class="chips">${[1, 2, 3, 4, 5].map(d => `<button class="chip" data-act="c-day:${d}" aria-pressed="${C.day === d}">${chipDay(d)}</button>`).join("")}<button class="chip" data-act="c-day:0" aria-pressed="${C.day === 0}">Today, right now</button></div>
         ${C.day ? `<div class="row" style="gap:10px;align-items:end"><label class="f" style="flex:1">Start time<select id="c-time">${TIMES.map(t => `<option ${t === C.time ? "selected" : ""}>${t}</option>`).join("")}</select></label>
-          <label class="f" style="flex:1">About how many hours<select id="c-hours">${[6, 7, 8, 9, 10, 11, 12].map(h => `<option value="${h}" ${h === C.hours ? "selected" : ""}>${h} hours</option>`).join("")}</select></label></div>` : ""}</div>
+          <label class="f" style="flex:1">About how many hours<select id="c-hours">${Array.from({ length: Math.max(1, 13 - Math.min(6, MIN_HRS)) }, (_, i) => Math.min(6, MIN_HRS) + i).filter(h => h >= MIN_HRS).map(h => `<option value="${h}" ${h === C.hours ? "selected" : ""}>${h} hours</option>`).join("")}</select></label></div>` : ""}</div>
       <div class="row small"><span class="muted">Hourly, ${MIN_HRS}-hour minimum per truck</span><b>Est. ${money(est)}</b></div>
       <button class="btn" data-act="c-request" ${n ? "" : "disabled"}>Request ${n} truck${n === 1 ? "" : "s"} ${C.day === 0 ? "now" : C.day === 1 ? "for tomorrow" : "for " + dayLabel(C.day)}</button>
     </div>`;
@@ -423,7 +461,7 @@ function cSearching() {
         <p class="muted small">Sent to ${job.sentTo} vetted drivers within ${job.radius} miles. ${later ? "Drivers can accept any time until every spot is filled. We'll text you when it's full." : "First to accept get the job."}</p></div>
       <div class="bar"><i style="width:${Math.round(100 * got / need)}%"></i></div>
       ${got ? `<div>${crewRows()}</div>` : ""}
-      ${job.radius < 100 ? `<button class="btn light" data-act="c-widen">Not enough trucks? Widen to ${RADII[RADII.indexOf(job.radius) + 1]} miles</button>` : ""}
+      ${RADII.some(r => r > job.radius) ? `<button class="btn light" data-act="c-widen">Not enough trucks? Widen to ${RADII.find(r => r > job.radius)} miles</button>` : ""}
       <button class="btn light" data-act="c-cancel">${later ? "Cancel job" : "Cancel request"}</button>
     </div>`;
 }
@@ -456,7 +494,7 @@ function cDone() {
     <h1>Job complete</h1><p class="muted">${esc(job.place.name)} · ${job.crew.length} trucks</p>
     <div class="kv">${job.crew.map(m => `<div class="row"><span>${esc(m.name)} · ${TRUCKS[m.type].short} · ${H(m).toFixed(1)} hrs</span><span>${money(H(m) * TRUCKS[m.type].rate)}</span></div>`).join("")}
       <div class="row" style="border-top:1px solid var(--line);padding-top:10px"><span>Total, charged to your bank account</span><span class="big" style="font-size:24px">${money(bill)}</span></div></div>
-    <p class="muted small">Paid by the hour, ${MIN_HRS}-hour minimum per truck. A broker at 11% would have kept about ${money(bill * 0.11)}. Trucks2U's 7% comes out of the drivers' pay, not your bill.</p>
+    <p class="muted small">Paid by the hour, ${MIN_HRS}-hour minimum per truck. A broker at ${pct(BROKER_PCT)} would have kept about ${money(bill * BROKER_PCT)}. Trucks2U's ${pct(FEE)} comes out of the drivers' pay, not your bill.</p>
     <div class="stack"><b>Rate your drivers</b><div class="stars" role="group" aria-label="Rating">${[1, 2, 3, 4, 5].map(i => `<button data-act="c-star:${i}" class="${i <= (job.stars || 0) ? "on" : ""}" aria-label="${i} stars">★</button>`).join("")}</div></div>
     <button class="btn" data-act="c-reset">Done</button>
   </div>`;
@@ -475,9 +513,9 @@ function cMenu() {
 function myOpenSlot() { return job && job.status === "searching" && !job.crew.some(m => m.id === "me") && !job.declined && job.wantByType[ME.type] > job.crew.filter(m => m.type === ME.type).length; }
 /* Open jobs drivers can pick from (sample jobs from other contractors + the demo request) */
 const BOARD = [
-  { dayN: 1, start: "7:00 AM", hours: 8, place: PLACES[2], material: "Haul off dirt", contractor: "Bay Cities Grading", crating: "4.8", trucks: 6, left: 2, rate: 130, contact: "Maria, (510) 555-0163", note: "Dump site is the Richmond yard on Cutting Blvd." },
-  { dayN: 2, start: "5:30 AM", hours: 10, place: PLACES[1], material: "Haul off grindings", contractor: "Delta Paving", crating: "4.6", trucks: 10, left: 4, rate: 130, contact: "Sam, (510) 555-0188" },
-  { dayN: 3, start: "6:00 AM", hours: 8, place: { name: "Foothill Blvd overlay", sub: "Castro Valley, CA", x: 270, y: 420 }, material: "Bring asphalt", contractor: "East Bay Paving", crating: "4.9", trucks: 5, left: 1, rate: 130, contact: "Vic, (510) 555-0121", startAt: "DeSilva Gates asphalt plant, Dublin", note: "Load at 5:30 AM. Tarp every load." }
+  { dayN: 1, start: "7:00 AM", hours: 8, place: PLACES[2], material: "Haul off dirt", contractor: "Bay Cities Grading", crating: "4.8", trucks: 6, left: 2, get rate() { return TRUCKS[ME.type].rate; }, contact: "Maria, (510) 555-0163", note: "Dump site is the Richmond yard on Cutting Blvd." },
+  { dayN: 2, start: "5:30 AM", hours: 10, place: PLACES[1], material: "Haul off grindings", contractor: "Delta Paving", crating: "4.6", trucks: 10, left: 4, get rate() { return TRUCKS[ME.type].rate; }, contact: "Sam, (510) 555-0188" },
+  { dayN: 3, start: "6:00 AM", hours: 8, place: { name: "Foothill Blvd overlay", sub: "Castro Valley, CA", x: 270, y: 420 }, material: "Bring asphalt", contractor: "East Bay Paving", crating: "4.9", trucks: 5, left: 1, get rate() { return TRUCKS[ME.type].rate; }, contact: "Vic, (510) 555-0121", startAt: "DeSilva Gates asphalt plant, Dublin", note: "Load at 5:30 AM. Tarp every load." }
 ];
 function board() {
   const l = BOARD.map((b, i) => ({ ...b, key: String(i), date: dayLabel(b.dayN) }));
@@ -571,7 +609,7 @@ function dDone() {
     <div class="kv"><div class="row"><span>Clocked in</span><span>${fmtMin(m.clockIn)}</span></div><div class="row"><span>Clocked out</span><span>${fmtMin(m.clockOut)}</span></div>
       <div class="row"><span>Hours worked</span><span>${worked.toFixed(1)}${worked < MIN_HRS ? ` (paid ${MIN_HRS}, the minimum)` : ""}</span></div>
       <div class="row"><span>${paid.toFixed(1)} hrs × $${TRUCKS[ME.type].rate} · ${m.loads || 0} loads</span><span>${money(pay)}</span></div>
-      <div class="row"><span>Trucks2U fee (7%)</span><span>−${money(pay * FEE)}</span></div>
+      <div class="row"><span>Trucks2U fee (${pct(FEE)})</span><span>−${money(pay * FEE)}</span></div>
       <div class="row" style="border-top:1px solid var(--line);padding-top:10px"><span>You earned</span><span class="big" style="font-size:26px">${money(pay * (1 - FEE))}</span></div></div>
     <p class="muted small">Your clock-in and clock-out times went to the contractor. Paid to your bank within 2 business days after they approve your hours and ${D.tickets.length} ticket${D.tickets.length === 1 ? "" : "s"}.</p>
     <button class="btn" data-act="d-back">Back to map</button>
@@ -581,7 +619,7 @@ function dMenu() {
   return `<div class="menu" data-act="d-menu-close"><div>
     <button class="place" data-act="d-page:profile" style="margin-bottom:6px"><span class="avatar">MR</span><span><b>${ME.name}</b><span>★ ${ME.rating} · View profile</span></span></button>
     <button class="place" data-act="d-page:jobs"><span class="ic">📅</span><span><b>My jobs</b><span>${myUpcoming().length} upcoming</span></span></button>
-    <button class="place" data-act="d-page:earn"><span class="ic">$</span><span><b>Earnings</b><span>Paid every Friday</span></span></button>
+    <button class="place" data-act="d-page:earn"><span class="ic">$</span><span><b>Earnings</b><span>Paid every ${PAYDAY}</span></span></button>
     <button class="place" data-act="d-page:profile"><span class="ic">✓</span><span><b>Documents</b>${MYDOCS[2][2] === "warn" ? '<span style="color:var(--warn)">Insurance expires in 19 days</span>' : "<span>All verified</span>"}</span></button>
     <button class="place" data-act="d-signup"><span class="ic">+</span><span><b>Sign up as a new driver</b><span>See what new drivers fill in</span></span></button>
     <button class="place" data-mode="welcome"><span class="ic">⇄</span><span><b>Switch account</b><span>Demo: see the contractor or fleet side</span></span></button>
@@ -589,8 +627,8 @@ function dMenu() {
 }
 /* Driver profile, My jobs and Earnings */
 const UPCOMING = [
-  { dayN: 3, hours: 8, start: "6:00 AM", place: "Mission Blvd resurfacing", sub: "Hayward, CA", material: "Bring asphalt", contractor: "Lucas Paving", trucks: 8, rate: 130, contact: "Al, (510) 555-0100", note: "Stage on Industrial Pkwy. Tarp every load." },
-  { dayN: 5, hours: 8, start: "7:00 PM", place: "Elm St school lot", sub: "Fremont, CA", material: "Haul off grindings", contractor: "Lucas Paving", trucks: 4, rate: 130, contact: "Al, (510) 555-0100", note: "Night job. Enter from the back gate on Elm St." }
+  { dayN: 3, hours: 8, start: "6:00 AM", place: "Mission Blvd resurfacing", sub: "Hayward, CA", material: "Bring asphalt", contractor: "Lucas Paving", trucks: 8, get rate() { return TRUCKS[ME.type].rate; }, contact: "Al, (510) 555-0100", note: "Stage on Industrial Pkwy. Tarp every load." },
+  { dayN: 5, hours: 8, start: "7:00 PM", place: "Elm St school lot", sub: "Fremont, CA", material: "Haul off grindings", contractor: "Lucas Paving", trucks: 4, get rate() { return TRUCKS[ME.type].rate; }, contact: "Al, (510) 555-0100", note: "Night job. Enter from the back gate on Elm St." }
 ];
 const PAST = [
   { date: dayLabel(-1), place: "Harbor Blvd & 2nd St", sub: "Richmond, CA", contractor: "Lucas Paving", worked: 9, tickets: 14, rate: 130 },
@@ -640,7 +678,7 @@ function dJobs() {
 function dEarn() {
   const week = PAST.reduce((s, j) => s + paidHrs(j.worked) * j.rate * (1 - FEE), 0) + D.earnedToday;
   return page("Earnings", `
-    <div class="stack" style="gap:4px"><span class="muted small">This week</span><div class="big">${money(week)}</div><p class="muted small">After the 7% Trucks2U fee. Paid every Friday to your bank account ending 2231.</p></div>
+    <div class="stack" style="gap:4px"><span class="muted small">This week</span><div class="big">${money(week)}</div><p class="muted small">After the ${pct(FEE)} Trucks2U fee. Paid every ${PAYDAY} to your bank account ending 2231.</p></div>
     <div>${D.earnedToday ? `<div class="doc"><div><b>Today</b><div class="muted small">Waiting for the contractor to approve your hours</div></div><b>${money(D.earnedToday)}</b></div>` : ""}
       ${PAST.map(j => `<div class="doc"><div><b>${j.date}</b><div class="muted small">${esc(j.contractor)} · ${paidHrs(j.worked)} hrs × $${j.rate}</div></div><b>${money(paidHrs(j.worked) * j.rate * (1 - FEE))}</b></div>`).join("")}</div>
     <div class="kv"><div class="row"><span>Last week</span><b>$6,214</b></div><div class="row"><span>This year</span><b>$71,860</b></div></div>`);
@@ -674,7 +712,7 @@ function dSignup() {
   const inp = (k, label, extra = "") => `<label class="f">${label}<input id="su-${k}" value="${esc(s[k] || "")}" ${extra}></label>`;
   const next = `<button class="btn" data-act="su-next" ${suValid() ? "" : "disabled"}>Continue</button>`;
   if (s.step === 1) return `<div class="full" data-su>${head(1, "Drive with Trucks2U")}
-    <p class="muted">Get dump truck jobs near you. No broker. You keep 93%, not 88 to 90%.</p>
+    <p class="muted">Get dump truck jobs near you. No broker. You keep ${pct(1 - FEE)}, not 88 to 90%.</p>
     ${inp("name", "Full legal name")}${inp("phone", "Mobile number", 'inputmode="tel"')}${inp("email", "Email", 'inputmode="email"')}
     ${inp("city", "Home base (city)", 'placeholder="e.g. Hayward, CA"')}${inp("company", "Company name (if you have one)")}
     <label class="f">Years driving dump trucks<select id="su-years">${["Less than 1", "1 to 3", "3 to 5", "5 to 10", "More than 10"].map(y => `<option ${s.years === y ? "selected" : ""}>${y}</option>`).join("")}</select></label>
@@ -756,7 +794,8 @@ function fHome() {
   } else {
     const rows = FLEET.trucks.filter(k => k.status !== "offline").map((k, i) => ({ k, amt: [1180, 1340, 1240, 1410, 1560, 1490, 0, 1520][i] || 0 }));
     const week = 31840;
-    body = `<div class="stack" style="gap:4px"><span class="muted small">This week</span><div class="big">${money(week)}</div><p class="muted small">After the Trucks2U fee. Paid out every Friday.</p></div>
+    body = `<div class="stack" style="gap:4px"><span class="muted small">This week</span><div class="big">${money(week)}</div><p class="muted small">After the Trucks2U fee. Paid out every ${PAYDAY}.</p></div>
+      <p class="muted small">Dispatching your own trucks to your own customers through the app: ${money(FLEET_FEE)} per truck per day.</p>
       <div>${rows.map(({ k, amt }) => `<div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><span>${k.id} · ${esc(k.driver)}</span><b>${money(amt)} today</b></div>`).join("")}</div>`;
   }
   return `<div class="top"><button class="round" data-act="f-menu" aria-label="Menu">☰</button><span class="pill">${working} of ${on} trucks working</span><span style="width:44px"></span></div>
@@ -831,20 +870,91 @@ function aHome() {
     : `<p class="muted">Nobody is waiting. New sign-ups show up here.</p>`;
   else if (A.tab === "expiring") body = `<p class="muted small" style="margin:0">Drivers get a text 30, 14 and 3 days before a document expires. When it expires, they can't take new jobs until a new one is checked.</p>` +
     EXPIRING.map(e => `<div class="doc"><div><b>${esc(e.name)}</b><div class="small" style="color:var(--warn)">${esc(e.doc)} expires ${esc(e.when)}</div></div><button class="chip" data-act="a-remind">Remind</button></div>`).join("");
+  else if (A.tab === "settings") body = aSettings();
   else body = ROSTER.map(r => `<div class="doc"><div><b>${esc(r.name)}</b><div class="muted small">${TRUCKS[r.type].name} · ${esc(r.city)}</div></div>
       <div class="row" style="gap:8px"><span class="tag ${r.status === "Approved" ? "go" : ""}">${r.status}</span><button class="chip" data-act="a-suspend:${esc(r.name)}">${r.status === "Suspended" ? "Reinstate" : "Suspend"}</button></div></div>`).join("");
   return `<div class="full">
     <div class="row"><button class="round" data-act="a-menu" aria-label="Menu" style="box-shadow:none;background:var(--chip)">☰</button><span class="tag">Trucks2U admin</span></div>
     <div class="row" style="gap:8px">${[[ROSTER.filter(r => r.status === "Approved").length + 120, "Approved drivers"], [APPS.length, "Waiting for review"], [EXPIRING.length, "Expiring soon"]].map(([n, l]) => `<div style="flex:1;background:var(--chip);border-radius:12px;padding:10px 12px"><div style="font-size:22px;font-weight:800">${n}</div><div class="muted small">${l}</div></div>`).join("")}</div>
-    <div class="chips">${[["review", `To review · ${APPS.length}`], ["expiring", "Expiring"], ["drivers", "Drivers"]].map(([k, l]) => `<button class="chip" data-act="a-tab:${k}" aria-pressed="${A.tab === k}">${l}</button>`).join("")}</div>
+    <div class="chips">${[["review", `To review · ${APPS.length}`], ["expiring", "Expiring"], ["drivers", "Drivers"], ["settings", "Settings"]].map(([k, l]) => `<button class="chip" data-act="a-tab:${k}" aria-pressed="${A.tab === k}">${l}</button>`).join("")}</div>
     <div>${body}</div>
   </div>`;
+}
+/* ---------- Admin: business settings ---------- */
+const TA = "width:100%;font:500 15px var(--font);color:var(--fg);background:var(--chip);border:2px solid transparent;border-radius:10px;padding:11px 12px;resize:vertical";
+const toDraft = st => ({
+  trucks: Object.entries(st.trucks).filter(([, t]) => !t.off).map(([key, t]) => ({ key, name: t.name, short: t.short, seat: t.seat, rate: t.rate, main: st.main.includes(key) })),
+  fee: +(st.fee * 100).toFixed(2), minHrs: st.minHrs, brokerPct: +(st.brokerPct * 100).toFixed(2), fleetFee: st.fleetFee, payday: st.payday,
+  materials: st.materials.join("\n"), times: st.times.join("\n"), radii: st.radii.join(", ")
+});
+const lines = t => String(t).split(/\n/).map(x => x.trim()).filter(Boolean);
+// Check the form and turn it into settings. Returns { err } when something needs fixing.
+function fromDraft(d) {
+  const num = (v, label, min, max) => { const n = Number(String(v).replace(/[$%,\s]/g, "")); if (String(v).trim() === "" || !isFinite(n) || n < min || n > max) throw `${label} must be a number from ${min} to ${max}.`; return n; };
+  try {
+    if (!d.trucks.length) throw "Keep at least one truck type.";
+    const trucks = {}, main = [];
+    d.trucks.forEach((t, i) => {
+      const name = String(t.name).trim(); if (!name) throw `Truck type ${i + 1} needs a name.`;
+      trucks[t.key] = { name, short: String(t.short).trim() || name.split(/\s+/).map(w => w[0]).join("").slice(0, 3).toUpperCase(), seat: String(t.seat).trim(), rate: num(t.rate, `The hourly rate for ${name}`, 1, 1000) };
+      if (t.main) main.push(t.key);
+    });
+    Object.keys(TRUCKS).forEach(k => { if (!trucks[k]) trucks[k] = { ...TRUCKS[k], off: true }; });   // removed types stay switched off
+    const times = lines(d.times).map(t => t.toUpperCase().replace(/\s*(AM|PM)$/, " $1"));
+    const bad = times.find(t => !/^(1[0-2]|[1-9]):[0-5]\d (AM|PM)$/.test(t)); if (bad) throw `"${bad}" is not a start time. Write times like 6:00 AM or 7:30 PM.`;
+    if (!times.length) throw "Add at least one start time.";
+    const materials = lines(d.materials); if (!materials.length) throw "Add at least one kind of work.";
+    const radii = [...new Set(String(d.radii).split(/[,\s]+/).filter(Boolean).map(r => num(r, "Each search distance", 1, 500)))].sort((a, b) => a - b);
+    if (!radii.length) throw "Add at least one search distance.";
+    return { st: { trucks, main: main.length ? main : [d.trucks[0].key], fee: num(d.fee, "The Trucks2U fee", 0, 50) / 100, minHrs: num(d.minHrs, "The minimum hours", 0, 12),
+      brokerPct: num(d.brokerPct, "The broker comparison", 0, 50) / 100, fleetFee: num(d.fleetFee, "The fleet fee", 0, 1000), payday: d.payday, materials, times, radii } };
+  } catch (e) { return { err: String(e) }; }
+}
+function aSettings() {
+  const d = A.draft, dirty = JSON.stringify(d) !== JSON.stringify(toDraft(currentSettings()));
+  const fld = (k, label, hint, pre = "", post = "") => `<label class="f">${label}<span class="row" style="gap:8px">${pre ? `<b>${pre}</b>` : ""}<input data-sf="${k}" inputmode="decimal" value="${esc(d[k])}">${post ? `<b>${post}</b>` : ""}</span><span class="muted small" style="font-weight:400">${hint}</span></label>`;
+  const truck = (t, i) => `<div style="background:var(--chip);border-radius:12px;padding:12px;display:grid;gap:10px">
+      <div class="row" style="gap:8px;align-items:end">
+        <label class="f" style="flex:3">Name<input data-tk="${i}" data-tf="name" value="${esc(t.name)}" placeholder="e.g. Belly dump" style="background:var(--sheet)"></label>
+        <label class="f" style="flex:1">Short<input data-tk="${i}" data-tf="short" value="${esc(t.short)}" maxlength="4" placeholder="BD" style="background:var(--sheet)"></label>
+        <label class="f" style="flex:1.4">$ per hour<input data-tk="${i}" data-tf="rate" inputmode="decimal" value="${esc(t.rate)}" style="background:var(--sheet)"></label></div>
+      <label class="f">What it carries<input data-tk="${i}" data-tf="seat" value="${esc(t.seat)}" placeholder="e.g. ~25 tons a load" style="background:var(--sheet)"></label>
+      <div class="row"><label class="row" style="gap:8px;font-size:14px;font-weight:600;cursor:pointer"><input type="checkbox" data-tk="${i}" data-tf="main" ${t.main ? "checked" : ""} style="width:20px;height:20px"> Show first when ordering</label>
+        <button class="chip" data-act="a-set-del:${i}" style="background:var(--sheet)">Remove</button></div></div>`;
+  return `<div class="stack" style="gap:18px">
+    <div class="small" style="background:var(--chip);padding:10px 12px;border-radius:10px">These settings are saved on this computer or phone only. Until the app has a server, change them on each device you use.</div>
+    ${A.setErr ? `<div class="small" style="color:#e11900;font-weight:600">${esc(A.setErr)}</div>` : ""}
+    <div class="stack" style="gap:12px"><h2>Money and pay</h2>
+      ${fld("fee", "Trucks2U fee", "Taken out of the driver's pay. Contractors pay nothing extra.", "", "%")}
+      ${fld("minHrs", "Minimum hours paid", "Every truck is paid at least this many hours a day.", "", "hours")}
+      ${fld("brokerPct", "What a broker usually keeps", "Shown to contractors to compare with a broker.", "", "%")}
+      ${fld("fleetFee", "Fleet fee for dispatching their own trucks", "Per truck, per day. This is a placeholder until you set the real price.", "$")}
+      <label class="f">Payday<select data-sf="payday">${DAYS.map(x => `<option ${x === d.payday ? "selected" : ""}>${x}</option>`).join("")}</select><span class="muted small" style="font-weight:400">Drivers and fleets are paid once a week on this day.</span></label></div>
+    <div class="stack" style="gap:10px"><h2>Truck types</h2><p class="muted small" style="margin:0">The rate is what the contractor pays per hour for that truck.</p>
+      ${d.trucks.map(truck).join("")}
+      <button class="btn light" data-act="a-set-add">+ Add a truck type</button></div>
+    <div class="stack" style="gap:12px"><h2>Job options</h2>
+      <label class="f">Kinds of work<textarea data-sf="materials" rows="3" style="${TA}">${esc(d.materials)}</textarea><span class="muted small" style="font-weight:400">One per line. Contractors pick one when they order trucks.</span></label>
+      <label class="f">Start times<textarea data-sf="times" rows="7" style="${TA}">${esc(d.times)}</textarea><span class="muted small" style="font-weight:400">One per line, like 6:00 AM or 7:30 PM.</span></label>
+      <label class="f">Search distances (miles)<input data-sf="radii" value="${esc(d.radii)}"><span class="muted small" style="font-weight:400">Separate with commas, like 10, 25, 50.</span></label></div>
+    ${dirty ? `<p class="small" style="margin:0;color:var(--warn);font-weight:600">You have changes that aren't saved yet.</p>` : ""}
+    <button class="btn" data-act="a-set-save">Save settings</button>
+    <div class="row" style="gap:10px"><button class="btn light" style="flex:1" data-act="a-set-undo" ${dirty ? "" : "disabled"}>Undo changes</button><button class="btn light" style="flex:1" data-act="a-set-reset">Use original settings</button></div>
+  </div>`;
+}
+function setDraft(el) {
+  if (!A.draft || !el.dataset) return false;
+  if (el.dataset.sf) A.draft[el.dataset.sf] = el.value;
+  else if (el.dataset.tk) { const t = A.draft.trucks[+el.dataset.tk]; t[el.dataset.tf] = el.type === "checkbox" ? el.checked : el.value; }
+  else return false;
+  return true;
 }
 function aMenu() {
   return `<div class="menu" data-act="a-menu-close"><div>
     <div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:14px"><div class="avatar">T2</div><div><b>Trucks2U admin</b><div class="muted small">Staff only</div></div></div>
     <button class="place" data-act="a-tab:review"><span class="ic">✓</span><span><b>Driver approvals</b><span>Check documents and approve</span></span></button>
     <button class="place" data-act="a-tab:expiring"><span class="ic">!</span><span><b>Expiring documents</b><span>Send reminders</span></span></button>
+    <button class="place" data-act="a-tab:settings"><span class="ic">⚙</span><span><b>Settings</b><span>Truck types, fees and pay rules</span></span></button>
     <button class="place" data-mode="welcome"><span class="ic">⇄</span><span><b>Switch account</b><span>Demo: see the other sides</span></span></button>
   </div></div>`;
 }
@@ -909,7 +1019,11 @@ function render() {
     if (D.menu) h += dMenu();
   }
   const keepQ = $("#q") ? $("#q").value : null;
+  const ae = document.activeElement, keepF = ae && ae.dataset && (ae.dataset.sf || ae.dataset.tk) ? [ae.dataset.sf ? `[data-sf="${ae.dataset.sf}"]` : `[data-tk="${ae.dataset.tk}"][data-tf="${ae.dataset.tf}"]`, ae.selectionStart, $(".full") && $(".full").scrollTop] : null;
+  const keepS = mode === "admin" && A.tab === "settings" && $(".full") ? $(".full").scrollTop : null;
   $("#ui").innerHTML = h;
+  if (keepS != null && $(".full")) $(".full").scrollTop = keepS;
+  if (keepF && $(keepF[0])) { const el = $(keepF[0]); if ($(".full")) $(".full").scrollTop = keepF[2]; el.focus(); try { if (keepF[1] != null) el.setSelectionRange(keepF[1], keepF[1]); } catch (e) {} }
   if (mode === "contractor" && C.screen === "live" && job && job.unread) { const n = job.unread; setTimeout(() => { if (job) job.unread = 0; }, 6000); if (!job.toldUnread) { job.toldUnread = true; toast(`${n} new update${n === 1 ? "" : "s"} from your drivers`); } }
   if (job && job.unread === 0) job.toldUnread = false;
   $("#who").textContent = { contractor: "For contractors", driver: "For drivers", fleet: "For fleets and brokers", admin: "Admin" }[mode] || "";
@@ -1027,10 +1141,10 @@ function act(name, arg) {
     case "su-approve": D.approved = true; { const i = APPS.findIndex(a => a.id === "me"); if (i >= 0) APPS.splice(i, 1); } toast("Approved. Tap GO to start getting jobs."); break;
     case "c-more": C.more = true; break;
     case "c-radius": C.radius = +arg; break;
-    case "c-widen": { const r = RADII[RADII.indexOf(job.radius) + 1]; const before = job.sentTo; job.radius = r; job.sentTo = TYPES.reduce((s, t) => s + (job.wantByType[t] ? nearby(t, r) : 0), 0); toast(`Now sent to ${job.sentTo - before} more drivers, up to ${r} miles away`); break; }
+    case "c-widen": { const r = RADII.find(x => x > job.radius); if (!r) break; const before = job.sentTo; job.radius = r; job.sentTo = TYPES.reduce((s, t) => s + (job.wantByType[t] ? nearby(t, r) : 0), 0); toast(`Now sent to ${job.sentTo - before} more drivers, up to ${r} miles away`); break; }
     case "a-menu": A.menu = true; break;
     case "a-menu-close": A.menu = false; break;
-    case "a-tab": A.tab = arg; A.open = null; A.menu = false; break;
+    case "a-tab": A.tab = arg; A.open = null; A.menu = false; if (arg === "settings" && !A.draft) A.draft = toDraft(currentSettings()); A.setErr = ""; break;
     case "a-open": A.open = arg; break;
     case "a-back": A.open = null; break;
     case "a-view": toast("The document opens full screen here so you can check it."); return;
@@ -1040,6 +1154,17 @@ function act(name, arg) {
       APPS.splice(i, 1); A.open = null;
       if (name === "a-approve") { ROSTER.unshift({ name: ap.name, type: ap.type, city: ap.city, status: "Approved" }); if (ap.id === "me") D.approved = true; toast(`${ap.name} approved. They can take jobs now.`); }
       else { if (ap.id === "me") { D.approved = true; D.signup = null; } toast(`${ap.name} was turned down. We texted them why.`); }
+      break;
+    }
+    case "a-set-add": A.draft.trucks.push({ key: "t" + Date.now().toString(36), name: "", short: "", seat: "", rate: 120, main: false }); A.setErr = ""; render(); { const n = document.querySelectorAll('[data-tf="name"]'); if (n.length) { n[n.length - 1].focus(); n[n.length - 1].scrollIntoView({ block: "center" }); } } return;
+    case "a-set-del": { const t = A.draft.trucks[+arg]; if (A.draft.trucks.length === 1) { toast("Keep at least one truck type."); return; } A.draft.trucks.splice(+arg, 1); toast(`${t.name || "Truck type"} removed. Tap Save settings to keep it that way.`); break; }
+    case "a-set-undo": A.draft = toDraft(currentSettings()); A.setErr = ""; toast("Changes undone."); break;
+    case "a-set-reset": A.draft = toDraft(DEFAULTS); A.setErr = ""; toast("Original settings loaded. Tap Save settings to use them."); break;
+    case "a-set-save": {
+      const r = fromDraft(A.draft);
+      if (r.err) { A.setErr = r.err; render(); $(".full").scrollTop = 0; return; }
+      const ok = saveSettings(r.st); syncState(); A.draft = toDraft(currentSettings()); A.setErr = "";
+      toast(ok ? "Settings saved on this device." : "Settings are in use now, but this browser won't keep them after you close it.");
       break;
     }
     case "a-remind": toast("Reminder texted. If it expires, they can't take new jobs until it's renewed."); return;
@@ -1066,11 +1191,13 @@ document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === 
 document.addEventListener("input", e => {
   if (e.target.id === "q") $("#results").innerHTML = placeList(e.target.value);
   if (e.target.id === "c-note") C.note = e.target.value;
+  if (setDraft(e.target)) return;
   if (e.target.closest && e.target.closest("[data-su]")) { saveSu(); const b = $("[data-act=su-next], [data-act=su-submit]"); if (b) b.disabled = !suValid(); }
 });
 document.addEventListener("change", e => {
   if (e.target.dataset && e.target.dataset.pick) { const id = e.target.dataset.pick; F.picked = e.target.checked ? [...F.picked, id] : F.picked.filter(x => x !== id); render(); return; }
   if (e.target.id === "ticket" && e.target.files[0]) { D.tickets.push(String(448800 + D.tickets.length * 13)); toast("Ticket saved. The contractor can see it."); render(); }
+  if ((e.target.type === "checkbox" || e.target.tagName === "SELECT") && setDraft(e.target)) { render(); return; }
   if (e.target.id === "c-plant") { C.plant = +e.target.value; render(); return; }
   if (e.target.id === "c-time") { C.time = e.target.value; render(); return; }
   if (e.target.id === "c-hours") { C.hours = +e.target.value; render(); return; }
