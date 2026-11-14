@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Trucks2U</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -264,7 +265,12 @@ const FLEET = { name: "Summit Hauling", owner: "Rick S.", trucks: [
   { id: "SH-07", driver: "Eddie K.", type: "w10", x: 360, y: 520, status: "offline" },
   { id: "SH-08", driver: "Walt J.", type: "sd", x: 100, y: 640, status: "online" }
 ] };
-const ME = { name: "Marco R.", type: "w12", plate: "8XKD218", rating: "4.9", x: 330, y: 190 };   // the driver in the driver app
+const ME = { name: "Marco R.", type: "w12", plate: "8XKD218", rating: "4.9", x: 330, y: 190, city: "Hayward, CA" };   // the driver in the driver app
+const DEMO_ME = { ...ME };
+// Who is signed in on each side: null = not signed in yet (shows "new or existing?"), "demo" = the sample account, "new" = an account made in this visit
+const ACCT = { driver: null, contractor: null, fleet: null };
+const NEW = { driver: null, contractor: null, fleet: null };   // accounts made with the sign-up screens
+const initials = n => (n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(x => x[0].toUpperCase()).join("");
 
 /* ---------- State ---------- */
 let mode = null;   // null = welcome screen; "contractor", "driver" or "fleet" once signed in
@@ -379,7 +385,7 @@ const C_JOBS = [
   { dayN: 5, start: "7:00 PM", hours: 8, place: PLACES[4], material: "Haul off grindings", need: 4, crew: ["Dana K.", "Mike H.", "Rosa G.", "Kim L."].map(n => DRIVERS.find(d => d.name === n)) }
 ];
 function cUpcoming() {
-  const l = C_JOBS.map((j, i) => ({ key: String(i), name: j.place.name, date: dayLabel(j.dayN), dayN: j.dayN, start: j.start, got: j.crew.length, need: j.need }));
+  const l = C_JOBS.map((j, i) => ({ key: String(i), owner: j.owner || "demo", name: j.place.name, date: dayLabel(j.dayN), dayN: j.dayN, start: j.start, got: j.crew.length, need: j.need })).filter(j => j.owner === ACCT.contractor);
   if (job && sched() && job.status !== "cancelled") l.push({ key: "demo", name: job.place.name, date: job.date, dayN: job.dayN, start: job.start, got: job.crew.length, need: job.need });
   return l.sort((a, b) => a.dayN - b.dayN);
 }
@@ -501,7 +507,7 @@ function cDone() {
 }
 function cMenu() {
   return `<div class="menu" data-act="c-menu-close"><div>
-    <div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:14px"><div class="avatar">AL</div><div><b>Lucas Paving</b><div class="muted small">Contractor</div></div></div>
+    <div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:14px"><div class="avatar">${ACCT.contractor === "new" ? initials(NEW.contractor.company) : "AL"}</div><div><b>${ACCT.contractor === "new" ? esc(NEW.contractor.company) : "Lucas Paving"}</b><div class="muted small">Contractor${ACCT.contractor === "new" ? " · " + esc(NEW.contractor.name) : ""}</div></div></div>
     <button class="place" data-act="c-hist"><span class="ic">🧾</span><span><b>Your jobs</b><span>Past requests and invoices</span></span></button>
     <button class="place" data-act="c-pay"><span class="ic">🏦</span><span><b>Payment</b><span>Bank account ending 4417</span></span></button>
     <button class="place" data-act="c-help"><span class="ic">?</span><span><b>Help</b><span>Talk to Trucks2U</span></span></button>
@@ -523,7 +529,7 @@ function board() {
   return l.sort((a, b) => a.dayN - b.dayN);
 }
 function myUpcoming() {
-  const l = UPCOMING.map((j, i) => ({ ...j, key: String(i), date: dayLabel(j.dayN) }));
+  const l = UPCOMING.map((j, i) => ({ ...j, key: String(i), date: dayLabel(j.dayN) })).filter(j => (j.owner || "demo") === ACCT.driver);
   const me = job && sched() && job.crew.find(m => m.id === "me");
   if (me) l.push({ key: "demo", dayN: job.dayN, date: job.date, start: job.start, hours: job.hours, place: job.place.name, sub: job.place.sub, material: job.material, contractor: "Lucas Paving", trucks: job.need, rate: TRUCKS[ME.type].rate, contact: job.contact, note: job.note || job.notes.at(-1) || "", startAt: startOf(me) === "plant" ? PLANTS[job.plant].name + ", " + PLANTS[job.plant].sub : "", confirmed: me.reconfirmed });
   return l.sort((a, b) => a.dayN - b.dayN);
@@ -533,8 +539,10 @@ function dHome() {
   if (!D.approved) return dPending();
   const ups = myUpcoming(), next = ups[0], b = board();
   const ask = ups.find(j => j.dayN === 1 && !j.confirmed);
+  const hello = ACCT.driver === "new" && !ups.length && !NEW.driver.hideHello;
   return `<div class="top"><button class="round" data-act="d-menu" aria-label="Menu">☰</button><span class="pill">${money(D.earnedToday)}</span><span style="width:44px"></span></div>
     <div class="sheet" style="padding-top:10px">
+      ${hello ? `<div class="stack" style="background:var(--chip);border-radius:12px;padding:12px 14px;gap:6px"><b>Welcome, ${esc(ME.name.split(" ")[0])}! You're approved.</b><span class="muted small">Below are jobs near you for your ${esc(TRUCKS[ME.type].name)}. Tap one to see the details and take it. You get paid by the hour, ${MIN_HRS}-hour minimum.</span><button class="chip" data-act="d-hello" style="justify-self:start">Got it</button></div>` : ""}
       ${ask ? `<div class="stack" style="background:var(--chip);border-radius:12px;padding:12px 14px;gap:6px"><b>Tomorrow ${ask.start}: are you still coming?</b><span class="muted small">${esc(ask.place)}, ${esc(ask.sub)}. Please confirm by 8 PM tonight, or your spot goes to another driver.</span><button class="btn" data-act="d-confirm:${ask.key}">Yes, I'm coming</button></div>`
         : next ? `<button class="place" data-act="d-openjob:${next.key}"><span class="ic">📅</span><span><b>Next job: ${next.date}, ${next.start}</b><span>${esc(next.place)} · ${esc(next.sub)}</span></span></button>` : ""}
       <div class="row"><h2>Available jobs</h2><span class="tag">${TRUCKS[ME.type].short} · ${D.radius} mi</span></div>
@@ -617,11 +625,11 @@ function dDone() {
 }
 function dMenu() {
   return `<div class="menu" data-act="d-menu-close"><div>
-    <button class="place" data-act="d-page:profile" style="margin-bottom:6px"><span class="avatar">MR</span><span><b>${ME.name}</b><span>★ ${ME.rating} · View profile</span></span></button>
+    <button class="place" data-act="d-page:profile" style="margin-bottom:6px"><span class="avatar">${initials(ME.name)}</span><span><b>${esc(ME.name)}</b><span>${ACCT.driver === "new" ? "New driver" : "★ " + ME.rating} · View profile</span></span></button>
     <button class="place" data-act="d-page:jobs"><span class="ic">📅</span><span><b>My jobs</b><span>${myUpcoming().length} upcoming</span></span></button>
     <button class="place" data-act="d-page:earn"><span class="ic">$</span><span><b>Earnings</b><span>Paid every ${PAYDAY}</span></span></button>
-    <button class="place" data-act="d-page:profile"><span class="ic">✓</span><span><b>Documents</b>${MYDOCS[2][2] === "warn" ? '<span style="color:var(--warn)">Insurance expires in 19 days</span>' : "<span>All verified</span>"}</span></button>
-    <button class="place" data-act="d-signup"><span class="ic">+</span><span><b>Sign up as a new driver</b><span>See what new drivers fill in</span></span></button>
+    <button class="place" data-act="d-page:profile"><span class="ic">✓</span><span><b>Documents</b>${myDocs().some(d => d[2] === "warn") ? `<span style="color:var(--warn)">${esc(myDocs().find(d => d[2] === "warn")[0])} expires soon</span>` : "<span>All verified</span>"}</span></button>
+    <button class="place" data-act="acct-out:driver"><span class="ic">↩</span><span><b>Sign out</b><span>Back to "new or existing driver"</span></span></button>
     <button class="place" data-mode="welcome"><span class="ic">⇄</span><span><b>Switch account</b><span>Demo: see the contractor or fleet side</span></span></button>
   </div></div>`;
 }
@@ -635,23 +643,25 @@ const PAST = [
   { date: dayLabel(-2), place: "Lakeside Plaza parking lot", sub: "San Leandro, CA", contractor: "Delta Paving", worked: 4.5, tickets: 6, rate: 130 },
   { date: dayLabel(-4), place: "Main St & Oak Ave", sub: "Oakland, CA", contractor: "Lucas Paving", worked: 10, tickets: 16, rate: 130 }
 ];
+const myDocs = () => ACCT.driver === "new" ? NEW.driver.docs : MYDOCS;
 const MYDOCS = [["Driver's license (CDL)", "Class A · expires Mar 2028", "ok"], ["DOT medical card", "Expires Aug 2027", "ok"], ["Insurance certificate", "Expires Dec 3, 2026 (in 19 days)", "warn"], ["Truck registration", "Expires Jun 2027", "ok"], ["USDOT 3184472", "Active on FMCSA", "ok"]];
 const paidHrs = h => Math.max(MIN_HRS, h);
+const myPast = () => ACCT.driver === "new" ? [] : PAST;
 function page(title, body) {
   return `<div class="full"><div class="row"><button class="round" data-act="d-page:" aria-label="Back" style="box-shadow:none;background:var(--chip)">←</button><h2 style="flex:1">${title}</h2></div>${body}</div>`;
 }
 function dProfile() {
   const ok = (t, sub, st) => `<div class="doc"><div><b>${t}</b><div class="small" style="color:${st === "warn" ? "var(--warn)" : "var(--muted)"}">${sub}</div></div>${st === "warn" ? `<label>Update<input type="file" accept="image/*,application/pdf" data-mydoc="ins"></label>` : '<span class="ok">✓ Verified</span>'}</div>`;
   return page("Profile", `
-    <div class="row" style="justify-content:flex-start;gap:14px"><div class="avatar" style="width:64px;height:64px;font-size:22px">MR</div><div><h2>${ME.name}</h2><div class="muted small">★ ${ME.rating} · 212 jobs · on Trucks2U since 2026</div></div></div>
+    <div class="row" style="justify-content:flex-start;gap:14px"><div class="avatar" style="width:64px;height:64px;font-size:22px">${initials(ME.name)}</div><div><h2>${esc(ME.name)}</h2><div class="muted small">${ACCT.driver === "new" ? "New driver · joined today" : `★ ${ME.rating} · 212 jobs · on Trucks2U since 2026`}</div></div></div>
     <div class="stack" style="gap:6px"><b>Your truck</b>
       <div style="background:var(--chip);border-radius:12px;height:110px;display:grid;place-items:center"><svg viewBox="0 0 120 50" width="150" aria-label="Truck photo"><rect x="4" y="10" width="70" height="26" rx="3" fill="var(--fg)"/><rect x="78" y="16" width="32" height="20" rx="4" fill="var(--fg)"/><rect x="92" y="19" width="12" height="8" rx="2" fill="var(--chip)"/><circle cx="20" cy="40" r="7" fill="var(--muted)"/><circle cx="40" cy="40" r="7" fill="var(--muted)"/><circle cx="96" cy="40" r="7" fill="var(--muted)"/></svg></div>
-      <div class="kv"><div class="row"><span>Type</span><b>${TRUCKS[ME.type].name}</b></div><div class="row"><span>Truck</span><b>2019 Peterbilt 567</b></div><div class="row"><span>Plate</span><b>${ME.plate}</b></div><div class="row"><span>Your rate</span><b>$${TRUCKS[ME.type].rate}/hr · ${MIN_HRS} hr min</b></div></div></div>
-    <div class="stack" style="gap:6px"><b>Where you'll take jobs</b><span class="muted small">From Hayward, CA. You only get requests inside this distance.</span>
+      <div class="kv"><div class="row"><span>Type</span><b>${TRUCKS[ME.type].name}</b></div><div class="row"><span>Truck</span><b>${ACCT.driver === "new" ? esc(NEW.driver.truckName) : "2019 Peterbilt 567"}</b></div><div class="row"><span>Plate</span><b>${esc(ME.plate)}</b></div><div class="row"><span>Your rate</span><b>$${TRUCKS[ME.type].rate}/hr · ${MIN_HRS} hr min</b></div></div></div>
+    <div class="stack" style="gap:6px"><b>Where you'll take jobs</b><span class="muted small">From ${esc(ME.city)}. You only get requests inside this distance.</span>
       <div class="chips">${RADII.map(r => `<button class="chip" data-act="d-radius:${r}" aria-pressed="${D.radius === r}">${r} mi</button>`).join("")}</div></div>
     <div class="stack" style="gap:6px"><b>When you're available</b>
       <div class="chips" style="flex-wrap:wrap">${["Weekdays", "Saturdays", "Sundays", "Night work"].map(a => `<button class="chip" data-act="d-days:${a}" aria-pressed="${D.avail.includes(a)}">${a}</button>`).join("")}</div></div>
-    <div class="stack" style="gap:0"><b>Documents</b>${MYDOCS.map(d => ok(...d)).join("")}</div>
+    <div class="stack" style="gap:0"><b>Documents</b>${myDocs().map(d => ok(...d)).join("")}</div>
     <p class="muted small">Edits to your truck or documents are checked by Trucks2U before they go live.</p>`);
 }
 function dJobs() {
@@ -670,18 +680,19 @@ function dJobs() {
       <button class="btn light" data-act="d-cantmake:${D.openJob}">I can't make it</button>`);
   }
   const up = ups.map(j => `<button class="place" data-act="d-openjob:${j.key}"><span class="ic">📅</span><span><b>${esc(j.place)}</b><span>${j.date} · ${j.start} · ${esc(j.sub)}</span><span style="display:block">${esc(j.material)} · $${j.rate}/hr${j.dayN === 1 ? (j.confirmed ? " · Confirmed ✓" : ' · <b style="color:var(--warn);display:inline">Please confirm</b>') : ""}</span></span></button>`).join("") || '<p class="muted">No upcoming jobs. Scheduled jobs you accept show up here.</p>';
-  const past = PAST.map(j => { const h = paidHrs(j.worked); return `<div class="doc"><div><b>${esc(j.place)}</b><div class="muted small">${j.date} · ${j.worked} hrs worked${j.worked < MIN_HRS ? `, paid ${MIN_HRS} (minimum)` : ""} · ${j.tickets} tickets</div></div><b>${money(h * j.rate * (1 - FEE))}</b></div>`; }).join("");
+  const past = myPast().map(j => { const h = paidHrs(j.worked); return `<div class="doc"><div><b>${esc(j.place)}</b><div class="muted small">${j.date} · ${j.worked} hrs worked${j.worked < MIN_HRS ? `, paid ${MIN_HRS} (minimum)` : ""} · ${j.tickets} tickets</div></div><b>${money(h * j.rate * (1 - FEE))}</b></div>`; }).join("") || '<p class="muted">No past jobs yet.</p>';
   return page("My jobs", `
     <div class="chips">${[["up", `Upcoming · ${ups.length}`], ["past", "Past"]].map(([k, l]) => `<button class="chip" data-act="d-jobtab:${k}" aria-pressed="${D.jobTab === k}">${l}</button>`).join("")}</div>
     <div>${D.jobTab === "up" ? up : past}</div>`);
 }
 function dEarn() {
-  const week = PAST.reduce((s, j) => s + paidHrs(j.worked) * j.rate * (1 - FEE), 0) + D.earnedToday;
+  const isNew = ACCT.driver === "new";
+  const week = myPast().reduce((s, j) => s + paidHrs(j.worked) * j.rate * (1 - FEE), 0) + D.earnedToday;
   return page("Earnings", `
     <div class="stack" style="gap:4px"><span class="muted small">This week</span><div class="big">${money(week)}</div><p class="muted small">After the ${pct(FEE)} Trucks2U fee. Paid every ${PAYDAY} to your bank account ending 2231.</p></div>
     <div>${D.earnedToday ? `<div class="doc"><div><b>Today</b><div class="muted small">Waiting for the contractor to approve your hours</div></div><b>${money(D.earnedToday)}</b></div>` : ""}
-      ${PAST.map(j => `<div class="doc"><div><b>${j.date}</b><div class="muted small">${esc(j.contractor)} · ${paidHrs(j.worked)} hrs × $${j.rate}</div></div><b>${money(paidHrs(j.worked) * j.rate * (1 - FEE))}</b></div>`).join("")}</div>
-    <div class="kv"><div class="row"><span>Last week</span><b>$6,214</b></div><div class="row"><span>This year</span><b>$71,860</b></div></div>`);
+      ${myPast().map(j => `<div class="doc"><div><b>${j.date}</b><div class="muted small">${esc(j.contractor)} · ${paidHrs(j.worked)} hrs × $${j.rate}</div></div><b>${money(paidHrs(j.worked) * j.rate * (1 - FEE))}</b></div>`).join("")}</div>
+    ${isNew ? '<p class="muted">No earnings yet. Your pay shows here after your first job.</p>' : '<div class="kv"><div class="row"><span>Last week</span><b>$6,214</b></div><div class="row"><span>This year</span><b>$71,860</b></div></div>'}`);
 }
 
 /* Driver sign-up: three short steps */
@@ -750,8 +761,61 @@ function dPending() {
   return `<div class="full" style="align-content:center;text-align:center">
     <div style="font-size:54px">⏳</div><h1>We're checking your documents</h1>
     <p class="muted">Usually less than 1 business day. We'll text you as soon as you can start taking jobs.</p>
-    <button class="btn" data-act="su-approve">Approve now (demo)</button>
-    <p class="muted small">Or switch to the Trucks2U admin account and approve it there.</p></div>`;
+    <div class="kv" style="text-align:left"><div class="row"><span>Name</span><b>${esc(ME.name)}</b></div><div class="row"><span>Truck</span><b>${esc(NEW.driver ? NEW.driver.truckName : "")}</b></div><div class="row"><span>Status</span><b style="color:var(--warn)">Waiting for approval</b></div></div>
+    <p class="muted small" style="margin:0">Demo: you are also the Trucks2U staff. Open the admin area to check and approve this driver.</p>
+    <button class="btn" data-act="a-goto-me">Open admin to approve</button>
+    <button class="btn light" data-act="su-approve">Skip: approve it now</button>
+    <button class="chip" data-act="acct-out:driver" style="justify-self:center">Sign out</button></div>`;
+}
+
+/* ---------- New or existing account? (after picking a side on the welcome screen) ---------- */
+const START = {
+  driver: { title: "Drive with Trucks2U", newSub: "Sign up as a new driver. Your info, your truck, then your documents.", demo: "Marco R. · approved driver" },
+  contractor: { title: "Get trucks with Trucks2U", newSub: "Create an account for your company. Takes 2 minutes.", demo: "Lucas Paving · contractor" },
+  fleet: { title: "Run your fleet on Trucks2U", newSub: "Sign up your trucking company. We check your USDOT first.", demo: "Summit Hauling · 8 trucks" }
+};
+function acctStart(kind) {
+  const t = START[kind], n = NEW[kind];
+  const nStatus = !n ? "" : kind === "driver" ? (n.approved ? "Approved, ready for jobs" : "Waiting for approval") : kind === "fleet" ? (n.approved ? "Approved" : "Waiting for approval") : "Your new account";
+  return `<div class="welcome"><div class="logo">Trucks2U</div>
+    <h1>${t.title}</h1>
+    <button class="role" data-act="acct-new:${kind}"><span class="ic">+</span><span><b>I'm new here</b><span>${t.newSub}</span></span><span>›</span></button>
+    ${n ? `<button class="role" data-act="acct-in:${kind}:new"><span class="ic" style="font-size:16px;font-weight:700">${initials(n.name)}</span><span><b>Sign in as ${esc(n.name)}</b><span>${nStatus}</span></span><span>›</span></button>` : ""}
+    <button class="role" data-act="acct-in:${kind}:demo"><span class="ic">→</span><span><b>I already have an account</b><span>Sign in to the sample account: ${t.demo}</span></span><span>›</span></button>
+    <button data-mode="welcome" style="background:none;border:0;color:#b3b3b3;font:600 14px var(--font);text-decoration:underline;cursor:pointer;justify-self:center;margin-top:6px">← Back</button>
+  </div>`;
+}
+const ACCT_FIELDS = {
+  contractor: [["company", "Company name"], ["name", "Your name"], ["phone", "Mobile number", 'inputmode="tel"'], ["email", "Email", 'inputmode="email"'], ["city", "Where you work (city)", 'placeholder="e.g. Hayward, CA"']],
+  fleet: [["company", "Company name"], ["name", "Your name"], ["phone", "Mobile number", 'inputmode="tel"'], ["email", "Email", 'inputmode="email"'], ["dot", "USDOT number", 'inputmode="numeric" placeholder="1234567"'], ["count", "How many trucks?", 'inputmode="numeric" placeholder="8"']]
+};
+let AF = null;   // contractor or fleet sign-up in progress: { kind, ...answers }
+const afValid = () => AF && ACCT_FIELDS[AF.kind].every(([k]) => (AF[k] || "").trim()) && (AF.kind !== "fleet" || (AF.dot || "").replace(/\D/g, "").length >= 6);
+function acctSignup() {
+  const k = AF.kind;
+  return `<div class="full" data-af>
+    <div class="row"><button class="round" data-act="af-close" aria-label="Back" style="box-shadow:none;background:var(--chip)">←</button><span class="muted small">${k === "fleet" ? "New fleet" : "New contractor"}</span></div>
+    <h1>${k === "fleet" ? "Sign up your fleet" : "Create your account"}</h1>
+    <p class="muted">${k === "fleet" ? "Send your own trucks to Trucks2U jobs, and dispatch them to your own customers in the app." : `Request vetted dump trucks for tomorrow or later in the week. No extra fee for contractors.`}</p>
+    ${ACCT_FIELDS[k].map(([f, l, x]) => `<label class="f">${l}<input id="af-${f}" value="${esc(AF[f] || "")}" ${x || ""}></label>`).join("")}
+    ${k === "fleet" ? '<p class="muted small" style="margin-top:-6px">We check your USDOT number with the FMCSA. After you are approved, you add your trucks and drivers, and each one uploads their documents.</p>' : '<p class="muted small" style="margin-top:-6px">You pay for jobs by bank transfer. You add your bank account before your first job.</p>'}
+    <button class="btn" data-act="af-submit" ${afValid() ? "" : "disabled"}>${k === "fleet" ? "Submit for review" : "Create account"}</button></div>`;
+}
+function fPending() {
+  return `<div class="full" style="align-content:center;text-align:center">
+    <div style="font-size:54px">⏳</div><h1>We're checking your company</h1>
+    <p class="muted">Usually less than 1 business day. We check your USDOT number and insurance, then text you.</p>
+    <div class="kv" style="text-align:left"><div class="row"><span>Company</span><b>${esc(NEW.fleet.company)}</b></div><div class="row"><span>USDOT</span><b>${esc(NEW.fleet.dot)}</b></div><div class="row"><span>Status</span><b style="color:var(--warn)">Waiting for approval</b></div></div>
+    <button class="btn" data-act="f-approve">Approve now (demo)</button>
+    <button class="chip" data-act="acct-out:fleet" style="justify-self:center">Sign out</button></div>`;
+}
+function signIn(kind, who) {
+  ACCT[kind] = who;
+  if (kind === "driver") {
+    D.menu = false; D.page = null; D.screen = "home"; D.signup = null;
+    if (who === "new") { const n = NEW.driver; Object.assign(ME, { name: n.name, type: n.type, plate: n.plate, rating: "New", city: n.city }); D.approved = n.approved; }
+    else { Object.assign(ME, DEMO_ME); D.approved = true; }
+  }
 }
 
 /* ---------- Welcome (everyone downloads the same app) ---------- */
@@ -806,7 +870,7 @@ function fHome() {
 }
 function fMenu() {
   return `<div class="menu" data-act="f-menu-close"><div>
-    <div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:14px"><div class="avatar">SH</div><div><b>${FLEET.name}</b><div class="muted small">Fleet · ${FLEET.trucks.length} trucks</div></div></div>
+    <div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:14px"><div class="avatar">${ACCT.fleet === "new" ? initials(NEW.fleet.company) : "SH"}</div><div><b>${ACCT.fleet === "new" ? esc(NEW.fleet.company) : FLEET.name}</b><div class="muted small">Fleet · ${FLEET.trucks.length} trucks${ACCT.fleet === "new" ? " (sample)" : ""}</div></div></div>
     <button class="place" data-act="f-tab:trucks"><span class="ic">🚛</span><span><b>My trucks</b><span>Drivers, documents and status</span></span></button>
     <button class="place" data-act="f-tab:earn"><span class="ic">$</span><span><b>Earnings</b><span>Weekly payouts to one bank account</span></span></button>
     <button class="place" data-mode="welcome"><span class="ic">⇄</span><span><b>Switch account</b><span>Demo: see the contractor or driver side</span></span></button>
@@ -864,10 +928,11 @@ function aHome() {
     </div>`;
   }
   let body = "";
-  if (A.tab === "review") body = APPS.length ? APPS.map(a => {
+  const seeMe = A.tab === "review" && A.justApproved ? `<div class="stack" style="background:var(--chip);border-radius:12px;padding:12px 14px;gap:6px"><b>${esc(A.justApproved)} is approved</b><span class="muted small">See what they see now when they open the app.</span><button class="btn" data-act="a-seeme">Open ${esc(A.justApproved.split(" ")[0])}'s driver app</button></div>` : "";
+  if (A.tab === "review") body = seeMe + (APPS.length ? APPS.map(a => {
       const flags = Object.values(a.docs).filter(([, st]) => st !== "ok").map(([, st]) => st.split(":")[1]);
       return `<button class="place" data-act="a-open:${a.id}"><span class="ic">${a.name[0]}</span><span><b>${esc(a.name)}</b><span>${TRUCKS[a.type].name} · ${esc(a.city)} · ${esc(a.when)}</span>${flags.length ? `<span style="display:block;color:${flags.some(f => f.startsWith("Expired")) ? "#e11900" : "var(--warn)"}">${esc(flags.join(", "))}</span>` : ""}</span></button>`; }).join("")
-    : `<p class="muted">Nobody is waiting. New sign-ups show up here.</p>`;
+    : `<p class="muted">Nobody is waiting. New sign-ups show up here.</p>`);
   else if (A.tab === "expiring") body = `<p class="muted small" style="margin:0">Drivers get a text 30, 14 and 3 days before a document expires. When it expires, they can't take new jobs until a new one is checked.</p>` +
     EXPIRING.map(e => `<div class="doc"><div><b>${esc(e.name)}</b><div class="small" style="color:var(--warn)">${esc(e.doc)} expires ${esc(e.when)}</div></div><button class="chip" data-act="a-remind">Remind</button></div>`).join("");
   else if (A.tab === "settings") body = aSettings();
@@ -975,7 +1040,7 @@ function aMenu() {
 /* ---------- Job engine ---------- */
 function startJob() {
   const wantByType = { ...C.counts };
-  if (job && sched() && job.status !== "cancelled") C_JOBS.push({ dayN: job.dayN, start: job.start, hours: job.hours, place: job.place, material: job.material, need: job.need, crew: job.crew });
+  if (job && sched() && job.status !== "cancelled") C_JOBS.push({ owner: ACCT.contractor, dayN: job.dayN, start: job.start, hours: job.hours, place: job.place, material: job.material, need: job.need, crew: job.crew });
   job = { place: C.place, material: C.material, when: C.day ? `${dayLabel(C.day)} · ${C.time}` : "Now", dayN: C.day, date: dayLabel(C.day), start: C.time, hours: C.hours, wantByType, need: totalTrucks(), crew: [], status: "searching", radius: C.radius, sentTo: TYPES.reduce((s, t) => s + (C.counts[t] ? nearby(t) : 0), 0), contact: "Al, (510) 555-0100", notes: [], note: C.note.trim(), plantN: Math.min(C.plantN, totalTrucks()), plant: C.plant, updates: [], unread: 0, dayT0: Date.now(), dayMin: C.day ? toMin(C.time) : new Date().getHours() * 60 + new Date().getMinutes() };
   // Other drivers accept one by one; leave a 12-wheeler spot for "me" if one was requested and I'm online soon
   const queue = [];
@@ -1016,6 +1081,9 @@ function closeOffer() { clearInterval(offerTimer); D.screen = "home"; }
 function render() {
   let h = "";
   if (!mode) h = welcome();
+  else if ((mode === "contractor" || mode === "fleet") && !ACCT[mode]) h = AF && AF.kind === mode ? acctSignup() : acctStart(mode);
+  else if (mode === "driver" && !ACCT.driver && !D.signup) h = acctStart("driver");
+  else if (mode === "fleet" && ACCT.fleet === "new" && !NEW.fleet.approved) h = fPending();
   else if (mode === "fleet") { h = fHome(); if (F.menu) h += fMenu(); }
   else if (mode === "admin") { h = aHome(); if (A.menu) h += aMenu(); }
   else if (mode === "contractor") {
@@ -1092,7 +1160,7 @@ function act(name, arg) {
         job.crew.push({ id: "me", name: ME.name, type: ME.type, rating: ME.rating, plate: ME.plate, phone: "(510) 555-0142", start: { x: ME.x, y: ME.y }, t0: Date.now(), eta: etaMin(ME, job.place), status: "On the way", slot: job.crew.length, arrived: false, reconfirmed: false });
       } else {
         const b = BOARD.splice(+arg, 1)[0];
-        UPCOMING.push({ dayN: b.dayN, hours: b.hours, start: b.start, place: b.place.name, sub: b.place.sub, material: b.material, contractor: b.contractor, trucks: b.trucks, rate: b.rate, contact: b.contact, note: b.note || "", startAt: b.startAt || "" });
+        UPCOMING.push({ owner: ACCT.driver, dayN: b.dayN, hours: b.hours, start: b.start, place: b.place.name, sub: b.place.sub, material: b.material, contractor: b.contractor, trucks: b.trucks, rate: b.rate, contact: b.contact, note: b.note || "", startAt: b.startAt || "" });
       }
       D.page = "jobs"; D.jobTab = "up"; D.openJob = null; toast("Accepted. It's in My jobs, and the contractor can see you.");
       if (arg === "demo") { checkFilled(); return; } break;
@@ -1106,6 +1174,17 @@ function act(name, arg) {
     case "d-radius": D.radius = +arg; toast(`You'll get requests up to ${arg} miles away.`); break;
     case "d-days": D.avail = D.avail.includes(arg) ? D.avail.filter(a => a !== arg) : [...D.avail, arg]; break;
     case "d-signup": D.menu = false; D.signup = { step: 1, files: {}, det: { cdl: {}, med: {}, ins: {}, reg: {} }, years: "5 to 10" }; break;
+    case "acct-new": if (arg === "driver") { act("d-signup"); return; } AF = { kind: arg }; break;
+    case "acct-in": { const [k, who] = arg.split(":"); signIn(k, who); if (who === "demo") toast("Signed in to the sample account."); break; }
+    case "acct-out": ACCT[arg] = null; C.menu = D.menu = F.menu = false; break;
+    case "af-close": AF = null; break;
+    case "af-submit": { saveAf(); if (!afValid()) return; const k = AF.kind; NEW[k] = { ...AF, approved: k !== "fleet" }; AF = null; ACCT[k] = "new";
+      if (k === "contractor") { C.screen = "home"; toast(`Welcome, ${NEW.contractor.name.split(" ")[0]}. Tap "Where's the job?" to request your first trucks.`); }
+      else toast("Thanks! We're checking your company."); break; }
+    case "f-approve": NEW.fleet.approved = true; toast("Approved. Next you add your trucks and drivers. Showing the sample fleet for now."); break;
+    case "d-hello": NEW.driver.hideHello = true; break;
+    case "a-goto-me": mode = "admin"; A.tab = "review"; A.open = APPS.some(a => a.id === "me") ? "me" : null; A.menu = false; break;
+    case "a-seeme": mode = "driver"; A.justApproved = null; signIn("driver", "new"); break;
     case "d-go": D.online = !D.online; toast(D.online ? "You'll also get same-day requests." : "Same-day requests are off."); break;
     case "d-accept": {
       clearInterval(offerTimer);
@@ -1145,13 +1224,16 @@ function act(name, arg) {
     case "su-next": saveSu(); D.signup.step++; break;
     case "su-type": saveSu(); D.signup.type = arg; if (!D.signup.cap) D.signup.cap = (TRUCKS[arg].seat.match(/~(\d+) tons/) || [])[1] || ""; break;
     case "su-submit": { saveSu(); const s = D.signup, st = iso => daysTo(iso) <= 30 ? `warn:Expires in ${daysTo(iso)} days` : "ok";
+      { const old = APPS.findIndex(a => a.id === "me"); if (old >= 0) APPS.splice(old, 1); }
       APPS.unshift({ id: "me", name: s.name, city: s.city || "Bay Area", phone: s.phone, email: s.email, company: s.company, years: s.years, type: s.type, plate: s.plate, dot: s.dotNum, mc: s.mc, when: "Just now",
         truck: { make: s.make, model: s.model, year: s.year, vin: s.vin, cap: s.cap, tarp: s.tarp, photo: s.files.truck },
         docs: { cdl: [s.files.cdl, st(s.det.cdl.exp), `${s.det.cdl.state} · Class ${s.det.cdl.cls} · #${s.det.cdl.num} · expires ${fmtDate(s.det.cdl.exp)}`], med: [s.files.med, st(s.det.med.exp), `Expires ${fmtDate(s.det.med.exp)}`],
           ins: [s.files.ins, st(s.det.ins.exp), `${s.det.ins.co} · #${s.det.ins.pol} · ${s.det.ins.amt} · expires ${fmtDate(s.det.ins.exp)}`], reg: [s.files.reg, st(s.det.reg.exp), `Expires ${fmtDate(s.det.reg.exp)}`] },
         checks: { fmcsa: `ok:USDOT ${s.dotNum} is active, with insurance on file`, mvr: "wait:Driving record check in progress, usually 1 to 2 days" } });
-      D.signup = null; D.approved = false; D.online = false; break; }
-    case "su-approve": D.approved = true; { const i = APPS.findIndex(a => a.id === "me"); if (i >= 0) APPS.splice(i, 1); } toast("Approved. Tap GO to start getting jobs."); break;
+      const docs = DOCS.map(([k, t]) => { const e = s.det[k].exp, d = daysTo(e); return [t, d <= 30 ? `Expires ${fmtDate(e)} (in ${d} days)` : `Expires ${fmtDate(e)}`, d <= 30 ? "warn" : "ok"]; }).concat([[`USDOT ${s.dotNum}`, "Active on FMCSA", "ok"]]);
+      NEW.driver = { name: s.name.trim(), type: s.type, plate: s.plate, city: s.city || "Bay Area", truckName: `${s.year} ${s.make} ${s.model}`, docs, approved: false };
+      signIn("driver", "new"); D.online = false; A.justApproved = null; break; }
+    case "su-approve": approveMe(); { const i = APPS.findIndex(a => a.id === "me"); if (i >= 0) APPS.splice(i, 1); } toast("Approved. You can take jobs now."); break;
     case "c-more": C.more = true; break;
     case "c-radius": C.radius = +arg; break;
     case "c-widen": { const r = RADII.find(x => x > job.radius); if (!r) break; const before = job.sentTo; job.radius = r; job.sentTo = TYPES.reduce((s, t) => s + (job.wantByType[t] ? nearby(t, r) : 0), 0); toast(`Now sent to ${job.sentTo - before} more drivers, up to ${r} miles away`); break; }
@@ -1165,8 +1247,8 @@ function act(name, arg) {
       const i = APPS.findIndex(a => a.id === arg), ap = APPS[i];
       if (name === "a-ask") { toast(`Text sent to ${ap.name.split(" ")[0]} asking for a new document.`); return; }
       APPS.splice(i, 1); A.open = null;
-      if (name === "a-approve") { ROSTER.unshift({ name: ap.name, type: ap.type, city: ap.city, status: "Approved" }); if (ap.id === "me") D.approved = true; toast(`${ap.name} approved. They can take jobs now.`); }
-      else { if (ap.id === "me") { D.approved = true; D.signup = null; } toast(`${ap.name} was turned down. We texted them why.`); }
+      if (name === "a-approve") { ROSTER.unshift({ name: ap.name, type: ap.type, city: ap.city, status: "Approved" }); if (ap.id === "me") { approveMe(); A.justApproved = ap.name; } toast(`${ap.name} approved. They can take jobs now.`); }
+      else { if (ap.id === "me") { NEW.driver = null; if (ACCT.driver === "new") ACCT.driver = null; D.signup = null; } toast(`${ap.name} was turned down. We texted them why.`); }
       break;
     }
     case "a-set-fold": A.setOpen[arg] = !A.setOpen[arg]; break;
@@ -1187,6 +1269,8 @@ function act(name, arg) {
   }
   render();
 }
+function approveMe() { if (NEW.driver) NEW.driver.approved = true; if (ACCT.driver === "new") D.approved = true; }
+function saveAf() { if (!AF) return; ACCT_FIELDS[AF.kind].forEach(([f]) => { const el = $("#af-" + f); if (el) AF[f] = el.value; }); }
 function saveSu() {
   const s = D.signup; if (!s) return;
   ["name", "phone", "email", "city", "company", "years", "make", "model", "year", "plate", "cap", "vin", "mc"].forEach(k => { const el = $("#su-" + k); if (el) s[k] = k === "vin" ? el.value.toUpperCase() : el.value; });
@@ -1197,7 +1281,7 @@ function saveSu() {
 
 document.addEventListener("click", e => {
   const m = e.target.closest("[data-mode]");
-  if (m) { mode = m.dataset.mode === "welcome" ? null : m.dataset.mode; C.menu = D.menu = F.menu = A.menu = false; render(); return; }
+  if (m) { mode = m.dataset.mode === "welcome" ? null : m.dataset.mode; C.menu = D.menu = F.menu = A.menu = false; if (mode && mode !== "admin" && m.closest(".welcome")) { ACCT[mode] = null; AF = null; D.signup = null; } render(); return; }
   const a = e.target.closest("[data-act]");
   if (a && a.dataset.act.endsWith("menu-close") && e.target !== a) return;   // clicks inside the menu panel don't close it
   if (a && !(e.target.closest("label") && e.target.tagName === "INPUT")) { const [n, ...rest] = a.dataset.act.split(":"); act(n, rest.join(":")); }
@@ -1208,6 +1292,7 @@ document.addEventListener("input", e => {
   if (e.target.id === "c-note") C.note = e.target.value;
   if (setDraft(e.target)) { const bar = $("#set-bar"); if (bar) bar.style.display = setDirty() ? "flex" : "none"; return; }
   if (e.target.closest && e.target.closest("[data-su]")) { saveSu(); const b = $("[data-act=su-next], [data-act=su-submit]"); if (b) b.disabled = !suValid(); }
+  if (e.target.closest && e.target.closest("[data-af]")) { saveAf(); const b = $("[data-act=af-submit]"); if (b) b.disabled = !afValid(); }
 });
 document.addEventListener("change", e => {
   if (e.target.dataset && e.target.dataset.pick) { const id = e.target.dataset.pick; F.picked = e.target.checked ? [...F.picked, id] : F.picked.filter(x => x !== id); render(); return; }
