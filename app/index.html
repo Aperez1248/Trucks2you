@@ -546,6 +546,7 @@ function render() {
   if (!mode) h = welcome();
   else if (mode === "fleet") { h = fHome(); if (F.menu) h += fMenu(); }
   else if (mode === "contractor") {
+    if (job && job.status === "live" && C.screen === "searching") C.screen = "live";
     h = { home: cHome, where: cWhere, options: cOptions, searching: cSearching, live: cLive, done: cDone }[C.screen]();
     if (C.menu) h += cMenu();
   } else {
