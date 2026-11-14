@@ -8,7 +8,7 @@ This repo holds **clickable prototypes** with sample data. There are no real log
 
 ## See it online
 
-The website is published free with GitHub Pages at **https://aperez1248.github.io/trucks2you/**. It always shows the latest `app/index.html` on the `main` branch, and updates a minute or two after a change is merged. The first prototype is at https://aperez1248.github.io/trucks2you/prototype/.
+The website is published free with GitHub Pages at **https://aperez1248.github.io/Trucks2you/**. It always shows the latest `app/index.html` on the `main` branch, and updates a minute or two after a change is merged. The first prototype is at https://aperez1248.github.io/Trucks2you/prototype/.
 
 ## What's here
 
