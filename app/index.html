@@ -876,7 +876,7 @@ function aHome() {
   return `<div class="full">
     <div class="row"><button class="round" data-act="a-menu" aria-label="Menu" style="box-shadow:none;background:var(--chip)">☰</button><span class="tag">Trucks2U admin</span></div>
     <div class="row" style="gap:8px">${[[ROSTER.filter(r => r.status === "Approved").length + 120, "Approved drivers"], [APPS.length, "Waiting for review"], [EXPIRING.length, "Expiring soon"]].map(([n, l]) => `<div style="flex:1;background:var(--chip);border-radius:12px;padding:10px 12px"><div style="font-size:22px;font-weight:800">${n}</div><div class="muted small">${l}</div></div>`).join("")}</div>
-    <div class="chips">${[["review", `To review · ${APPS.length}`], ["expiring", "Expiring"], ["drivers", "Drivers"], ["settings", "Settings"]].map(([k, l]) => `<button class="chip" data-act="a-tab:${k}" aria-pressed="${A.tab === k}">${l}</button>`).join("")}</div>
+    <div class="chips" style="flex-wrap:wrap">${[["review", `To review · ${APPS.length}`], ["expiring", "Expiring"], ["drivers", "Drivers"], ["settings", "Settings"]].map(([k, l]) => `<button class="chip" data-act="a-tab:${k}" aria-pressed="${A.tab === k}">${l}</button>`).join("")}</div>
     <div>${body}</div>
   </div>`;
 }
@@ -911,37 +911,50 @@ function fromDraft(d) {
   } catch (e) { return { err: String(e) }; }
 }
 function aSettings() {
-  const d = A.draft, dirty = JSON.stringify(d) !== JSON.stringify(toDraft(currentSettings()));
-  const fld = (k, label, hint, pre = "", post = "") => `<label class="f">${label}<span class="row" style="gap:8px">${pre ? `<b>${pre}</b>` : ""}<input data-sf="${k}" inputmode="decimal" value="${esc(d[k])}">${post ? `<b>${post}</b>` : ""}</span><span class="muted small" style="font-weight:400">${hint}</span></label>`;
-  const truck = (t, i) => `<div style="background:var(--chip);border-radius:12px;padding:12px;display:grid;gap:10px">
-      <div class="row" style="gap:8px;align-items:end">
-        <label class="f" style="flex:3">Name<input data-tk="${i}" data-tf="name" value="${esc(t.name)}" placeholder="e.g. Belly dump" style="background:var(--sheet)"></label>
-        <label class="f" style="flex:1">Short<input data-tk="${i}" data-tf="short" value="${esc(t.short)}" maxlength="4" placeholder="BD" style="background:var(--sheet)"></label>
-        <label class="f" style="flex:1.4">$ per hour<input data-tk="${i}" data-tf="rate" inputmode="decimal" value="${esc(t.rate)}" style="background:var(--sheet)"></label></div>
-      <label class="f">What it carries<input data-tk="${i}" data-tf="seat" value="${esc(t.seat)}" placeholder="e.g. ~25 tons a load" style="background:var(--sheet)"></label>
-      <div class="row"><label class="row" style="gap:8px;font-size:14px;font-weight:600;cursor:pointer"><input type="checkbox" data-tk="${i}" data-tf="main" ${t.main ? "checked" : ""} style="width:20px;height:20px"> Show first when ordering</label>
-        <button class="chip" data-act="a-set-del:${i}" style="background:var(--sheet)">Remove</button></div></div>`;
-  return `<div class="stack" style="gap:18px">
-    <div class="small" style="background:var(--chip);padding:10px 12px;border-radius:10px">These settings are saved on this computer or phone only. Until the app has a server, change them on each device you use.</div>
+  const d = A.draft, dirty = setDirty(), op = A.setOpen || (A.setOpen = {});
+  const box = "background:var(--chip);border-radius:12px;padding:12px 14px";
+  const fold = (k, title, sub, inner) => `<div style="border-top:1px solid var(--line)"><button data-act="a-set-fold:${k}" aria-expanded="${!!op[k]}" style="all:unset;box-sizing:border-box;display:flex;width:100%;align-items:center;gap:12px;padding:14px 0;cursor:pointer"><span style="flex:1"><b style="font-size:16px">${title}</b><span class="muted small" style="display:block">${sub}</span></span><span style="font-size:20px;transform:rotate(${op[k] ? 90 : 0}deg)">›</span></button>${op[k] ? `<div class="stack" style="gap:12px;padding-bottom:16px">${inner}</div>` : ""}</div>`;
+  const num = (k, label, pre, post) => `<label class="f" style="flex:1;min-width:0">${label}<span class="row" style="gap:6px">${pre ? `<b>${pre}</b>` : ""}<input data-sf="${k}" inputmode="decimal" value="${esc(d[k])}">${post ? `<b class="muted">${post}</b>` : ""}</span></label>`;
+  const truck = (t, i) => {
+    const open = A.editTruck === i;
+    return `<div style="border-bottom:1px solid var(--line);padding:10px 0">
+      <div class="row" style="gap:10px">
+        <button data-act="a-set-edit:${i}" aria-expanded="${open}" style="all:unset;flex:1;min-width:0;cursor:pointer"><b>${esc(t.name || "New truck type")}</b><span class="muted small" style="display:block">${t.main ? "Shown first · " : ""}${esc(t.seat || "Tap to edit")}</span></button>
+        <span class="row" style="gap:4px;flex:none"><b>$</b><input data-tk="${i}" data-tf="rate" inputmode="decimal" value="${esc(t.rate)}" aria-label="${esc(t.name)} rate per hour" style="width:76px;padding:10px"><span class="muted small">/hr</span></span></div>
+      ${open ? `<div class="stack" style="${box};gap:10px;margin-top:10px">
+        <label class="f">Name<input data-tk="${i}" data-tf="name" value="${esc(t.name)}" placeholder="e.g. Belly dump" style="background:var(--sheet)"></label>
+        <div class="row" style="gap:8px"><label class="f" style="flex:1">Short label<input data-tk="${i}" data-tf="short" value="${esc(t.short)}" maxlength="4" placeholder="BD" style="background:var(--sheet)"></label>
+          <label class="f" style="flex:2">What it carries<input data-tk="${i}" data-tf="seat" value="${esc(t.seat)}" placeholder="~25 tons a load" style="background:var(--sheet)"></label></div>
+        <div class="row"><label class="row" style="gap:8px;font-size:14px;font-weight:600;cursor:pointer"><input type="checkbox" data-tk="${i}" data-tf="main" ${t.main ? "checked" : ""} style="width:20px;height:20px"> Show first when ordering</label>
+          <button class="chip" data-act="a-set-del:${i}" style="background:var(--sheet);color:#e11900">Remove</button></div></div>` : ""}
+    </div>`;
+  };
+  return `<div class="stack" style="gap:20px">
     ${A.setErr ? `<div class="small" style="color:#e11900;font-weight:600">${esc(A.setErr)}</div>` : ""}
-    <div class="stack" style="gap:12px"><h2>Money and pay</h2>
-      ${fld("fee", "Trucks2U fee", "Taken out of the driver's pay. Contractors pay nothing extra.", "", "%")}
-      ${fld("minHrs", "Minimum hours paid", "Every truck is paid at least this many hours a day.", "", "hours")}
-      ${fld("brokerPct", "What a broker usually keeps", "Shown to contractors to compare with a broker.", "", "%")}
-      ${fld("fleetFee", "Fleet fee for dispatching their own trucks", "Per truck, per day. This is a placeholder until you set the real price.", "$")}
-      <label class="f">Payday<select data-sf="payday">${DAYS.map(x => `<option ${x === d.payday ? "selected" : ""}>${x}</option>`).join("")}</select><span class="muted small" style="font-weight:400">Drivers and fleets are paid once a week on this day.</span></label></div>
-    <div class="stack" style="gap:10px"><h2>Truck types</h2><p class="muted small" style="margin:0">The rate is what the contractor pays per hour for that truck.</p>
-      ${d.trucks.map(truck).join("")}
-      <button class="btn light" data-act="a-set-add">+ Add a truck type</button></div>
-    <div class="stack" style="gap:12px"><h2>Job options</h2>
-      <label class="f">Kinds of work<textarea data-sf="materials" rows="3" style="${TA}">${esc(d.materials)}</textarea><span class="muted small" style="font-weight:400">One per line. Contractors pick one when they order trucks.</span></label>
-      <label class="f">Start times<textarea data-sf="times" rows="7" style="${TA}">${esc(d.times)}</textarea><span class="muted small" style="font-weight:400">One per line, like 6:00 AM or 7:30 PM.</span></label>
-      <label class="f">Search distances (miles)<input data-sf="radii" value="${esc(d.radii)}"><span class="muted small" style="font-weight:400">Separate with commas, like 10, 25, 50.</span></label></div>
-    ${dirty ? `<p class="small" style="margin:0;color:var(--warn);font-weight:600">You have changes that aren't saved yet.</p>` : ""}
-    <button class="btn" data-act="a-set-save">Save settings</button>
-    <div class="row" style="gap:10px"><button class="btn light" style="flex:1" data-act="a-set-undo" ${dirty ? "" : "disabled"}>Undo changes</button><button class="btn light" style="flex:1" data-act="a-set-reset">Use original settings</button></div>
+    <div class="stack" style="gap:10px"><h2>Pay</h2>
+      <div class="row" style="gap:12px;align-items:start">${num("fee", "Trucks2U fee", "", "%")}${num("minHrs", "Minimum hours", "", "hrs")}</div>
+      <p class="muted small" style="margin:0">The fee comes out of the driver's pay. Every truck is paid at least the minimum hours.</p></div>
+    <div class="stack" style="gap:2px"><h2>Truck types and rates</h2>
+      <p class="muted small" style="margin:0 0 4px">Change a rate right here. Tap a name to rename or remove it.</p>
+      <div>${d.trucks.map(truck).join("")}</div>
+      <button class="chip" data-act="a-set-add" style="justify-self:start;margin-top:10px">+ Add a truck type</button></div>
+    <div>
+      ${fold("more", "More pay settings", `Payday ${esc(d.payday)} · broker ${esc(d.brokerPct)}% · fleet fee $${esc(d.fleetFee)}`, `
+        <label class="f">Payday<select data-sf="payday">${DAYS.map(x => `<option ${x === d.payday ? "selected" : ""}>${x}</option>`).join("")}</select></label>
+        <div class="row" style="gap:12px;align-items:start">${num("brokerPct", "Broker usually keeps", "", "%")}${num("fleetFee", "Fleet fee per truck/day", "$", "")}</div>
+        <p class="muted small" style="margin:0">The broker % is only shown to contractors as a comparison. The fleet fee is a placeholder until you set the real price.</p>`)}
+      ${fold("jobs", "Job options", "Kinds of work, start times, search distances", `
+        <label class="f">Kinds of work<textarea data-sf="materials" rows="3" style="${TA}">${esc(d.materials)}</textarea><span class="muted small" style="font-weight:400">One per line.</span></label>
+        <label class="f">Start times<textarea data-sf="times" rows="6" style="${TA}">${esc(d.times)}</textarea><span class="muted small" style="font-weight:400">One per line, like 6:00 AM.</span></label>
+        <label class="f">Search distances (miles)<input data-sf="radii" value="${esc(d.radii)}"><span class="muted small" style="font-weight:400">Separate with commas.</span></label>`)}
+      ${fold("reset", "Start over", "Go back to the original settings", `<button class="btn light" data-act="a-set-reset">Use original settings</button>`)}
+    </div>
+    <p class="muted small" style="margin:0">Saved on this device only, until the app has a server.</p>
+    <div id="set-bar" style="position:sticky;bottom:0;padding:12px 0;box-shadow:0 -12px 16px -8px var(--sheet);background:var(--sheet);border-top:1px solid var(--line);display:${dirty ? "flex" : "none"};gap:10px">
+      <button class="btn light" style="flex:1" data-act="a-set-undo">Undo</button><button class="btn" style="flex:2" data-act="a-set-save">Save changes</button></div>
   </div>`;
 }
+const setDirty = () => A.draft && JSON.stringify(A.draft) !== JSON.stringify(toDraft(currentSettings()));
 function setDraft(el) {
   if (!A.draft || !el.dataset) return false;
   if (el.dataset.sf) A.draft[el.dataset.sf] = el.value;
@@ -1156,10 +1169,12 @@ function act(name, arg) {
       else { if (ap.id === "me") { D.approved = true; D.signup = null; } toast(`${ap.name} was turned down. We texted them why.`); }
       break;
     }
-    case "a-set-add": A.draft.trucks.push({ key: "t" + Date.now().toString(36), name: "", short: "", seat: "", rate: 120, main: false }); A.setErr = ""; render(); { const n = document.querySelectorAll('[data-tf="name"]'); if (n.length) { n[n.length - 1].focus(); n[n.length - 1].scrollIntoView({ block: "center" }); } } return;
-    case "a-set-del": { const t = A.draft.trucks[+arg]; if (A.draft.trucks.length === 1) { toast("Keep at least one truck type."); return; } A.draft.trucks.splice(+arg, 1); toast(`${t.name || "Truck type"} removed. Tap Save settings to keep it that way.`); break; }
+    case "a-set-fold": A.setOpen[arg] = !A.setOpen[arg]; break;
+    case "a-set-edit": A.editTruck = A.editTruck === +arg ? null : +arg; break;
+    case "a-set-add": A.draft.trucks.push({ key: "t" + Date.now().toString(36), name: "", short: "", seat: "", rate: 120, main: false }); A.editTruck = A.draft.trucks.length - 1; A.setErr = ""; render(); { const n = document.querySelectorAll('[data-tf="name"]'); if (n.length) { n[n.length - 1].focus(); n[n.length - 1].scrollIntoView({ block: "center" }); } } return;
+    case "a-set-del": { const t = A.draft.trucks[+arg]; if (A.draft.trucks.length === 1) { toast("Keep at least one truck type."); return; } A.draft.trucks.splice(+arg, 1); A.editTruck = null; toast(`${t.name || "Truck type"} removed. Tap Save changes to keep it that way.`); break; }
     case "a-set-undo": A.draft = toDraft(currentSettings()); A.setErr = ""; toast("Changes undone."); break;
-    case "a-set-reset": A.draft = toDraft(DEFAULTS); A.setErr = ""; toast("Original settings loaded. Tap Save settings to use them."); break;
+    case "a-set-reset": A.draft = toDraft(DEFAULTS); A.setErr = ""; toast("Original settings loaded. Tap Save changes to use them."); break;
     case "a-set-save": {
       const r = fromDraft(A.draft);
       if (r.err) { A.setErr = r.err; render(); $(".full").scrollTop = 0; return; }
@@ -1191,7 +1206,7 @@ document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === 
 document.addEventListener("input", e => {
   if (e.target.id === "q") $("#results").innerHTML = placeList(e.target.value);
   if (e.target.id === "c-note") C.note = e.target.value;
-  if (setDraft(e.target)) return;
+  if (setDraft(e.target)) { const bar = $("#set-bar"); if (bar) bar.style.display = setDirty() ? "flex" : "none"; return; }
   if (e.target.closest && e.target.closest("[data-su]")) { saveSu(); const b = $("[data-act=su-next], [data-act=su-submit]"); if (b) b.disabled = !suValid(); }
 });
 document.addEventListener("change", e => {
