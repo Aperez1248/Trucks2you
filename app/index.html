@@ -146,8 +146,17 @@ button:focus-visible, .opt:focus-visible, label:focus-within { outline: 3px soli
 const TRUCKS = {
   w10: { name: "10 wheeler", short: "10W", seat: "~15 tons a load", rate: 115 },
   w12: { name: "12 wheeler", short: "12W", seat: "~19 tons a load", rate: 130 },
-  sd:  { name: "Super dumper", short: "SD", seat: "~26 tons a load", rate: 150 }
+  sd:  { name: "Super dumper", short: "SD", seat: "~26 tons a load", rate: 150 },
+  bd:  { name: "Bottom dump", short: "BD", seat: "~25 tons a load", rate: 140 },
+  sdd: { name: "Side dump", short: "SDT", seat: "~25 tons a load", rate: 145 },
+  tr:  { name: "Transfer", short: "TR", seat: "~27 tons a load", rate: 145 },
+  wt:  { name: "Water truck", short: "WT", seat: "2,000 to 4,000 gallons", rate: 125 },
+  fb:  { name: "Flatbed", short: "FB", seat: "Materials and equipment", rate: 120 },
+  lb:  { name: "Lowboy", short: "LB", seat: "Moves rollers and pavers", rate: 165 }
 };
+const MAIN = ["w10", "w12", "sd"];   // shown first; the rest sit under "More truck types"
+const MIN_HRS = 6;                     // drivers are paid by the hour, 6-hour minimum
+const RADII = [10, 25, 50, 75, 100];   // miles
 const FEE = 0.05;
 const MATERIALS = ["Haul off grindings", "Bring asphalt", "Both"];
 const PLACES = [
@@ -161,7 +170,7 @@ const NAMES = ["Marco R.", "Luis O.", "Dana K.", "Tam N.", "Ben C.", "Ana R.", "
 const TYPES = Object.keys(TRUCKS);
 // Sample drivers spread around the map (positions in map units)
 const DRIVERS = NAMES.map((n, i) => ({
-  id: "d" + i, name: n, type: TYPES[i % 3], rating: (4.7 + ((i * 7) % 3) / 10).toFixed(1),
+  id: "d" + i, name: n, type: ["w10", "w12", "sd", "w12", "bd", "w10", "tr", "w12", "sd", "wt", "w10", "w12", "lb", "sd", "w12", "sdd", "w10", "fb", "w12", "sd"][i], rating: (4.7 + ((i * 7) % 3) / 10).toFixed(1),
   plate: ["8", "7", "6"][i % 3] + "ABC" + (100 + i * 37) % 900,
   x: 40 + ((i * 97) % 320), y: 120 + ((i * 151) % 520), phone: "(510) 555-01" + String(10 + i).padStart(2, "0")
 }));
@@ -181,7 +190,8 @@ const ME = { name: "Marco R.", type: "w12", plate: "8XKD218", rating: "4.9", x: 
 /* ---------- State ---------- */
 let mode = null;   // null = welcome screen; "contractor", "driver" or "fleet" once signed in
 let F = { tab: "requests", picked: [], menu: false };
-let C = { screen: "home", place: null, material: MATERIALS[0], counts: { w10: 0, w12: 2, sd: 0 }, focus: "w12", when: "Now", menu: false };
+let C = { screen: "home", place: null, material: MATERIALS[0], counts: Object.fromEntries(Object.keys(TRUCKS).map(t => [t, t === "w12" ? 2 : 0])), focus: "w12", when: "Now", menu: false, radius: 25, more: false };
+let A = { tab: "review", open: null, menu: false };   // Trucks2U admin
 let D = { online: false, screen: "home", offerLeft: 0, earnedToday: 0, tickets: [], menu: false, signup: null, approved: true };
 let job = null;   // the one live request, shared by both apps
 let toastTimer, offerTimer, tick;
@@ -192,7 +202,7 @@ const money = n => "$" + Math.round(n).toLocaleString("en-US");
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const etaMin = (a, b) => Math.max(2, Math.round(dist(a, b) / 9));
 const totalTrucks = () => TYPES.reduce((s, t) => s + C.counts[t], 0);
-const nearby = t => DRIVERS.filter(d => d.type === t).length * 6 + 4;
+const nearby = (t, r = C.radius) => Math.round((DRIVERS.filter(d => d.type === t).length * 6 + 4) * (r / 25) ** 0.8);
 
 function toast(msg) {
   const old = $(".toast"); if (old) old.remove();
@@ -294,16 +304,21 @@ function placeList(q) {
 }
 function cOptions() {
   const n = totalTrucks();
-  const est = TYPES.reduce((s, t) => s + C.counts[t] * TRUCKS[t].rate * 10, 0);
+  const est = TYPES.reduce((s, t) => s + C.counts[t] * TRUCKS[t].rate * 8, 0);
+  const shown = C.more ? TYPES : TYPES.filter(t => MAIN.includes(t) || C.counts[t]);
   return `<div class="top"><button class="round" data-act="c-where" aria-label="Back">←</button><span class="pill">${esc(C.place.name)}</span><span style="width:44px"></span></div>
     <div class="sheet">
       <div class="chips">${MATERIALS.map(m => `<button class="chip" data-act="c-mat:${m}" aria-pressed="${C.material === m}">${m}</button>`).join("")}</div>
-      <div class="stack" style="gap:4px">${TYPES.map(t => `<div class="opt ${C.focus === t ? "on" : ""}" data-act="c-focus:${t}" tabindex="0">
+      <div class="stack" style="gap:4px">${shown.map(t => `<div class="opt ${C.focus === t ? "on" : ""}" data-act="c-focus:${t}" tabindex="0">
           <svg viewBox="0 0 58 30" width="58" height="30" aria-hidden="true"><rect x="2" y="6" width="34" height="16" rx="2" fill="var(--fg)"/><rect x="38" y="10" width="16" height="12" rx="3" fill="var(--fg)"/><circle cx="12" cy="25" r="4" fill="var(--muted)"/><circle cx="26" cy="25" r="4" fill="var(--muted)"/><circle cx="46" cy="25" r="4" fill="var(--muted)"/></svg>
           <div><div class="name">${TRUCKS[t].name}</div><div class="meta">${nearby(t)} nearby · ${4 + TYPES.indexOf(t) * 3} min · ${TRUCKS[t].seat}</div></div>
-          <div><div class="price">$${TRUCKS[t].rate}/hr</div><div class="step"><button data-act="c-dec:${t}" aria-label="Fewer">−</button><output>${C.counts[t]}</output><button data-act="c-inc:${t}" aria-label="More">+</button></div></div>
-        </div>`).join("")}</div>
-      <div class="row small"><button class="chip" data-act="c-sched">🕒 ${esc(C.when)}</button><span class="muted">Est. ${money(est)} for 10 hrs</span></div>
+          <div><div class="price">$${TRUCKS[t].rate}/hr</div><div class="meta" style="text-align:right">${MIN_HRS} hr min</div><div class="step"><button data-act="c-dec:${t}" aria-label="Fewer">−</button><output>${C.counts[t]}</output><button data-act="c-inc:${t}" aria-label="More">+</button></div></div>
+        </div>`).join("")}
+        ${C.more ? "" : `<button class="chip" data-act="c-more" style="justify-self:start">+ More truck types</button>`}</div>
+      <div class="stack" style="gap:6px"><span class="small"><b>Send to drivers within</b></span>
+        <div class="chips">${RADII.map(r => `<button class="chip" data-act="c-radius:${r}" aria-pressed="${C.radius === r}">${r} mi</button>`).join("")}</div></div>
+      <div class="row small"><button class="chip" data-act="c-sched">🕒 ${esc(C.when)}</button><span class="muted">Est. ${money(est)} for 8 hrs</span></div>
+      <p class="muted small" style="margin-top:-6px">Paid by the hour. Every truck is paid at least ${MIN_HRS} hours.</p>
       <button class="btn" data-act="c-request" ${n ? "" : "disabled"}>Request ${n} truck${n === 1 ? "" : "s"}</button>
     </div>`;
 }
@@ -318,9 +333,10 @@ function cSearching() {
   return `<div class="top"><button class="round" data-act="c-menu" aria-label="Menu">☰</button><span class="pill">${esc(job.place.name)}</span><span style="width:44px"></span></div>
     <div class="sheet">
       <div class="stack" style="gap:6px"><h2>${got ? `${got} of ${need} trucks accepted` : "Sending your request…"}</h2>
-        <p class="muted small">Sent to ${job.sentTo} vetted drivers nearby. First to accept get the job.</p></div>
+        <p class="muted small">Sent to ${job.sentTo} vetted drivers within ${job.radius} miles. First to accept get the job.</p></div>
       <div class="bar"><i style="width:${Math.round(100 * got / need)}%"></i></div>
       ${got ? `<div>${crewRows()}</div>` : ""}
+      ${job.radius < 100 ? `<button class="btn light" data-act="c-widen">Not enough trucks? Widen to ${RADII[RADII.indexOf(job.radius) + 1]} miles</button>` : ""}
       <button class="btn light" data-act="c-cancel">Cancel request</button>
     </div>`;
 }
@@ -341,7 +357,7 @@ function cDone() {
     <h1>Job complete</h1><p class="muted">${esc(job.place.name)} · ${job.crew.length} trucks</p>
     <div class="kv">${job.crew.map(m => `<div class="row"><span>${esc(m.name)} · ${TRUCKS[m.type].short} · ${hrs} hrs</span><span>${money(hrs * TRUCKS[m.type].rate)}</span></div>`).join("")}
       <div class="row" style="border-top:1px solid var(--line);padding-top:10px"><span>Total, charged to your bank account</span><span class="big" style="font-size:24px">${money(bill)}</span></div></div>
-    <p class="muted small">A broker at 11% would have kept about ${money(bill * 0.11)}. Trucks2U's 5% is ${money(bill * FEE)}.</p>
+    <p class="muted small">Paid by the hour, ${MIN_HRS}-hour minimum per truck. A broker at 11% would have kept about ${money(bill * 0.11)}. Trucks2U's 5% is ${money(bill * FEE)}.</p>
     <div class="stack"><b>Rate your drivers</b><div class="stars" role="group" aria-label="Rating">${[1, 2, 3, 4, 5].map(i => `<button data-act="c-star:${i}" class="${i <= (job.stars || 0) ? "on" : ""}" aria-label="${i} stars">★</button>`).join("")}</div></div>
     <button class="btn" data-act="c-reset">Done</button>
   </div>`;
@@ -372,7 +388,7 @@ function dOffer() {
   const left = D.offerLeft, mi = (dist(ME, job.place) / 22).toFixed(1), rate = TRUCKS[ME.type].rate;
   const C2 = 2 * Math.PI * 24;
   return `<div class="offer" role="dialog" aria-label="New job request">
-    <div class="row"><div><span class="muted small">New job request</span><div class="big">$${rate}/hr</div><div class="muted small">About ${money(rate * 10 * (1 - FEE))} to you for a 10-hour day</div></div>
+    <div class="row"><div><span class="muted small">New job request</span><div class="big">$${rate}/hr</div><div class="muted small">${MIN_HRS}-hour minimum: at least ${money(rate * MIN_HRS * (1 - FEE))} to you</div></div>
       <svg class="ring" viewBox="0 0 56 56" aria-label="${left} seconds left"><circle cx="28" cy="28" r="24" fill="none" stroke="#333" stroke-width="5"/><circle cx="28" cy="28" r="24" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="${C2}" stroke-dashoffset="${C2 * (1 - left / 20)}" transform="rotate(-90 28 28)" stroke-linecap="round"/><text x="28" y="34" text-anchor="middle" fill="#fff" font-size="17" font-weight="800">${left}</text></svg></div>
     <div class="stack" style="gap:4px"><b>${esc(job.material)}</b><span>${esc(job.place.name)}, ${esc(job.place.sub)}</span><span class="muted small">${mi} mi away · ${etaMin(ME, job.place)} min · starts ${job.when.toLowerCase()} · ${job.need} trucks on this job</span></div>
     <button class="btn" data-act="d-accept">Accept</button>
@@ -441,7 +457,8 @@ function dPending() {
   return `<div class="full" style="align-content:center;text-align:center">
     <div style="font-size:54px">⏳</div><h1>We're checking your documents</h1>
     <p class="muted">Usually less than 1 business day. We'll text you as soon as you can start taking jobs.</p>
-    <button class="btn" data-act="su-approve">Approve now (demo)</button></div>`;
+    <button class="btn" data-act="su-approve">Approve now (demo)</button>
+    <p class="muted small">Or switch to the Trucks2U admin account and approve it there.</p></div>`;
 }
 
 /* ---------- Welcome (everyone downloads the same app) ---------- */
@@ -452,6 +469,7 @@ function welcome() {
     <button class="role" data-mode="driver"><span class="ic">🚛</span><span><b>I drive a truck</b><span>Owner-operators and drivers</span></span><span>›</span></button>
     <button class="role" data-mode="fleet"><span class="ic">▦</span><span><b>I run a fleet</b><span>Brokers and companies with several trucks</span></span><span>›</span></button>
     <p style="color:#8a8a8a;font-size:13px;text-align:center;margin-top:6px">Every driver and truck is checked before they can take jobs.</p>
+    <button data-mode="admin" style="background:none;border:0;color:#8a8a8a;font:600 13px var(--font);text-decoration:underline;cursor:pointer;justify-self:center">Trucks2U staff: admin</button>
   </div>`;
 }
 
@@ -470,7 +488,7 @@ function fHome() {
       const picked = F.picked.map(id => FLEET.trucks.find(k => k.id === id));
       body = `<div class="stack" style="gap:4px"><span class="tag go" style="justify-self:start">New job request</span><h2>${esc(job.place.name)}</h2>
           <p class="muted small">${esc(job.place.sub)} · ${esc(job.material)} · starts ${job.when.toLowerCase()}</p>
-          <p class="small"><b>Open spots:</b> ${Object.entries(spots).map(([t, n]) => `${n} × ${TRUCKS[t].name} at $${TRUCKS[t].rate}/hr`).join(", ")}</p></div>
+          <p class="small"><b>Open spots:</b> ${Object.entries(spots).map(([t, n]) => `${n} × ${TRUCKS[t].name} at $${TRUCKS[t].rate}/hr`).join(", ")} · ${MIN_HRS}-hr minimum</p></div>
         <div>${fits.flatMap(t => freeTrucks(t)).map(k => { const on = F.picked.includes(k.id); const full = !on && F.picked.filter(id => FLEET.trucks.find(x => x.id === id).type === k.type).length >= spots[k.type];
           return `<label class="check" style="${full ? "opacity:.4" : ""}"><input type="checkbox" data-pick="${k.id}" ${on ? "checked" : ""} ${full ? "disabled" : ""}><span><b>${k.id} · ${esc(k.driver)}</b><span class="muted small" style="display:block">${TRUCKS[k.type].name} · ${etaMin(k, job.place)} min away</span></span><span class="tag">${TRUCKS[k.type].short}</span></label>`; }).join("")}</div>
         <button class="btn" data-act="f-send" ${picked.length ? "" : "disabled"}>Send ${picked.length || ""} truck${picked.length === 1 ? "" : "s"}</button>
@@ -501,10 +519,71 @@ function fMenu() {
   </div></div>`;
 }
 
+/* ---------- Trucks2U admin (staff only) ---------- */
+const DOC_NAMES = { cdl: "Driver's license (CDL)", med: "DOT medical card", ins: "Insurance certificate", reg: "Truck registration" };
+const APPS = [
+  { id: "a1", name: "Tina Morales", city: "Concord, CA", phone: "(925) 555-0131", type: "bd", plate: "9TMB441", dot: "3301987", when: "2 hours ago",
+    docs: { cdl: ["CDL_front.jpg", "ok"], med: ["Medical_card.jpg", "ok"], ins: ["COI_2026.pdf", "ok"], reg: ["Registration.jpg", "ok"] } },
+  { id: "a2", name: "Ray Kim", city: "Antioch, CA", phone: "(925) 555-0177", type: "wt", plate: "7RKW210", dot: "2984410", when: "Yesterday",
+    docs: { cdl: ["License.jpg", "ok"], med: ["Med_card.jpg", "ok"], ins: ["Insurance.pdf", "warn:Expires in 12 days"], reg: ["Reg.jpg", "ok"] } },
+  { id: "a3", name: "Bill Porter", city: "Livermore, CA", phone: "(925) 555-0190", type: "w10", plate: "6BPX902", dot: "3110256", when: "Yesterday",
+    docs: { cdl: ["CDL.jpg", "ok"], med: ["Medical.jpg", "bad:Expired Oct 30, 2026"], ins: ["COI.pdf", "ok"], reg: ["Registration.pdf", "ok"] } }
+];
+const EXPIRING = [
+  { name: "Luis O.", doc: "Insurance certificate", when: "in 9 days" },
+  { name: "Steve B.", doc: "DOT medical card", when: "in 21 days" },
+  { name: "Omar A.", doc: "Truck registration", when: "in 27 days" }
+];
+const ROSTER = DRIVERS.slice(0, 12).map(d => ({ name: d.name, type: d.type, city: ["Oakland", "Hayward", "Richmond", "San Leandro", "Fremont", "Concord"][d.name.length % 6] + ", CA", status: "Approved" }));
+function docRow(k, d, id) {
+  const [file, st] = d, [kind, note] = st.split(":");
+  return `<div class="doc"><div><b>${DOC_NAMES[k]}</b><div class="small" style="color:${kind === "bad" ? "#e11900" : kind === "warn" ? "var(--warn)" : "var(--muted)"}">${kind === "ok" ? esc(file || "Uploaded") : esc(note)}</div></div>
+    <button class="chip" data-act="a-view:${id}">View</button></div>`;
+}
+function aHome() {
+  if (A.open) {
+    const a = APPS.find(x => x.id === A.open);
+    const problem = Object.values(a.docs).some(([, st]) => st.startsWith("bad"));
+    return `<div class="full">
+      <div class="row"><button class="round" data-act="a-back" aria-label="Back" style="box-shadow:none;background:var(--chip)">←</button><span class="muted small">Applied ${esc(a.when.toLowerCase())}</span></div>
+      <div class="row" style="justify-content:flex-start;gap:12px"><div class="avatar">${a.name.split(" ").map(x => x[0]).join("")}</div><div><h2>${esc(a.name)}</h2><div class="muted small">${esc(a.city)} · ${esc(a.phone)}</div></div></div>
+      <div class="kv"><div class="row"><span>Truck</span><b>${TRUCKS[a.type].name}</b></div><div class="row"><span>Plate</span><b>${esc(a.plate)}</b></div>
+        <div class="row"><span>USDOT</span><b>${esc(a.dot)} <span class="ok" style="color:var(--go)">✓ Active on FMCSA</span></b></div></div>
+      <div>${Object.entries(a.docs).map(([k, d]) => docRow(k, d, a.id)).join("")}</div>
+      ${problem ? `<p class="small" style="color:#e11900;margin:0">A document is expired. Ask for a new one before approving.</p>` : ""}
+      <button class="btn" data-act="a-approve:${a.id}" ${problem ? "disabled" : ""}>Approve driver</button>
+      <div class="row" style="gap:10px"><button class="btn light" style="flex:1" data-act="a-ask:${a.id}">Ask for a document</button><button class="btn light" style="flex:1" data-act="a-reject:${a.id}">Reject</button></div>
+    </div>`;
+  }
+  let body = "";
+  if (A.tab === "review") body = APPS.length ? APPS.map(a => {
+      const flags = Object.values(a.docs).filter(([, st]) => st !== "ok").map(([, st]) => st.split(":")[1]);
+      return `<button class="place" data-act="a-open:${a.id}"><span class="ic">${a.name[0]}</span><span><b>${esc(a.name)}</b><span>${TRUCKS[a.type].name} · ${esc(a.city)} · ${esc(a.when)}</span>${flags.length ? `<span style="display:block;color:${flags.some(f => f.startsWith("Expired")) ? "#e11900" : "var(--warn)"}">${esc(flags.join(", "))}</span>` : ""}</span></button>`; }).join("")
+    : `<p class="muted">Nobody is waiting. New sign-ups show up here.</p>`;
+  else if (A.tab === "expiring") body = `<p class="muted small" style="margin:0">Drivers get a text 30, 14 and 3 days before a document expires. When it expires, they can't take new jobs until a new one is checked.</p>` +
+    EXPIRING.map(e => `<div class="doc"><div><b>${esc(e.name)}</b><div class="small" style="color:var(--warn)">${esc(e.doc)} expires ${esc(e.when)}</div></div><button class="chip" data-act="a-remind">Remind</button></div>`).join("");
+  else body = ROSTER.map(r => `<div class="doc"><div><b>${esc(r.name)}</b><div class="muted small">${TRUCKS[r.type].name} · ${esc(r.city)}</div></div>
+      <div class="row" style="gap:8px"><span class="tag ${r.status === "Approved" ? "go" : ""}">${r.status}</span><button class="chip" data-act="a-suspend:${esc(r.name)}">${r.status === "Suspended" ? "Reinstate" : "Suspend"}</button></div></div>`).join("");
+  return `<div class="full">
+    <div class="row"><button class="round" data-act="a-menu" aria-label="Menu" style="box-shadow:none;background:var(--chip)">☰</button><span class="tag">Trucks2U admin</span></div>
+    <div class="row" style="gap:8px">${[[ROSTER.filter(r => r.status === "Approved").length + 120, "Approved drivers"], [APPS.length, "Waiting for review"], [EXPIRING.length, "Expiring soon"]].map(([n, l]) => `<div style="flex:1;background:var(--chip);border-radius:12px;padding:10px 12px"><div style="font-size:22px;font-weight:800">${n}</div><div class="muted small">${l}</div></div>`).join("")}</div>
+    <div class="chips">${[["review", `To review · ${APPS.length}`], ["expiring", "Expiring"], ["drivers", "Drivers"]].map(([k, l]) => `<button class="chip" data-act="a-tab:${k}" aria-pressed="${A.tab === k}">${l}</button>`).join("")}</div>
+    <div>${body}</div>
+  </div>`;
+}
+function aMenu() {
+  return `<div class="menu" data-act="a-menu-close"><div>
+    <div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:14px"><div class="avatar">T2</div><div><b>Trucks2U admin</b><div class="muted small">Staff only</div></div></div>
+    <button class="place" data-act="a-tab:review"><span class="ic">✓</span><span><b>Driver approvals</b><span>Check documents and approve</span></span></button>
+    <button class="place" data-act="a-tab:expiring"><span class="ic">!</span><span><b>Expiring documents</b><span>Send reminders</span></span></button>
+    <button class="place" data-mode="welcome"><span class="ic">⇄</span><span><b>Switch account</b><span>Demo: see the other sides</span></span></button>
+  </div></div>`;
+}
+
 /* ---------- Job engine ---------- */
 function startJob() {
   const wantByType = { ...C.counts };
-  job = { place: C.place, material: C.material, when: C.when, wantByType, need: totalTrucks(), crew: [], status: "searching", sentTo: 30 + Math.floor(Math.random() * 30), contact: "Al, (510) 555-0100", notes: [] };
+  job = { place: C.place, material: C.material, when: C.when, wantByType, need: totalTrucks(), crew: [], status: "searching", radius: C.radius, sentTo: TYPES.reduce((s, t) => s + (C.counts[t] ? nearby(t) : 0), 0), contact: "Al, (510) 555-0100", notes: [] };
   // Other drivers accept one by one; leave a 12-wheeler spot for "me" if one was requested and I'm online soon
   const queue = [];
   TYPES.forEach(t => { const pool = DRIVERS.filter(d => d.type === t).sort((a, b) => dist(a, job.place) - dist(b, job.place)); for (let i = 0; i < wantByType[t]; i++) queue.push(pool[i % pool.length]); });
@@ -545,6 +624,7 @@ function render() {
   let h = "";
   if (!mode) h = welcome();
   else if (mode === "fleet") { h = fHome(); if (F.menu) h += fMenu(); }
+  else if (mode === "admin") { h = aHome(); if (A.menu) h += aMenu(); }
   else if (mode === "contractor") {
     if (job && job.status === "live" && C.screen === "searching") C.screen = "live";
     h = { home: cHome, where: cWhere, options: cOptions, searching: cSearching, live: cLive, done: cDone }[C.screen]();
@@ -614,8 +694,27 @@ function act(name, arg) {
     case "su-prev": saveSu(); D.signup.step--; break;
     case "su-next": saveSu(); D.signup.step++; break;
     case "su-type": saveSu(); D.signup.type = arg; break;
-    case "su-submit": D.signup = null; D.approved = false; D.online = false; break;
-    case "su-approve": D.approved = true; toast("Approved. Tap GO to start getting jobs."); break;
+    case "su-submit": { saveSu(); const s = D.signup; APPS.unshift({ id: "me", name: s.name || "New driver", city: s.city || "Bay Area", phone: s.phone || "", type: s.type || "w12", plate: s.plate || "", dot: s.dotNum || "", docs: { cdl: [s.files.cdl, "ok"], med: [s.files.med, "ok"], ins: [s.files.ins, "ok"], reg: [s.files.reg, "ok"] }, when: "Just now" }); D.signup = null; D.approved = false; D.online = false; break; }
+    case "su-approve": D.approved = true; { const i = APPS.findIndex(a => a.id === "me"); if (i >= 0) APPS.splice(i, 1); } toast("Approved. Tap GO to start getting jobs."); break;
+    case "c-more": C.more = true; break;
+    case "c-radius": C.radius = +arg; break;
+    case "c-widen": { const r = RADII[RADII.indexOf(job.radius) + 1]; const before = job.sentTo; job.radius = r; job.sentTo = TYPES.reduce((s, t) => s + (job.wantByType[t] ? nearby(t, r) : 0), 0); toast(`Now sent to ${job.sentTo - before} more drivers, up to ${r} miles away`); break; }
+    case "a-menu": A.menu = true; break;
+    case "a-menu-close": A.menu = false; break;
+    case "a-tab": A.tab = arg; A.open = null; A.menu = false; break;
+    case "a-open": A.open = arg; break;
+    case "a-back": A.open = null; break;
+    case "a-view": toast("The document opens full screen here so you can check it."); return;
+    case "a-approve": case "a-reject": case "a-ask": {
+      const i = APPS.findIndex(a => a.id === arg), ap = APPS[i];
+      if (name === "a-ask") { toast(`Text sent to ${ap.name.split(" ")[0]} asking for a new document.`); return; }
+      APPS.splice(i, 1); A.open = null;
+      if (name === "a-approve") { ROSTER.unshift({ name: ap.name, type: ap.type, city: ap.city, status: "Approved" }); if (ap.id === "me") D.approved = true; toast(`${ap.name} approved. They can take jobs now.`); }
+      else { if (ap.id === "me") { D.approved = true; D.signup = null; } toast(`${ap.name} was turned down. We texted them why.`); }
+      break;
+    }
+    case "a-remind": toast("Reminder texted. If it expires, they can't take new jobs until it's renewed."); return;
+    case "a-suspend": { const r = ROSTER.find(x => x.name === arg); r.status = r.status === "Suspended" ? "Approved" : "Suspended"; toast(r.status === "Suspended" ? `${arg} suspended. They can't take jobs.` : `${arg} reinstated.`); break; }
   }
   render();
 }
@@ -627,7 +726,7 @@ function saveSu() {
 
 document.addEventListener("click", e => {
   const m = e.target.closest("[data-mode]");
-  if (m) { mode = m.dataset.mode === "welcome" ? null : m.dataset.mode; C.menu = D.menu = F.menu = false; render(); return; }
+  if (m) { mode = m.dataset.mode === "welcome" ? null : m.dataset.mode; C.menu = D.menu = F.menu = A.menu = false; render(); return; }
   const a = e.target.closest("[data-act]");
   if (a && a.dataset.act.endsWith("menu-close") && e.target !== a) return;   // clicks inside the menu panel don't close it
   if (a && !(e.target.closest("label") && e.target.tagName === "INPUT")) { const [n, ...rest] = a.dataset.act.split(":"); act(n, rest.join(":")); }
@@ -645,7 +744,7 @@ document.addEventListener("change", e => {
 });
 
 drawBaseMap();
-if (["#driver", "#contractor", "#fleet"].includes(location.hash)) mode = location.hash.slice(1);
+if (["#driver", "#contractor", "#fleet", "#admin"].includes(location.hash)) mode = location.hash.slice(1);
 render();
 // Keep the map and ETAs moving
 tick = setInterval(() => {
