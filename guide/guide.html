@@ -46,6 +46,12 @@ ul { margin: 4px 0 12px; padding-left: 18px; } li { margin: 3px 0; }
 .small { font-size: 9pt; color: #6b6b6b; }
 code { font-family: Menlo, monospace; font-size: 9pt; background: #f0f0f0; padding: 1px 5px; border-radius: 4px; }
 </style></head>
+<style>
+.web { width: 100%; border-radius: 10px; border: 1px solid #ddd; display: block; margin: 6px 0 16px; }
+.roles4 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 16px; }
+.role p { margin: 0; }
+.tt td, .tt th { padding: 5px 10px; }
+</style>
 <body>
 
 <!-- Cover -->
@@ -53,9 +59,9 @@ code { font-family: Menlo, monospace; font-size: 9pt; background: #f0f0f0; paddi
   <div class="txt">
     <div class="kicker" style="color:#8a8a8a">Product guide</div>
     <h1>How Trucks2U works</h1>
-    <p class="lead">Dump trucks on demand. A paving company asks for trucks, vetted drivers nearby get the job on their phone, and the first to tap Accept get it. It works like Uber, but for dump trucks.</p>
-    <p class="lead" style="font-size:10.5pt">This guide walks through every screen of the current app: the contractor who needs trucks, the driver, and the fleet owner or broker who runs several trucks.</p>
-    <div class="meta">Prototype as of November 14, 2026. All names, prices, trucks and jobs shown are sample data.</div>
+    <p class="lead">Book dump trucks for tomorrow in a few taps. A paving company posts the job, vetted drivers nearby pick it from their job list, and the first ones to accept get the spots. It works like Uber, but for dump trucks.</p>
+    <p class="lead" style="font-size:10.5pt">This guide walks through every screen: the contractor who needs trucks, the driver, the fleet owner or broker, and the Trucks2U admin who checks every driver.</p>
+    <div class="meta">Prototype as of November 13, 2026. All names, prices, trucks and jobs shown are sample data.</div>
   </div>
   <img src="shots/01-welcome.png">
 </div></section>
@@ -63,114 +69,146 @@ code { font-family: Menlo, monospace; font-size: 9pt; background: #f0f0f0; paddi
 <!-- Overview -->
 <section class="page">
   <div class="kicker">The big picture</div>
-  <h2>One app, four steps</h2>
-  <p class="lead">Everyone downloads the same Trucks2U app. What you see depends on who you are: someone who needs trucks, someone who drives one, or someone who runs a fleet.</p>
+  <h2>Book today, haul tomorrow</h2>
+  <p class="lead">Most truck requests are for the next day or a few days out, so the app is built around booking ahead. A "right now" request is still there for emergencies.</p>
   <div class="steps">
-    <div class="step"><div class="big">1</div><div><h3>Request</h3><p>The paving company enters the job site, picks the work (haul off grindings, bring asphalt, or both), and chooses how many of each truck it needs.</p></div></div>
-    <div class="step"><div class="big">2</div><div><h3>Notify</h3><p>Trucks2U sends the job to every vetted driver nearby with the right truck. Fleet owners see it too and can send their own trucks.</p></div></div>
-    <div class="step"><div class="big">3</div><div><h3>Accept</h3><p>Drivers see the pay, the site and the distance, and tap Accept or Decline. The first ones to accept get the spots. Once every spot is filled, the job closes.</p></div></div>
-    <div class="step"><div class="big">4</div><div><h3>Haul and pay</h3><p>The contractor watches trucks arrive on the map. Drivers snap load tickets. When the job ends, the contractor pays in one charge and rates the drivers.</p></div></div>
+    <div class="step"><div class="big">1</div><div><h3>Post the job</h3><p>The contractor picks the job site, the trucks it needs, how far to search, and the date, start time and about how many hours.</p></div></div>
+    <div class="step"><div class="big">2</div><div><h3>Drivers pick it up</h3><p>The job goes to every vetted driver within that distance who has the right truck. It shows up in their Available jobs list, and they can accept until every spot fills. Fleet owners can send their own trucks too.</p></div></div>
+    <div class="step"><div class="big">3</div><div><h3>Confirm the night before</h3><p>Each driver taps "Yes, I'm coming" the evening before. If someone cancels or doesn't confirm, the spot reopens and the app finds a replacement.</p></div></div>
+    <div class="step"><div class="big">4</div><div><h3>Haul and pay</h3><p>On the morning of the job, the contractor watches the trucks arrive on the map. Drivers snap load tickets. At the end, the contractor pays in one charge and rates the drivers.</p></div></div>
   </div>
-
   <h3>Who uses it</h3>
-  <div class="roles">
-    <div class="role"><h3>I need trucks</h3><p>Paving and construction companies that order trucks for a job.</p></div>
-    <div class="role"><h3>I drive a truck</h3><p>Owner-operators and drivers who want work without a broker in the middle.</p></div>
-    <div class="role"><h3>I run a fleet</h3><p>Brokers and companies with several trucks. They pick which of their trucks to send to each job.</p></div>
+  <div class="roles4">
+    <div class="role"><h3>I need trucks</h3><p>Paving and construction companies that book trucks</p></div>
+    <div class="role"><h3>I drive a truck</h3><p>Owner-operators and drivers who want work without a broker</p></div>
+    <div class="role"><h3>I run a fleet</h3><p>Brokers and companies that send several trucks</p></div>
+    <div class="role"><h3>Trucks2U admin</h3><p>Our staff, who check and approve every driver</p></div>
   </div>
-
-  <h3>Truck types and sample rates</h3>
-  <table>
-    <tr><th>Truck</th><th>Typical load</th><th class="r">Rate</th></tr>
-    <tr><td>10 wheeler</td><td>About 15 tons</td><td class="r">$115 per hour</td></tr>
-    <tr><td>12 wheeler</td><td>About 19 tons</td><td class="r">$130 per hour</td></tr>
-    <tr><td>Super dumper</td><td>About 26 tons</td><td class="r">$150 per hour</td></tr>
-  </table>
-
   <div class="box">
-    <p><b>How Trucks2U makes money.</b> Trucks2U keeps 5% of each job. A broker usually keeps 10 to 12%. On the sample job in this guide (three trucks for 9.5 hours, $3,895 total), the Trucks2U fee is $195, where a broker at 11% would have kept $428.</p>
-    <p><b>Every driver is vetted.</b> Before anyone gets a job, we check their commercial driver's license, DOT medical card, insurance, truck registration and USDOT number.</p>
+    <p><b>Pay is by the hour, with a 6-hour minimum.</b> A driver who works 4.5 hours is still paid for 6.</p>
+    <p><b>Trucks2U keeps 5%.</b> A broker usually keeps 10 to 12%. On the sample job in this guide (3 trucks for 9.5 hours, $3,895), the fee is $195, where a broker at 11% would have kept $428.</p>
   </div>
 </section>
 
-<!-- Getting started -->
+<!-- Trucks + start -->
 <section class="page">
   <div class="kicker">Getting started</div>
   <h2>Pick who you are, once</h2>
-  <div class="split" style="margin-top:14px">
+  <div class="split" style="margin-top:12px">
     <div class="shot"><img src="shots/01-welcome.png"></div>
     <div>
-      <p class="lead" style="margin-bottom:12px">The first time someone opens the app, they choose one of three options. That choice decides which version of the app they get.</p>
+      <p class="lead" style="margin-bottom:10px">Everyone uses the same app. The first time someone opens it, they choose who they are, and from then on they go straight to their own screens.</p>
       <ul>
-        <li><b>I need trucks</b> opens the contractor app: a map with a "Where's the job?" box, just like ordering a ride.</li>
-        <li><b>I drive a truck</b> starts driver sign-up. After the documents are approved, the driver gets the map with the big GO button.</li>
-        <li><b>I run a fleet</b> opens the fleet app: a map of the owner's trucks, incoming job requests, and earnings for every truck.</li>
+        <li><b>I need trucks</b> opens the contractor screens.</li>
+        <li><b>I drive a truck</b> starts driver sign-up.</li>
+        <li><b>I run a fleet</b> opens the fleet screens.</li>
+        <li><b>Trucks2U staff: admin</b> (the small link at the bottom) is for our team.</li>
       </ul>
-      <div class="box">
-        <p><b>This screen shows up only once.</b> In the real app, people choose at sign-up and then go straight to their own screen every time they log in.</p>
-        <p>In this prototype you can come back to this screen any time from the menu (the ☰ button in the top left) by tapping <b>Switch account</b>. That makes it easy to play every role on one phone.</p>
-      </div>
+      <p class="small" style="margin-bottom:14px">In the prototype, you can come back to this screen any time with <b>Switch account</b> in the ☰ menu or at the top of the website.</p>
+      <h3>Truck types and sample rates</h3>
+      <table class="tt">
+        <tr><th>Truck</th><th class="r">Rate</th></tr>
+        <tr><td>10 wheeler</td><td class="r">$115/hr</td></tr>
+        <tr><td>12 wheeler</td><td class="r">$130/hr</td></tr>
+        <tr><td>Super dumper</td><td class="r">$150/hr</td></tr>
+        <tr><td>Bottom dump</td><td class="r">$140/hr</td></tr>
+        <tr><td>Side dump, transfer</td><td class="r">$145/hr</td></tr>
+        <tr><td>Water truck</td><td class="r">$125/hr</td></tr>
+        <tr><td>Flatbed</td><td class="r">$120/hr</td></tr>
+        <tr><td>Lowboy</td><td class="r">$165/hr</td></tr>
+      </table>
     </div>
   </div>
+</section>
+
+<!-- Website -->
+<section class="page">
+  <div class="kicker">Computer or phone</div>
+  <h2>One website that works everywhere</h2>
+  <p class="lead">Trucks2U is a website first. On a computer it looks like this: a bar across the top, the map filling the screen, and the controls in a panel on the left. Office staff can book and track trucks on a big screen.</p>
+  <img class="web" src="shots/30-website.png">
+  <ul>
+    <li><b>On a phone,</b> the same website looks like the screens in the rest of this guide. Drivers tap "Add to Home Screen," and it gets an icon and opens like an app.</li>
+    <li><b>Later,</b> once the pilot proves the idea, a driver app in the App Store and Google Play adds live GPS while the phone is locked and more reliable notifications. It reuses most of the website's code.</li>
+  </ul>
 </section>
 
 <!-- Contractor 1 -->
 <section class="page">
   <div class="kicker">I need trucks · part 1</div>
-  <h2>Ordering trucks</h2>
-  <p class="lead">Ordering trucks takes three taps, the same way you order a ride.</p>
+  <h2>Booking trucks</h2>
+  <p class="lead">Booking trucks for tomorrow takes about a minute.</p>
   <div class="row">
-    <div class="shot"><img src="shots/02-contractor-home.png"><div class="n">1</div>
-      <p><b>Home.</b> The map shows vetted trucks near you right now. Tap <b>Where's the job?</b> or pick a recent site. Choose <b>Now</b> or <b>Schedule for later</b>.</p></div>
-    <div class="shot"><img src="shots/03-contractor-where.png"><div class="n">2</div>
-      <p><b>Job site.</b> Type the address or tap one of your saved sites.</p></div>
-    <div class="shot"><img src="shots/04-contractor-options.png"><div class="n">3</div>
-      <p><b>Pick your trucks.</b> Choose the work (haul off grindings, bring asphalt, or both). Use + and − to set how many 10 wheelers, 12 wheelers and super dumpers you need. The app shows how many are nearby, how far away they are, and an estimated cost. Then tap <b>Request</b>.</p></div>
+    <div class="shot"><img src="shots/02-c-home.png"><div class="n">1</div>
+      <p><b>Home.</b> Tap <b>Where's the job?</b> or a recent site. Below that are <b>Your upcoming jobs</b>, each with a bar showing how many trucks are booked, like "6 of 8 trucks booked."</p></div>
+    <div class="shot"><img src="shots/04-c-trucks.png"><div class="n">2</div>
+      <p><b>Pick your trucks.</b> Choose the work (haul off grindings, bring asphalt, or both). Use + and − to set how many of each truck you need. Tap <b>+ More truck types</b> for bottom dumps, water trucks, lowboys and more.</p></div>
+    <div class="shot"><img src="shots/05-c-when.png"><div class="n">3</div>
+      <p><b>Distance and time.</b> Choose how far to search (10 to 100 miles). Under <b>When</b>, pick the day (tomorrow is the default), the start time, and about how many hours. You'll see an estimate. Then tap <b>Request trucks for tomorrow</b>.</p></div>
   </div>
 </section>
 
 <!-- Contractor 2 -->
 <section class="page">
   <div class="kicker">I need trucks · part 2</div>
-  <h2>Watching the job</h2>
-  <p class="lead">After you request, you watch drivers accept and drive to your site on the map.</p>
-  <div class="row">
-    <div class="shot"><img src="shots/05-contractor-searching.png"><div class="n">4</div>
-      <p><b>Finding trucks.</b> The request goes to every vetted driver nearby. Each driver who accepts shows up in the list with their name, rating, truck and plate. You can cancel any time.</p></div>
-    <div class="shot"><img src="shots/06-contractor-live.png"><div class="n">5</div>
-      <p><b>Trucks on the way.</b> Once every spot is filled, you see each truck's arrival time and phone number. Tap <b>Send a note to drivers</b> to message the whole crew at once, for example "Hold at staging on Oak Ave".</p></div>
-    <div class="shot"><img src="shots/07-contractor-done.png"><div class="n">6</div>
-      <p><b>End job and pay.</b> You see each truck's hours and cost, one total charged to your bank account, and how much you saved compared with a broker. Rate your drivers and tap Done.</p></div>
+  <h2>From booked to paid</h2>
+  <div class="row four">
+    <div class="shot"><img src="shots/06-c-booking.png"><div class="n">4</div>
+      <p><b>Booking.</b> Drivers accept one by one, any time until the job fills. If trucks are slow to come in, tap <b>Widen</b> to search farther.</p></div>
+    <div class="shot"><img src="shots/07-c-booked.png"><div class="n">5</div>
+      <p><b>All booked.</b> You see every driver, their truck and phone number. <b>Coming ✓</b> means they've confirmed for tomorrow. Tap <b>Send a note to drivers</b> to message the whole crew.</p></div>
+    <div class="shot"><img src="shots/08-c-live.png"><div class="n">6</div>
+      <p><b>Job morning.</b> Live tracking starts. You see each truck on the map and when it will arrive.</p></div>
+    <div class="shot"><img src="shots/09-c-done.png"><div class="n">7</div>
+      <p><b>End job and pay.</b> Hours and cost for each truck, one total charged to your bank, and a rating for your drivers.</p></div>
   </div>
+  <div class="box" style="margin-top:18px"><p><b>If a driver cancels,</b> the spot reopens right away and goes back out to drivers nearby. You get a message when a replacement accepts. In the prototype, the <b>A driver cancels</b> and <b>Jump to the morning of the job</b> buttons let you see both.</p></div>
 </section>
 
 <!-- Driver 1 -->
 <section class="page">
   <div class="kicker">I drive a truck · part 1</div>
-  <h2>Getting a job</h2>
-  <p class="lead">For drivers, the app works like a rideshare driver app. Go online, wait for a request, and accept it or turn it down.</p>
-  <div class="row">
-    <div class="shot"><img src="shots/08-driver-offline.png"><div class="n">1</div>
-      <p><b>Offline.</b> You won't get requests until you go online. Tap the blue <b>GO</b> button. The top of the screen shows what you've earned today.</p></div>
-    <div class="shot"><img src="shots/09-driver-online.png"><div class="n">2</div>
-      <p><b>Finding jobs.</b> You're online. As soon as a contractor nearby needs your type of truck, you get a request. Tap <b>STOP</b> to go offline.</p></div>
-    <div class="shot"><img src="shots/10-driver-offer.png"><div class="n">3</div>
-      <p><b>New job request.</b> You see the hourly pay, the estimated total for the day, the work, the site, the distance, and how many trucks are on it. You have 20 seconds to tap <b>Accept</b> or <b>Decline</b>. If others fill the job first, the request disappears.</p></div>
+  <h2>Finding and taking jobs</h2>
+  <p class="lead">Drivers don't have to sit waiting for a request. They pick the jobs they want from a list, like a job board.</p>
+  <div class="row four">
+    <div class="shot"><img src="shots/10-d-home.png"><div class="n">1</div>
+      <p><b>Available jobs.</b> Open jobs within your distance for your truck, sorted by date, with the pay and how many spots are left. Your next job shows at the top.</p></div>
+    <div class="shot"><img src="shots/11-d-request.png"><div class="n">2</div>
+      <p><b>Job details.</b> Pay, the 6-hour minimum, about how much you'll make, the work and the contractor's rating. Tap <b>Accept job</b>.</p></div>
+    <div class="shot"><img src="shots/12-d-myjobs.png"><div class="n">3</div>
+      <p><b>My jobs.</b> All your upcoming jobs. Tap one for the on-site contact, dispatch notes, directions, or <b>I can't make it</b>.</p></div>
+    <div class="shot"><img src="shots/14-d-oneaday.png"><div class="n">4</div>
+      <p><b>One job a day.</b> If you already have a job that day, the app won't let you accept another one.</p></div>
   </div>
+  <div class="box" style="margin-top:18px"><p><b>Same-day requests.</b> A switch at the bottom of the driver's home screen turns on "right now" requests. With it on, a driver gets a pop-up with 20 seconds to accept when a contractor nearby needs a truck immediately.</p></div>
 </section>
 
 <!-- Driver 2 -->
 <section class="page">
   <div class="kicker">I drive a truck · part 2</div>
-  <h2>Doing the job and getting paid</h2>
-  <p class="lead">After you accept, the app takes you to the job, keeps track of your tickets, and shows what you earned.</p>
-  <div class="row">
-    <div class="shot"><img src="shots/11-driver-heading.png"><div class="n">4</div>
-      <p><b>Head to the job site.</b> The map shows your route and arrival time. Tap <b>I've arrived</b> when you get there.</p></div>
-    <div class="shot"><img src="shots/12-driver-onjob.png"><div class="n">5</div>
-      <p><b>On the job.</b> You're on the clock. You see the on-site contact and any notes from dispatch. Tap <b>Snap ticket</b> to photograph each load ticket. Tap <b>End my day</b> when you're done.</p></div>
-    <div class="shot"><img src="shots/13-driver-earned.png"><div class="n">6</div>
-      <p><b>Nice work.</b> You see your hours, your rate, the 5% Trucks2U fee, and what you earned. The money goes to your bank within 2 business days after the contractor approves your hours and tickets.</p></div>
+  <h2>The night before and the day of</h2>
+  <div class="row four">
+    <div class="shot"><img src="shots/13-d-confirm.png"><div class="n">5</div>
+      <p><b>Are you still coming?</b> The evening before, tap <b>Yes, I'm coming</b> by 8 PM. If you don't, your spot goes to another driver.</p></div>
+    <div class="shot"><img src="shots/15-d-heading.png"><div class="n">6</div>
+      <p><b>Head to the job.</b> On the morning of the job, the map shows your route. Tap <b>I've arrived</b> at the site.</p></div>
+    <div class="shot"><img src="shots/16-d-onjob.png"><div class="n">7</div>
+      <p><b>On the clock.</b> See dispatch notes and the on-site contact. Tap <b>Snap ticket</b> for each load ticket, then <b>End my day</b>.</p></div>
+    <div class="shot"><img src="shots/17-d-earned.png"><div class="n">8</div>
+      <p><b>Paid.</b> Your hours, the 5% fee, and what you earned. The money goes to your bank once the contractor approves your hours.</p></div>
+  </div>
+</section>
+
+<!-- Driver 3 -->
+<section class="page">
+  <div class="kicker">I drive a truck · part 3</div>
+  <h2>Profile and earnings</h2>
+  <p class="lead">Both are in the ☰ menu.</p>
+  <div class="row" style="justify-content:flex-start;gap:0.4in">
+    <div class="shot"><img src="shots/18-d-profile.png"><div class="n">9</div>
+      <p><b>Profile.</b> Your truck and rate, how far you'll travel for work, which days you work, and every document with its expiration date. An expiring document has an <b>Update</b> button.</p></div>
+    <div class="shot"><img src="shots/19-d-earnings.png"><div class="n">10</div>
+      <p><b>Earnings.</b> This week's total after the fee, each day's pay, last week and this year. Payouts go out every Friday.</p></div>
   </div>
 </section>
 
@@ -178,32 +216,42 @@ code { font-family: Menlo, monospace; font-size: 9pt; background: #f0f0f0; paddi
 <section class="page">
   <div class="kicker">I run a fleet</div>
   <h2>For brokers and fleet owners</h2>
-  <p class="lead">A fleet owner sees jobs the same way a driver does, but sends their own trucks instead of driving. The top of the screen always shows how many of your trucks are working.</p>
+  <p class="lead">A fleet owner sees open jobs the same way a driver does, but sends their own trucks. The top of the screen shows how many of their trucks are working.</p>
   <div class="row">
-    <div class="shot"><img src="shots/14-fleet-request.png"><div class="n">1</div>
-      <p><b>Requests.</b> New jobs nearby show the site, the work and the open spots. Check off which of your free trucks to send, then tap <b>Send</b>. Your drivers get the job details on their phones right away.</p></div>
-    <div class="shot"><img src="shots/15-fleet-trucks.png"><div class="n">2</div>
-      <p><b>My trucks.</b> Every truck in your fleet, who is driving it, and whether it's free, on a job, or offline.</p></div>
-    <div class="shot"><img src="shots/16-fleet-earnings.png"><div class="n">3</div>
-      <p><b>Earnings.</b> This week's total after the Trucks2U fee, and today's earnings for each truck. Payouts go out every Friday.</p></div>
+    <div class="shot"><img src="shots/20-f-request.png"><div class="n">1</div>
+      <p><b>Requests.</b> Jobs nearby with the date, the work and the open spots. Check which of your free trucks to send, then tap <b>Send</b>. Your drivers get the job on their phones.</p></div>
+    <div class="shot"><img src="shots/21-f-trucks.png"><div class="n">2</div>
+      <p><b>My trucks.</b> Every truck, who drives it, and whether it's free, on a job or offline.</p></div>
+    <div class="shot"><img src="shots/22-f-earn.png"><div class="n">3</div>
+      <p><b>Earnings.</b> This week's total after the fee, and each truck's earnings today. Paid every Friday.</p></div>
   </div>
-  <div class="box" style="margin-top:20px"><p><b>Still to decide.</b> The pricing for fleets is not set yet. The earlier plan was a per-truck fee (for example $15 per truck per day) for brokers who dispatch their own trucks, and the normal 5% on Trucks2U jobs.</p></div>
+  <div class="box" style="margin-top:18px"><p><b>Still to decide:</b> fleet pricing. The earlier idea was a per-truck fee for brokers who dispatch their own trucks, and the normal 5% on Trucks2U jobs.</p></div>
+</section>
+
+<!-- Admin -->
+<section class="page">
+  <div class="kicker">Trucks2U admin</div>
+  <h2>Checking every driver</h2>
+  <p class="lead">Nobody gets a job until our team approves them. The admin screen is where that happens. In the real app, only Trucks2U staff can open it.</p>
+  <div class="row">
+    <div class="shot"><img src="shots/23-a-review.png"><div class="n">1</div>
+      <p><b>To review.</b> New sign-ups waiting for approval, with any problems flagged in orange or red. The counts at the top show approved drivers, drivers waiting, and expiring documents.</p></div>
+    <div class="shot"><img src="shots/24-a-driver.png"><div class="n">2</div>
+      <p><b>One driver.</b> Truck, plate, USDOT number checked with the FMCSA, and every document. A driver with an expired document can't be approved. Tap <b>Ask for a document</b> to text them.</p></div>
+    <div class="shot"><img src="shots/25-a-expiring.png"><div class="n">3</div>
+      <p><b>Expiring.</b> Drivers get texts 30, 14 and 3 days before a document expires. When it expires, they can't take new jobs until a new one is approved. The Drivers tab lets you suspend someone.</p></div>
+  </div>
 </section>
 
 <!-- Sign-up -->
 <section class="page">
-  <div class="kicker">I drive a truck · sign-up</div>
-  <h2>How drivers get vetted</h2>
-  <p class="lead">New drivers sign up in three short steps. Nobody gets a job until a person on our team has checked every document.</p>
+  <div class="kicker">Driver sign-up</div>
+  <h2>Three short steps</h2>
   <div class="row four">
-    <div class="shot"><img src="shots/17-signup-you.png"><div class="n">1</div>
-      <p><b>You.</b> Name, mobile number and city.</p></div>
-    <div class="shot"><img src="shots/18-signup-truck.png"><div class="n">2</div>
-      <p><b>Your truck.</b> Truck type and license plate.</p></div>
-    <div class="shot"><img src="shots/19-signup-docs.png"><div class="n">3</div>
-      <p><b>Documents.</b> Photos of the CDL, DOT medical card, insurance certificate and truck registration, plus the USDOT number. We check the USDOT number with the FMCSA.</p></div>
-    <div class="shot"><img src="shots/20-signup-pending.png"><div class="n">4</div>
-      <p><b>We're checking.</b> Approval usually takes less than 1 business day. The driver gets a text when it's done. (The prototype has an "Approve now" button so you can skip ahead.)</p></div>
+    <div class="shot"><img src="shots/26-s-you.png"><div class="n">1</div><p><b>You.</b> Name, mobile number and city.</p></div>
+    <div class="shot"><img src="shots/27-s-truck.png"><div class="n">2</div><p><b>Your truck.</b> One of the 9 truck types, and the license plate.</p></div>
+    <div class="shot"><img src="shots/28-s-docs.png"><div class="n">3</div><p><b>Documents.</b> Photos of the CDL, DOT medical card, insurance and registration, plus the USDOT number.</p></div>
+    <div class="shot"><img src="shots/29-s-pending.png"><div class="n">4</div><p><b>We're checking.</b> The application goes to the admin's To review list. Approval usually takes less than a business day.</p></div>
   </div>
 </section>
 
@@ -211,31 +259,32 @@ code { font-family: Menlo, monospace; font-size: 9pt; background: #f0f0f0; paddi
 <section class="page">
   <div class="kicker">Try it yourself</div>
   <h2>Using the prototype</h2>
-  <p class="lead">The prototype runs in any web browser on a phone or computer. It's a working mock-up for showing people and deciding what to build. It doesn't send real notifications or move real money yet.</p>
+  <p class="lead">The prototype runs in any web browser on a computer or phone. It's a working mock-up for showing people and deciding what to build. It doesn't send real notifications or move real money yet.</p>
   <h3>Open it</h3>
   <ul>
     <li>Link: <b>claude.ai/artifact/Xp6EWSHE75fxyXoPQy5o67</b></li>
     <li>The code is in your GitHub repository <b>Aperez1248/Trucks2you</b>, in the <code>app</code> folder.</li>
   </ul>
   <h3>A good way to demo it</h3>
-  <ul>
-    <li>Tap <b>I drive a truck</b>, approve the sign-up, and tap <b>GO</b> so you're online.</li>
-    <li>Open the menu, tap <b>Switch account</b>, choose <b>I need trucks</b>, and request a few trucks.</li>
-    <li>Switch back to the driver. The job request pops up. Tap <b>Accept</b>.</li>
-    <li>Switch to <b>I run a fleet</b>. The same job is waiting under Requests. Pick a super dumper and send it.</li>
-    <li>Switch back to the contractor to watch the trucks arrive, then end the job and pay.</li>
-  </ul>
+  <ol>
+    <li>Tap <b>I need trucks</b>, pick a site, and request a few trucks for tomorrow.</li>
+    <li>Switch to <b>I drive a truck</b>. Your job is in Available jobs. Accept it, then tap <b>Yes, I'm coming</b>.</li>
+    <li>Switch to <b>I run a fleet</b> and send a truck to fill the last spot.</li>
+    <li>Back as the contractor, open the job. Try <b>A driver cancels</b>, then <b>Jump to the morning of the job</b>.</li>
+    <li>As the driver, arrive, snap a ticket and end the day. As the contractor, end the job and pay.</li>
+    <li>Sign up as a new driver from the driver menu, then approve yourself from the admin screen.</li>
+  </ol>
   <h3>What's simulated</h3>
   <ul>
-    <li>The 20 other drivers, the Summit Hauling fleet, the job sites, the map and all the prices are sample data.</li>
-    <li>Other drivers accept on their own a few seconds apart. The app holds the last spots open for about 25 seconds so you have time to accept them yourself.</li>
-    <li>Time runs fast. One minute on screen is about 1.5 seconds in real life.</li>
+    <li>Other drivers, the Summit Hauling fleet, the job sites, the map and all prices are sample data.</li>
+    <li>Other drivers accept on their own a few seconds apart. The last spots stay open for about 25 seconds so you can take one yourself.</li>
+    <li>Time runs fast on the morning of the job. One minute on screen is about 1.5 seconds.</li>
   </ul>
   <h3>What a real version needs</h3>
   <ul>
-    <li>Phone apps for iPhone and Android with push notifications</li>
-    <li>Live GPS from drivers' phones</li>
-    <li>Document checks: an FMCSA lookup for USDOT numbers and a review screen for our team</li>
+    <li>A database and logins, so jobs and drivers are saved</li>
+    <li>Real text messages and notifications, including the night-before reminder</li>
+    <li>Document checks: an FMCSA lookup and secure storage for driver documents</li>
     <li>Payments: charging contractors and paying drivers and fleets by bank transfer</li>
   </ul>
 </section>
