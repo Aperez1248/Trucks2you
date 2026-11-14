@@ -72,10 +72,10 @@ code { font-family: Menlo, monospace; font-size: 9pt; background: #f0f0f0; paddi
   <h2>Book today, haul tomorrow</h2>
   <p class="lead">Most truck requests are for the next day or a few days out, so the app is built around booking ahead. A "right now" request is still there for emergencies.</p>
   <div class="steps">
-    <div class="step"><div class="big">1</div><div><h3>Post the job</h3><p>The contractor picks the job site, the trucks it needs, how far to search, and the date, start time and about how many hours.</p></div></div>
+    <div class="step"><div class="big">1</div><div><h3>Post the job</h3><p>The contractor picks the job site, the trucks it needs, how many start at the asphalt plant, notes for the drivers, and the date, start time and hours.</p></div></div>
     <div class="step"><div class="big">2</div><div><h3>Drivers pick it up</h3><p>The job goes to every vetted driver within that distance who has the right truck. It shows up in their Available jobs list, and they can accept until every spot fills. Fleet owners can send their own trucks too.</p></div></div>
     <div class="step"><div class="big">3</div><div><h3>Confirm the night before</h3><p>Each driver taps "Yes, I'm coming" the evening before. If someone cancels or doesn't confirm, the spot reopens and the app finds a replacement.</p></div></div>
-    <div class="step"><div class="big">4</div><div><h3>Haul and pay</h3><p>On the morning of the job, the contractor watches the trucks arrive on the map. Drivers snap load tickets. At the end, the contractor pays in one charge and rates the drivers.</p></div></div>
+    <div class="step"><div class="big">4</div><div><h3>Haul and pay</h3><p>On the job day, drivers clock in and out and send updates like "Loaded, heading to the job." The contractor sees every truck on the map. At the end, the contractor pays in one charge and rates the drivers.</p></div></div>
   </div>
   <h3>Who uses it</h3>
   <div class="roles4">
@@ -86,7 +86,7 @@ code { font-family: Menlo, monospace; font-size: 9pt; background: #f0f0f0; paddi
   </div>
   <div class="box">
     <p><b>Pay is by the hour, with a 6-hour minimum.</b> A driver who works 4.5 hours is still paid for 6.</p>
-    <p><b>Trucks2U keeps 5%.</b> A broker usually keeps 10 to 12%. On the sample job in this guide (3 trucks for 9.5 hours, $3,895), the fee is $195, where a broker at 11% would have kept $428.</p>
+    <p><b>Trucks2U keeps 7% of the driver's pay,</b> the same way a broker does, but brokers keep 10 to 12%. On one 12 wheeler working 8 hours at $130 ($1,040), Trucks2U keeps $73, where a broker at 11% would keep $114. Contractors pay nothing extra.</p>
   </div>
 </section>
 
@@ -138,31 +138,44 @@ code { font-family: Menlo, monospace; font-size: 9pt; background: #f0f0f0; paddi
   <div class="kicker">I need trucks · part 1</div>
   <h2>Booking trucks</h2>
   <p class="lead">Booking trucks for tomorrow takes about a minute.</p>
-  <div class="row">
+  <div class="row four">
     <div class="shot"><img src="shots/02-c-home.png"><div class="n">1</div>
-      <p><b>Home.</b> Tap <b>Where's the job?</b> or a recent site. Below that are <b>Your upcoming jobs</b>, each with a bar showing how many trucks are booked, like "6 of 8 trucks booked."</p></div>
+      <p><b>Home.</b> Tap <b>Where's the job?</b> or a recent site. <b>Your upcoming jobs</b> show how many trucks are booked, like "6 of 8."</p></div>
     <div class="shot"><img src="shots/04-c-trucks.png"><div class="n">2</div>
-      <p><b>Pick your trucks.</b> Choose the work (haul off grindings, bring asphalt, or both). Use + and − to set how many of each truck you need. Tap <b>+ More truck types</b> for bottom dumps, water trucks, lowboys and more.</p></div>
-    <div class="shot"><img src="shots/05-c-when.png"><div class="n">3</div>
-      <p><b>Distance and time.</b> Choose how far to search (10 to 100 miles). Under <b>When</b>, pick the day (tomorrow is the default), the start time, and about how many hours. You'll see an estimate. Then tap <b>Request trucks for tomorrow</b>.</p></div>
+      <p><b>Pick your trucks.</b> Choose the work, then set how many of each truck. <b>+ More truck types</b> adds bottom dumps, water trucks, lowboys and more.</p></div>
+    <div class="shot"><img src="shots/05-c-start.png"><div class="n">3</div>
+      <p><b>Where trucks start.</b> Set how many trucks start at the asphalt plant and pick the plant. The rest start at the job. Add <b>Notes for drivers</b>, like staging or load times.</p></div>
+    <div class="shot"><img src="shots/05b-c-when.png"><div class="n">4</div>
+      <p><b>When.</b> Pick the day (tomorrow is the default), the start time and about how many hours. Then tap <b>Request trucks for tomorrow</b>.</p></div>
   </div>
+  <div class="box" style="margin-top:18px"><p><b>Search distance.</b> Above "Where trucks start," choose how far to send the request, from 10 to 100 miles.</p></div>
 </section>
 
 <!-- Contractor 2 -->
 <section class="page">
   <div class="kicker">I need trucks · part 2</div>
-  <h2>From booked to paid</h2>
-  <div class="row four">
-    <div class="shot"><img src="shots/06-c-booking.png"><div class="n">4</div>
+  <h2>Getting booked</h2>
+  <div class="row" style="justify-content:flex-start;gap:0.4in">
+    <div class="shot"><img src="shots/06-c-booking.png"><div class="n">5</div>
       <p><b>Booking.</b> Drivers accept one by one, any time until the job fills. If trucks are slow to come in, tap <b>Widen</b> to search farther.</p></div>
-    <div class="shot"><img src="shots/07-c-booked.png"><div class="n">5</div>
-      <p><b>All booked.</b> You see every driver, their truck and phone number. <b>Coming ✓</b> means they've confirmed for tomorrow. Tap <b>Send a note to drivers</b> to message the whole crew.</p></div>
-    <div class="shot"><img src="shots/08-c-live.png"><div class="n">6</div>
-      <p><b>Job morning.</b> Live tracking starts. You see each truck on the map and when it will arrive.</p></div>
-    <div class="shot"><img src="shots/09-c-done.png"><div class="n">7</div>
-      <p><b>End job and pay.</b> Hours and cost for each truck, one total charged to your bank, and a rating for your drivers.</p></div>
+    <div class="shot"><img src="shots/07-c-booked.png"><div class="n">6</div>
+      <p><b>All booked.</b> Every driver, their truck and phone number. <b>Coming ✓</b> means they've confirmed for tomorrow. <b>Send a note to drivers</b> messages the whole crew.</p></div>
   </div>
   <div class="box" style="margin-top:18px"><p><b>If a driver cancels,</b> the spot reopens right away and goes back out to drivers nearby. You get a message when a replacement accepts. In the prototype, the <b>A driver cancels</b> and <b>Jump to the morning of the job</b> buttons let you see both.</p></div>
+</section>
+
+<!-- Contractor 3 -->
+<section class="page">
+  <div class="kicker">I need trucks · part 3</div>
+  <h2>The job day</h2>
+  <div class="row">
+    <div class="shot"><img src="shots/08-c-live.png"><div class="n">7</div>
+      <p><b>See every truck.</b> The map shows each truck heading to the job or the plant (the orange P). Each row shows where the driver starts, when they clocked in, and their hours so far.</p></div>
+    <div class="shot"><img src="shots/08b-c-updates.png"><div class="n">8</div>
+      <p><b>Updates from drivers.</b> When a driver taps "Loaded, heading to the job," you get the update with an arrival time, so you know when the asphalt will get there. New updates are marked <b>New</b>.</p></div>
+    <div class="shot"><img src="shots/09-c-done.png"><div class="n">9</div>
+      <p><b>End job and pay.</b> Each truck's hours come from its clock-in and clock-out times, with the 6-hour minimum. You get one total and rate your drivers.</p></div>
+  </div>
 </section>
 
 <!-- Driver 1 -->
@@ -186,28 +199,29 @@ code { font-family: Menlo, monospace; font-size: 9pt; background: #f0f0f0; paddi
 <!-- Driver 2 -->
 <section class="page">
   <div class="kicker">I drive a truck · part 2</div>
-  <h2>The night before and the day of</h2>
+  <h2>The night before and the job day</h2>
   <div class="row four">
     <div class="shot"><img src="shots/13-d-confirm.png"><div class="n">5</div>
-      <p><b>Are you still coming?</b> The evening before, tap <b>Yes, I'm coming</b> by 8 PM. If you don't, your spot goes to another driver.</p></div>
+      <p><b>Are you still coming?</b> The evening before, tap <b>Yes, I'm coming</b> by 8 PM, or your spot goes to another driver.</p></div>
     <div class="shot"><img src="shots/15-d-heading.png"><div class="n">6</div>
-      <p><b>Head to the job.</b> On the morning of the job, the map shows your route. Tap <b>I've arrived</b> at the site.</p></div>
+      <p><b>Head to your start.</b> The plant or the job site, with the contractor's notes. Tap <b>Clock in</b> when you get there.</p></div>
     <div class="shot"><img src="shots/16-d-onjob.png"><div class="n">7</div>
-      <p><b>On the clock.</b> See dispatch notes and the on-site contact. Tap <b>Snap ticket</b> for each load ticket, then <b>End my day</b>.</p></div>
-    <div class="shot"><img src="shots/17-d-earned.png"><div class="n">8</div>
-      <p><b>Paid.</b> Your hours, the 5% fee, and what you earned. The money goes to your bank once the contractor approves your hours.</p></div>
+      <p><b>On the clock.</b> Your hours count up. Tap the big button to update the contractor, like <b>Loaded, heading to the job</b>. Snap each load ticket.</p></div>
+    <div class="shot"><img src="shots/16b-d-loaded.png"><div class="n">8</div>
+      <p><b>The next step.</b> The button moves through the loop: loaded, arrived at the job, leaving for the plant, arrived at the plant. Quick buttons cover running late, a break or a truck problem.</p></div>
   </div>
 </section>
 
 <!-- Driver 3 -->
 <section class="page">
   <div class="kicker">I drive a truck · part 3</div>
-  <h2>Profile and earnings</h2>
-  <p class="lead">Both are in the ☰ menu.</p>
-  <div class="row" style="justify-content:flex-start;gap:0.4in">
-    <div class="shot"><img src="shots/18-d-profile.png"><div class="n">9</div>
-      <p><b>Profile.</b> Your truck and rate, how far you'll travel for work, which days you work, and every document with its expiration date. An expiring document has an <b>Update</b> button.</p></div>
-    <div class="shot"><img src="shots/19-d-earnings.png"><div class="n">10</div>
+  <h2>Getting paid, profile and earnings</h2>
+  <div class="row">
+    <div class="shot"><img src="shots/17-d-earned.png"><div class="n">9</div>
+      <p><b>Clock out.</b> You see your clock-in and clock-out times, hours worked, the 6-hour minimum if it applies, the 7% fee, and what you earned.</p></div>
+    <div class="shot"><img src="shots/18-d-profile.png"><div class="n">10</div>
+      <p><b>Profile.</b> Your truck and rate, how far you'll travel for work, which days you work, and every document with its expiration date.</p></div>
+    <div class="shot"><img src="shots/19-d-earnings.png"><div class="n">11</div>
       <p><b>Earnings.</b> This week's total after the fee, each day's pay, last week and this year. Payouts go out every Friday.</p></div>
   </div>
 </section>
@@ -225,7 +239,7 @@ code { font-family: Menlo, monospace; font-size: 9pt; background: #f0f0f0; paddi
     <div class="shot"><img src="shots/22-f-earn.png"><div class="n">3</div>
       <p><b>Earnings.</b> This week's total after the fee, and each truck's earnings today. Paid every Friday.</p></div>
   </div>
-  <div class="box" style="margin-top:18px"><p><b>Still to decide:</b> fleet pricing. The earlier idea was a per-truck fee for brokers who dispatch their own trucks, and the normal 5% on Trucks2U jobs.</p></div>
+  <div class="box" style="margin-top:18px"><p><b>Still to decide:</b> fleet pricing. The earlier idea was a per-truck fee for brokers who dispatch their own trucks, and the normal 7% on Trucks2U jobs.</p></div>
 </section>
 
 <!-- Admin -->
@@ -267,23 +281,24 @@ code { font-family: Menlo, monospace; font-size: 9pt; background: #f0f0f0; paddi
   </ul>
   <h3>A good way to demo it</h3>
   <ol>
-    <li>Tap <b>I need trucks</b>, pick a site, and request a few trucks for tomorrow.</li>
+    <li>Tap <b>I need trucks</b>, pick a site, set 2 trucks to start at the plant, add a note, and request trucks for tomorrow.</li>
     <li>Switch to <b>I drive a truck</b>. Your job is in Available jobs. Accept it, then tap <b>Yes, I'm coming</b>.</li>
     <li>Switch to <b>I run a fleet</b> and send a truck to fill the last spot.</li>
     <li>Back as the contractor, open the job. Try <b>A driver cancels</b>, then <b>Jump to the morning of the job</b>.</li>
-    <li>As the driver, arrive, snap a ticket and end the day. As the contractor, end the job and pay.</li>
+    <li>As the driver, clock in, tap <b>Loaded, heading to the job</b>, then switch to the contractor to see the update and your truck on the map. Clock out, then end the job and pay as the contractor.</li>
     <li>Sign up as a new driver from the driver menu, then approve yourself from the admin screen.</li>
   </ol>
   <h3>What's simulated</h3>
   <ul>
     <li>Other drivers, the Summit Hauling fleet, the job sites, the map and all prices are sample data.</li>
     <li>Other drivers accept on their own a few seconds apart. The last spots stay open for about 25 seconds so you can take one yourself.</li>
-    <li>Time runs fast on the morning of the job. One minute on screen is about 1.5 seconds.</li>
+    <li>Time runs fast on the job day. Trucks move at about 1.5 seconds per minute of driving, and the work clock counts 4 minutes every second.</li>
   </ul>
   <h3>What a real version needs</h3>
   <ul>
     <li>A database and logins, so jobs and drivers are saved</li>
-    <li>Real text messages and notifications, including the night-before reminder</li>
+    <li>Real text messages and notifications, including the night-before reminder and driver updates</li>
+    <li>Live GPS from drivers' phones, and automatic clock-in when a truck reaches the plant or the job</li>
     <li>Document checks: an FMCSA lookup and secure storage for driver documents</li>
     <li>Payments: charging contractors and paying drivers and fleets by bank transfer</li>
   </ul>

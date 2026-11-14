@@ -23,7 +23,10 @@ const SEED = () => { let s = 7; Math.random = () => (s = (s * 16807) % 214748364
   await p.click('.role[data-mode=contractor]'); await shot('02-c-home');
   await p.click('.search'); await shot('03-c-where');
   await p.click('[data-act="c-pick:0"]'); await p.click('[data-act="c-inc:sd"]'); await shot('04-c-trucks');
-  await bottom(); await shot('05-c-when');
+  await p.click('[data-act="c-plant+:1"]'); await p.click('[data-act="c-plant+:1"]');
+  await p.fill('#c-note', 'Plant trucks load at 5:30 AM. Job trucks stage on Oak Ave. Tarp every load.');
+  await p.evaluate(() => { const s = document.querySelector('.sheet'); s.scrollTop = s.querySelector('#c-note').offsetTop - 260; }); await shot('05-c-start');
+  await bottom(); await shot('05b-c-when');
   await p.click('[data-act=c-request]'); await p.waitForTimeout(4500); await shot('06-c-booking');
   // Driver picks it from the job list
   await sw('driver'); await shot('10-d-home');
@@ -45,10 +48,13 @@ const SEED = () => { let s = 7; Math.random = () => (s = (s * 16807) % 214748364
   await p.click('[data-act=c-morning]'); await p.waitForTimeout(6000); await shot('08-c-live');
   // Driver on the job
   await sw('driver'); await shot('15-d-heading');
-  await p.click('[data-act=d-arrive]');
+  await p.click('[data-act=d-clockin]'); await p.waitForTimeout(2500);
   await p.setInputFiles('#ticket', fake('t1.jpg')); await p.setInputFiles('#ticket', fake('t2.jpg'));
   await shot('16-d-onjob');
-  await p.click('[data-act=d-finish]'); await shot('17-d-earned');
+  await p.click('[data-act="d-upd:loaded"]'); await p.waitForTimeout(2500); await shot('16b-d-loaded');
+  await sw('contractor'); await p.waitForTimeout(4000); await p.evaluate(() => { const s = document.querySelector('.sheet'); s.scrollTop = s.scrollHeight; }); await shot('08b-c-updates');
+  await sw('driver'); await p.click('[data-act="d-upd:atJob"]'); await p.waitForTimeout(3000);
+  await p.click('[data-act=d-clockout]'); await shot('17-d-earned');
   await p.click('[data-act=d-back]');
   await p.click('[data-act=d-menu]'); await p.click('.menu [data-act="d-page:profile"] >> nth=0'); await shot('18-d-profile');
   await p.click('[data-act="d-page:"]'); await p.click('[data-act=d-menu]'); await p.click('[data-act="d-page:earn"]'); await shot('19-d-earnings');

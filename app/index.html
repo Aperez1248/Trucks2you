@@ -187,8 +187,19 @@ const DAY0 = new Date();
 const dateOf = n => { const d = new Date(DAY0); d.setDate(d.getDate() + n); return d; };
 const dayLabel = n => dateOf(n).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 const chipDay = n => n === 1 ? "Tomorrow" : dateOf(n).toLocaleDateString("en-US", { weekday: "short", day: "numeric" });
+const PLANTS = [
+  { name: "DeSilva Gates asphalt plant", sub: "Dublin, CA", x: 340, y: 600 },
+  { name: "Argent Materials", sub: "Oakland, CA", x: 150, y: 170 },
+  { name: "Antioch Building Materials", sub: "Antioch, CA", x: 370, y: 120 }
+];
+// Work-day clock for the demo: 1 real second = 4 minutes on the job
+const toMin = t => { const [h, m] = t.split(/[: ]/); return (+h % 12) * 60 + +m + (/PM/.test(t) ? 720 : 0); };
+const fmtMin = v => { v = Math.round(v) % 1440; const h = Math.floor(v / 60), m = v % 60; return `${(h % 12) || 12}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`; };
+const dayMin = () => job.dayMin + (Date.now() - job.dayT0) / 1000 * 4;
+const startOf = m => job.crew.indexOf(m) < (job.plantN || 0) ? "plant" : "site";
+const startPt = m => startOf(m) === "plant" ? PLANTS[job.plant] : job.place;
 const TIMES = ["5:00 AM", "5:30 AM", "6:00 AM", "6:30 AM", "7:00 AM", "8:00 AM", "6:00 PM", "7:00 PM", "8:00 PM"];
-const FEE = 0.05;
+const FEE = 0.07;   // taken from the driver's pay, like a broker (brokers take 10 to 12%)
 const MATERIALS = ["Haul off grindings", "Bring asphalt", "Both"];
 const PLACES = [
   { name: "Main St & Oak Ave", sub: "Oakland, CA", x: 205, y: 300 },
@@ -221,7 +232,7 @@ const ME = { name: "Marco R.", type: "w12", plate: "8XKD218", rating: "4.9", x: 
 /* ---------- State ---------- */
 let mode = null;   // null = welcome screen; "contractor", "driver" or "fleet" once signed in
 let F = { tab: "requests", picked: [], menu: false };
-let C = { screen: "home", place: null, material: MATERIALS[0], counts: Object.fromEntries(Object.keys(TRUCKS).map(t => [t, t === "w12" ? 2 : 0])), focus: "w12", day: 1, time: "6:00 AM", hours: 8, menu: false, radius: 25, more: false };
+let C = { screen: "home", place: null, material: MATERIALS[0], counts: Object.fromEntries(Object.keys(TRUCKS).map(t => [t, t === "w12" ? 2 : 0])), focus: "w12", note: "", plantN: 0, plant: 0, day: 1, time: "6:00 AM", hours: 8, menu: false, radius: 25, more: false };
 let A = { tab: "review", open: null, menu: false };   // Trucks2U admin
 let D = { page: null, jobTab: "up", openJob: null, radius: 50, avail: ["Weekdays", "Saturdays"], online: false, screen: "home", offerLeft: 0, earnedToday: 0, tickets: [], menu: false, signup: null, approved: true };
 let job = null;   // the one live request, shared by both apps
@@ -281,7 +292,8 @@ function drawMap() {
     const p = C.place || (live && job.place);
     if (p) o += pin(p);
     if (live) {
-      job.crew.forEach(m => { const q = crewPos(m); o += m.arrived || sched() ? "" : `<path d="M${m.start.x} ${m.start.y} L${job.place.x} ${job.place.y}" stroke="var(--route)" stroke-width="3" stroke-dasharray="2 6" stroke-linecap="round" opacity=".7"/>`; c += truckIcon(q.x, q.y, q.angle); });
+      if (job.plantN) o += plantPin(PLANTS[job.plant]);
+      job.crew.forEach(m => { const q = crewPos(m), to = m.leg ? m.leg.to : startPt(m); o += sched() || m.at || (m.arrived && !m.leg) ? "" : `<path d="M${q.x} ${q.y} L${to.x} ${to.y}" stroke="var(--route)" stroke-width="3" stroke-dasharray="2 6" stroke-linecap="round" opacity=".8"/>`; c += truckIcon(q.x, q.y, q.angle) + (m.id === "me" ? `<circle cx="${q.x}" cy="${q.y}" r="16" fill="none" stroke="var(--route)" stroke-width="3"/>` : ""); });
       DRIVERS.filter(d => !job.crew.some(m => m.id === d.id)).slice(0, 8).forEach(d => c += truckIcon(d.x, d.y, (d.x * 3) % 360, "idle"));
     } else {
       DRIVERS.forEach(d => c += truckIcon(d.x, d.y, (d.x * 3) % 360));
@@ -297,8 +309,9 @@ function drawMap() {
   } else if (mode === "driver") {
     const mine = live && !sched() && job.crew.find(m => m.id === "me");
     if (mine) {
-      const q = crewPos(mine);
-      o += `<path d="M${q.x} ${q.y} L${job.place.x} ${job.place.y}" stroke="var(--route)" stroke-width="6" stroke-linecap="round"/>` + pin(job.place);
+      const q = crewPos(mine), to = mine.leg ? mine.leg.to : (mine.at ? null : startPt(mine));
+      if (job.plantN) o += plantPin(PLANTS[job.plant]);
+      o += (to ? `<path d="M${q.x} ${q.y} L${to.x} ${to.y}" stroke="var(--route)" stroke-width="6" stroke-linecap="round"/>` : "") + pin(job.place);
       c += truckIcon(q.x, q.y, q.angle);
     } else {
       if (D.online) o += `<circle class="pulse" cx="${ME.x}" cy="${ME.y}" r="20"/>`;
@@ -311,11 +324,15 @@ function drawMap() {
 function sched() { return job && job.when !== "Now"; }   // a job scheduled for later: trucks are confirmed, not driving yet
 function crewPos(m) {
   if (sched()) return { x: m.start.x, y: m.start.y, angle: (m.start.x * 3) % 360 };
-  if (m.arrived) return { x: job.place.x + m.slot * 16 - 20, y: job.place.y + 22, angle: 0 };
-  const p = movePos(m.start, job.place, m.t0, m.eta);
-  if (p.f >= 1 && m.id !== "me") { m.arrived = true; m.status = "Arrived"; }
+  if (m.leg) { const p = movePos(m.leg.from, m.leg.to, m.leg.t0, m.leg.mins); if (p.f >= 1) { m.at = m.leg.to; m.leg = null; } return p; }
+  if (m.at) return { x: m.at.x + (m.slot % 4) * 14 - 20, y: m.at.y + 22, angle: 0 };
+  const tgt = startPt(m);
+  if (m.arrived) return { x: tgt.x + (m.slot % 4) * 14 - 20, y: tgt.y + 22, angle: 0 };
+  const p = movePos(m.start, tgt, m.t0, m.eta);
+  if (p.f >= 1 && m.id !== "me") { m.arrived = true; m.status = "Arrived"; m.clockIn = m.clockIn || dayMin(); }
   return p;
 }
+const plantPin = pl => `<g transform="translate(${pl.x} ${pl.y})"><circle r="11" fill="var(--warn)"/><text y="4" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">P</text></g>`;
 
 /* ---------- Contractor app ---------- */
 /* Lucas Paving's other upcoming jobs (sample) */
@@ -378,6 +395,11 @@ function cOptions() {
         ${C.more ? "" : `<button class="chip" data-act="c-more" style="justify-self:start">+ More truck types</button>`}</div>
       <div class="stack" style="gap:6px"><span class="small"><b>Send to drivers within</b></span>
         <div class="chips">${RADII.map(r => `<button class="chip" data-act="c-radius:${r}" aria-pressed="${C.radius === r}">${r} mi</button>`).join("")}</div></div>
+      <div class="stack" style="gap:6px"><span class="small"><b>Where trucks start</b></span>
+        <div class="row small"><span>At the asphalt plant</span><div class="step" style="margin:0"><button data-act="c-plant-:1" aria-label="Fewer">−</button><output>${C.plantN}</output><button data-act="c-plant+:1" aria-label="More">+</button></div></div>
+        ${C.plantN ? `<select id="c-plant">${PLANTS.map((pl, i) => `<option value="${i}" ${i === C.plant ? "selected" : ""}>${esc(pl.name)}, ${esc(pl.sub)}</option>`).join("")}</select>` : ""}
+        <span class="muted small">${C.plantN ? `${C.plantN} start at the plant, ${Math.max(0, n - C.plantN)} at the job site.` : `All ${n} start at the job site.`}</span></div>
+      <label class="f">Notes for drivers<textarea id="c-note" rows="2" placeholder="e.g. Stage on Oak Ave. Tarp every load. Gate code 4512." style="width:100%;font:500 15px var(--font);color:var(--fg);background:var(--chip);border:2px solid transparent;border-radius:10px;padding:11px 12px;resize:vertical">${esc(C.note)}</textarea></label>
       <div class="stack" style="gap:6px"><span class="small"><b>When</b></span>
         <div class="chips">${[1, 2, 3, 4, 5].map(d => `<button class="chip" data-act="c-day:${d}" aria-pressed="${C.day === d}">${chipDay(d)}</button>`).join("")}<button class="chip" data-act="c-day:0" aria-pressed="${C.day === 0}">Today, right now</button></div>
         ${C.day ? `<div class="row" style="gap:10px;align-items:end"><label class="f" style="flex:1">Start time<select id="c-time">${TIMES.map(t => `<option ${t === C.time ? "selected" : ""}>${t}</option>`).join("")}</select></label>
@@ -388,8 +410,8 @@ function cOptions() {
 }
 function crewRows() {
   return job.crew.map(m => `<div class="driver"><div class="avatar">${m.name.split(" · ")[0].split(" ").map(x => x[0]).join("")}</div>
-    <div><b>${esc(m.name)}</b> <span class="muted small">★ ${m.rating}</span><div class="muted small">${TRUCKS[m.type].name} · ${esc(m.plate)}</div></div>
-    <div style="text-align:right">${sched() ? (m.reconfirmed ? '<span class="tag go">Coming ✓</span>' : '<span class="tag">Accepted</span>') : m.arrived ? '<span class="tag go">Arrived</span>' : `<span class="tag">${m.status === "Accepted" ? "Accepted" : Math.max(1, Math.round(m.eta * (1 - movePos(m.start, job.place, m.t0, m.eta).f))) + " min"}</span>`}
+    <div><b>${esc(m.name)}</b> <span class="muted small">★ ${m.rating}</span><div class="muted small">${TRUCKS[m.type].name} · ${esc(m.plate)}${!sched() && job.plantN ? ` · starts at ${startOf(m) === "plant" ? "plant" : "job"}` : ""}</div>${!sched() && m.clockIn != null ? `<div class="small" style="color:var(--go)">In ${fmtMin(m.clockIn)}${m.clockOut != null ? ` · out ${fmtMin(m.clockOut)} · ${m.hours.toFixed(1)} hrs` : ` · ${((dayMin() - m.clockIn) / 60).toFixed(1)} hrs`}</div>` : ""}</div>
+    <div style="text-align:right">${!sched() && m.clockOut != null ? '<span class="tag">Clocked out</span>' : !sched() && (m.leg || (m.clockIn != null && m.id === "me")) ? `<span class="tag go">${m.leg ? (m.leg.to === job.place ? "To job · " + Math.max(1, Math.round(m.leg.mins * (1 - movePos(m.leg.from, m.leg.to, m.leg.t0, m.leg.mins).f))) + " min" : "To plant") : m.at === job.place ? "At job" : "At plant"}</span>` : sched() ? (m.reconfirmed ? '<span class="tag go">Coming ✓</span>' : '<span class="tag">Accepted</span>') : m.arrived ? '<span class="tag go">Arrived</span>' : `<span class="tag">${m.status === "Accepted" ? "Accepted" : Math.max(1, Math.round(m.eta * (1 - movePos(m.start, job.place, m.t0, m.eta).f))) + " min"}</span>`}
       <div class="small muted" style="margin-top:6px;user-select:all">${m.phone}</div></div></div>`).join("");
 }
 function cSearching() {
@@ -421,19 +443,20 @@ function cLive() {
   return `<div class="top"><button class="round" data-act="c-menu" aria-label="Menu">☰</button><span class="pill">${esc(job.place.name)}</span><span style="width:44px"></span></div>
     <div class="sheet">
       <div class="stack" style="gap:4px"><h2>${here === job.crew.length ? "All trucks are on site" : `${here} of ${job.crew.length} trucks on site`}</h2>
-        <p class="muted small">${esc(job.material)} · ${job.when}</p></div>
+        <p class="muted small">${esc(job.material)} · ${job.dayN ? esc(job.date) + " · " + esc(job.start) : "today"} · ${fmtMin(dayMin())} now</p></div>
       <div>${crewRows()}</div>
+      ${job.updates.length ? `<div class="stack" style="gap:6px"><b>Updates from drivers</b>${job.updates.slice(0, 5).map((u, i) => `<div class="small" style="background:var(--chip);padding:9px 12px;border-radius:10px">${i < job.unread ? '<span class="tag go" style="margin-right:6px">New</span>' : ""}<b>${esc(u.who.split(" · ")[0])}</b> · ${esc(u.at)}<br>${esc(u.text)}</div>`).join("")}</div>` : ""}
       <div class="row" style="gap:10px"><button class="btn light" data-act="c-note">Send a note to drivers</button></div>
       <button class="btn" data-act="c-end">End job and pay</button>
     </div>`;
 }
 function cDone() {
-  const hrs = 9.5, bill = job.crew.reduce((s, m) => s + hrs * TRUCKS[m.type].rate, 0);
+  const H = m => m.hours != null ? paidHrs(m.hours) : 9.5, hrs = 9.5, bill = job.crew.reduce((s, m) => s + H(m) * TRUCKS[m.type].rate, 0);
   return `<div class="full">
     <h1>Job complete</h1><p class="muted">${esc(job.place.name)} · ${job.crew.length} trucks</p>
-    <div class="kv">${job.crew.map(m => `<div class="row"><span>${esc(m.name)} · ${TRUCKS[m.type].short} · ${hrs} hrs</span><span>${money(hrs * TRUCKS[m.type].rate)}</span></div>`).join("")}
+    <div class="kv">${job.crew.map(m => `<div class="row"><span>${esc(m.name)} · ${TRUCKS[m.type].short} · ${H(m).toFixed(1)} hrs</span><span>${money(H(m) * TRUCKS[m.type].rate)}</span></div>`).join("")}
       <div class="row" style="border-top:1px solid var(--line);padding-top:10px"><span>Total, charged to your bank account</span><span class="big" style="font-size:24px">${money(bill)}</span></div></div>
-    <p class="muted small">Paid by the hour, ${MIN_HRS}-hour minimum per truck. A broker at 11% would have kept about ${money(bill * 0.11)}. Trucks2U's 5% is ${money(bill * FEE)}.</p>
+    <p class="muted small">Paid by the hour, ${MIN_HRS}-hour minimum per truck. A broker at 11% would have kept about ${money(bill * 0.11)}. Trucks2U's 7% comes out of the drivers' pay, not your bill.</p>
     <div class="stack"><b>Rate your drivers</b><div class="stars" role="group" aria-label="Rating">${[1, 2, 3, 4, 5].map(i => `<button data-act="c-star:${i}" class="${i <= (job.stars || 0) ? "on" : ""}" aria-label="${i} stars">★</button>`).join("")}</div></div>
     <button class="btn" data-act="c-reset">Done</button>
   </div>`;
@@ -452,19 +475,19 @@ function cMenu() {
 function myOpenSlot() { return job && job.status === "searching" && !job.crew.some(m => m.id === "me") && !job.declined && job.wantByType[ME.type] > job.crew.filter(m => m.type === ME.type).length; }
 /* Open jobs drivers can pick from (sample jobs from other contractors + the demo request) */
 const BOARD = [
-  { dayN: 1, start: "7:00 AM", hours: 8, place: PLACES[2], material: "Haul off dirt", contractor: "Bay Cities Grading", crating: "4.8", trucks: 6, left: 2, rate: 130, contact: "Maria, (510) 555-0163" },
+  { dayN: 1, start: "7:00 AM", hours: 8, place: PLACES[2], material: "Haul off dirt", contractor: "Bay Cities Grading", crating: "4.8", trucks: 6, left: 2, rate: 130, contact: "Maria, (510) 555-0163", note: "Dump site is the Richmond yard on Cutting Blvd." },
   { dayN: 2, start: "5:30 AM", hours: 10, place: PLACES[1], material: "Haul off grindings", contractor: "Delta Paving", crating: "4.6", trucks: 10, left: 4, rate: 130, contact: "Sam, (510) 555-0188" },
-  { dayN: 3, start: "6:00 AM", hours: 8, place: { name: "Foothill Blvd overlay", sub: "Castro Valley, CA", x: 270, y: 420 }, material: "Bring asphalt", contractor: "East Bay Paving", crating: "4.9", trucks: 5, left: 1, rate: 130, contact: "Vic, (510) 555-0121" }
+  { dayN: 3, start: "6:00 AM", hours: 8, place: { name: "Foothill Blvd overlay", sub: "Castro Valley, CA", x: 270, y: 420 }, material: "Bring asphalt", contractor: "East Bay Paving", crating: "4.9", trucks: 5, left: 1, rate: 130, contact: "Vic, (510) 555-0121", startAt: "DeSilva Gates asphalt plant, Dublin", note: "Load at 5:30 AM. Tarp every load." }
 ];
 function board() {
   const l = BOARD.map((b, i) => ({ ...b, key: String(i), date: dayLabel(b.dayN) }));
-  if (job && sched() && myOpenSlot()) l.push({ key: "demo", dayN: job.dayN, date: job.date, start: job.start, hours: job.hours, place: job.place, material: job.material, contractor: "Lucas Paving", crating: "4.9", trucks: job.need, left: job.wantByType[ME.type] - job.crew.filter(m => m.type === ME.type).length, rate: TRUCKS[ME.type].rate, contact: job.contact });
+  if (job && sched() && myOpenSlot()) l.push({ key: "demo", dayN: job.dayN, date: job.date, start: job.start, hours: job.hours, place: job.place, material: job.material, contractor: "Lucas Paving", crating: "4.9", trucks: job.need, left: job.wantByType[ME.type] - job.crew.filter(m => m.type === ME.type).length, rate: TRUCKS[ME.type].rate, contact: job.contact, note: job.note, startAt: job.crew.length < job.plantN ? PLANTS[job.plant].name + ", " + PLANTS[job.plant].sub : "" });
   return l.sort((a, b) => a.dayN - b.dayN);
 }
 function myUpcoming() {
   const l = UPCOMING.map((j, i) => ({ ...j, key: String(i), date: dayLabel(j.dayN) }));
   const me = job && sched() && job.crew.find(m => m.id === "me");
-  if (me) l.push({ key: "demo", dayN: job.dayN, date: job.date, start: job.start, hours: job.hours, place: job.place.name, sub: job.place.sub, material: job.material, contractor: "Lucas Paving", trucks: job.need, rate: TRUCKS[ME.type].rate, contact: job.contact, note: job.notes.at(-1) || "", confirmed: me.reconfirmed });
+  if (me) l.push({ key: "demo", dayN: job.dayN, date: job.date, start: job.start, hours: job.hours, place: job.place.name, sub: job.place.sub, material: job.material, contractor: "Lucas Paving", trucks: job.need, rate: TRUCKS[ME.type].rate, contact: job.contact, note: job.note || job.notes.at(-1) || "", startAt: startOf(me) === "plant" ? PLANTS[job.plant].name + ", " + PLANTS[job.plant].sub : "", confirmed: me.reconfirmed });
   return l.sort((a, b) => a.dayN - b.dayN);
 }
 const busy = n => myUpcoming().some(j => j.dayN === n);
@@ -488,7 +511,9 @@ function dBoard() {
   return page("Job request", `
     <div class="stack" style="gap:4px"><span class="tag" style="justify-self:start">${j.date} · ${j.start}</span><h2>${esc(j.place.name)}</h2><span class="muted small">${esc(j.place.sub)} · ${mi} mi from you</span></div>
     <div class="kv"><div class="row"><span>Pay</span><b>$${j.rate}/hr · ${MIN_HRS} hr minimum</b></div><div class="row"><span>About ${j.hours} hours</span><b>${money(j.hours * j.rate * (1 - FEE))} to you</b></div>
-      <div class="row"><span>Work</span><b>${esc(j.material)}</b></div><div class="row"><span>Contractor</span><b>${esc(j.contractor)} ★ ${j.crating}</b></div><div class="row"><span>Spots left</span><b>${j.left} of ${j.trucks}</b></div></div>
+      <div class="row"><span>Work</span><b>${esc(j.material)}</b></div><div class="row"><span>Contractor</span><b>${esc(j.contractor)} ★ ${j.crating}</b></div><div class="row"><span>Spots left</span><b>${j.left} of ${j.trucks}</b></div>
+      <div class="row"><span>You start at</span><b>${esc(j.startAt || "The job site")}</b></div></div>
+    ${j.note ? `<div class="small" style="background:var(--chip);padding:10px 12px;border-radius:10px"><b>Notes from the contractor:</b> ${esc(j.note)}</div>` : ""}
     ${clash ? `<p class="small" style="color:#e11900;margin:0">You already have a job on ${j.date}. You can take one job a day.</p>` : ""}
     <button class="btn" data-act="d-take:${j.key}" ${clash ? "disabled" : ""}>Accept job</button>
     <p class="muted small">The first drivers to accept get the spots. You'll get the on-site contact once you accept.</p>`);
@@ -500,32 +525,55 @@ function dOffer() {
     <div class="row"><div><span class="muted small">New job request</span><div class="big">$${rate}/hr</div><div class="muted small">${MIN_HRS}-hour minimum: at least ${money(rate * MIN_HRS * (1 - FEE))} to you</div></div>
       <svg class="ring" viewBox="0 0 56 56" aria-label="${left} seconds left"><circle cx="28" cy="28" r="24" fill="none" stroke="#333" stroke-width="5"/><circle cx="28" cy="28" r="24" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="${C2}" stroke-dashoffset="${C2 * (1 - left / 20)}" transform="rotate(-90 28 28)" stroke-linecap="round"/><text x="28" y="34" text-anchor="middle" fill="#fff" font-size="17" font-weight="800">${left}</text></svg></div>
     <div class="stack" style="gap:4px"><b>${esc(job.material)}</b><span>${esc(job.place.name)}, ${esc(job.place.sub)}</span><span class="muted small">${mi} mi away · ${etaMin(ME, job.place)} min · starts now · ${job.need} trucks on this job</span></div>
+    ${job.note ? `<span class="small">${esc(job.note)}</span>` : ""}
     <button class="btn" data-act="d-accept">Accept</button>
     <button class="btn light" data-act="d-decline">Decline</button>
   </div>`;
 }
+const NEXT = { plant: ["loaded", "Loaded, heading to the job"], toJob: ["atJob", "Arrived at the job"], site: ["dumped", "Leaving the job, heading to the plant"], toPlant: ["atPlant", "Arrived at the plant"] };
 function dJob() {
-  const m = job.crew.find(x => x.id === "me");
-  const st = m.status;
-  let body = "";
-  if (st === "Accepted" || st === "On the way") body = `<h2>Head to the job site</h2><p class="muted small">${esc(job.place.name)}, ${esc(job.place.sub)} · ${Math.max(1, Math.round(m.eta * (1 - movePos(m.start, job.place, m.t0, m.eta).f)))} min</p>
-      <button class="btn" data-act="d-arrive">I've arrived</button>`;
-  else if (st === "Arrived") body = `<div class="row"><h2>On the job</h2><span class="tag go">On the clock</span></div>
-      <p class="muted small">${esc(job.material)} · contact on site: ${esc(job.contact)}</p>
-      ${job.notes.length ? `<div class="stack" style="gap:6px">${job.notes.map(n => `<div class="small" style="background:var(--chip);padding:10px 12px;border-radius:10px"><b>From dispatch:</b> ${esc(n)}</div>`).join("")}</div>` : ""}
+  const m = job.crew.find(x => x.id === "me"), sp = startPt(m), here = m.at || (m.arrived ? sp : null);
+  const where = m.leg ? (m.leg.to === job.place ? "toJob" : "toPlant") : (here === job.place ? "site" : here ? "plant" : null);
+  const hrs = m.clockIn != null ? ((m.clockOut ?? dayMin()) - m.clockIn) / 60 : 0;
+  const note = job.note ? `<div class="small" style="background:var(--chip);padding:10px 12px;border-radius:10px"><b>Notes from the contractor:</b> ${esc(job.note)}</div>` : "";
+  let body;
+  if (m.clockIn == null) {
+    const left = m.leg ? 0 : Math.max(0, Math.round(m.eta * (1 - movePos(m.start, sp, m.t0, m.eta).f)));
+    body = `<h2>Head to ${startOf(m) === "plant" ? "the asphalt plant" : "the job site"}</h2>
+      <p class="muted small">${esc(sp.name)}, ${esc(sp.sub)} · ${left ? left + " min" : "you're here"} · start ${esc(job.start || "now")}</p>${note}
+      <button class="btn go" data-act="d-clockin">Clock in</button>
+      <p class="muted small" style="text-align:center">Clock in when you get there. Your hours start counting then.</p>`;
+  } else {
+    const nx = where && NEXT[where === "toJob" ? "toJob" : where === "toPlant" ? "toPlant" : where];
+    const last = job.updates.filter(u => u.me)[0];
+    body = `<div class="row"><h2>On the clock</h2><span class="tag go">${Math.floor(hrs)}h ${String(Math.round((hrs % 1) * 60)).padStart(2, "0")}m</span></div>
+      <p class="muted small">Clocked in at ${fmtMin(m.clockIn)} · ${m.loads || 0} load${m.loads === 1 ? "" : "s"} so far${last ? " · last update: " + esc(last.short) : ""}</p>
+      ${job.notes.length ? job.notes.map(n => `<div class="small" style="background:var(--chip);padding:10px 12px;border-radius:10px"><b>From dispatch:</b> ${esc(n)}</div>`).join("") : ""}
+      <div class="stack" style="gap:8px"><b class="small">Update the contractor</b>
+        ${nx ? `<button class="btn" data-act="d-upd:${nx[0]}">${nx[1]}</button>` : ""}
+        <div class="chips" style="flex-wrap:wrap">${["Running late", "Waiting at the plant", "On break", "Truck problem"].map(t => `<button class="chip" data-act="d-upd:${t}">${t}</button>`).join("")}</div></div>
       <div class="doc"><div><b>Load tickets</b><div class="muted small">${D.tickets.length} today${D.tickets.length ? " · last #" + esc(D.tickets[D.tickets.length - 1]) : ""}</div></div><label>Snap ticket<input type="file" accept="image/*" capture="environment" id="ticket"></label></div>
-      <button class="btn" data-act="d-finish">End my day</button>`;
+      <button class="btn light" data-act="d-clockout">Clock out</button>
+      <p class="muted small" style="text-align:center">Demo: the work clock runs fast (1 second = 4 minutes).</p>`;
+  }
   return `<div class="top"><button class="round" data-act="d-menu" aria-label="Menu">☰</button><span class="pill">${money(D.earnedToday)}</span><span style="width:44px"></span></div>
     <div class="sheet">${body}</div>`;
 }
+function postUpdate(m, short, text, eta) {
+  job.updates.unshift({ who: m.name, me: m.id === "me", short, text, at: fmtMin(dayMin()), eta });
+  job.unread++;
+  if (mode === "contractor") toast(`${m.name.split(" · ")[0]}: ${text}`);
+}
 function dDone() {
-  const pay = 9.5 * TRUCKS[ME.type].rate;
+  const m = job.crew.find(x => x.id === "me"), worked = m.hours || 0, paid = paidHrs(worked), pay = paid * TRUCKS[ME.type].rate;
   return `<div class="full">
     <h1>Nice work, ${ME.name.split(" ")[0]}</h1>
-    <div class="kv"><div class="row"><span>${esc(job.place.name)} · 9.5 hrs × $${TRUCKS[ME.type].rate}</span><span>${money(pay)}</span></div>
-      <div class="row"><span>Trucks2U fee (5%)</span><span>−${money(pay * FEE)}</span></div>
+    <div class="kv"><div class="row"><span>Clocked in</span><span>${fmtMin(m.clockIn)}</span></div><div class="row"><span>Clocked out</span><span>${fmtMin(m.clockOut)}</span></div>
+      <div class="row"><span>Hours worked</span><span>${worked.toFixed(1)}${worked < MIN_HRS ? ` (paid ${MIN_HRS}, the minimum)` : ""}</span></div>
+      <div class="row"><span>${paid.toFixed(1)} hrs × $${TRUCKS[ME.type].rate} · ${m.loads || 0} loads</span><span>${money(pay)}</span></div>
+      <div class="row"><span>Trucks2U fee (7%)</span><span>−${money(pay * FEE)}</span></div>
       <div class="row" style="border-top:1px solid var(--line);padding-top:10px"><span>You earned</span><span class="big" style="font-size:26px">${money(pay * (1 - FEE))}</span></div></div>
-    <p class="muted small">Paid to your bank within 2 business days after the contractor approves your hours and ${D.tickets.length} ticket${D.tickets.length === 1 ? "" : "s"}.</p>
+    <p class="muted small">Your clock-in and clock-out times went to the contractor. Paid to your bank within 2 business days after they approve your hours and ${D.tickets.length} ticket${D.tickets.length === 1 ? "" : "s"}.</p>
     <button class="btn" data-act="d-back">Back to map</button>
   </div>`;
 }
@@ -576,8 +624,8 @@ function dJobs() {
     return page("Job details", `
       <div class="stack" style="gap:4px"><div class="row" style="justify-content:flex-start;gap:8px"><span class="tag">${j.date} · ${j.start}</span>${j.confirmed ? '<span class="tag go">Confirmed ✓</span>' : ""}</div><h2>${esc(j.place)}</h2><span class="muted small">${esc(j.sub)} · ${esc(j.contractor)}</span></div>
       <div class="kv"><div class="row"><span>Work</span><b>${esc(j.material)}</b></div><div class="row"><span>Trucks on this job</span><b>${j.trucks}</b></div>
-        <div class="row"><span>Pay</span><b>$${j.rate}/hr · ${MIN_HRS} hr min</b></div><div class="row"><span>Contact on site</span><b>${esc(j.contact)}</b></div></div>
-      ${j.note ? `<div class="small" style="background:var(--chip);padding:10px 12px;border-radius:10px"><b>From dispatch:</b> ${esc(j.note)}</div>` : ""}
+        <div class="row"><span>Pay</span><b>$${j.rate}/hr · ${MIN_HRS} hr min</b></div><div class="row"><span>Contact on site</span><b>${esc(j.contact)}</b></div><div class="row"><span>You start at</span><b>${esc(j.startAt || "The job site")}</b></div></div>
+      ${j.note ? `<div class="small" style="background:var(--chip);padding:10px 12px;border-radius:10px"><b>Notes from the contractor:</b> ${esc(j.note)}</div>` : ""}
       <p class="muted small">We'll ask you to confirm the night before, and remind you an hour before the start.</p>
       ${j.dayN === 1 && !j.confirmed ? `<button class="btn" data-act="d-confirm:${j.key}">Yes, I'm coming tomorrow</button>` : ""}
       <button class="btn ${j.dayN === 1 && !j.confirmed ? "light" : ""}" data-act="d-directions">Get directions</button>
@@ -592,7 +640,7 @@ function dJobs() {
 function dEarn() {
   const week = PAST.reduce((s, j) => s + paidHrs(j.worked) * j.rate * (1 - FEE), 0) + D.earnedToday;
   return page("Earnings", `
-    <div class="stack" style="gap:4px"><span class="muted small">This week</span><div class="big">${money(week)}</div><p class="muted small">After the 5% Trucks2U fee. Paid every Friday to your bank account ending 2231.</p></div>
+    <div class="stack" style="gap:4px"><span class="muted small">This week</span><div class="big">${money(week)}</div><p class="muted small">After the 7% Trucks2U fee. Paid every Friday to your bank account ending 2231.</p></div>
     <div>${D.earnedToday ? `<div class="doc"><div><b>Today</b><div class="muted small">Waiting for the contractor to approve your hours</div></div><b>${money(D.earnedToday)}</b></div>` : ""}
       ${PAST.map(j => `<div class="doc"><div><b>${j.date}</b><div class="muted small">${esc(j.contractor)} · ${paidHrs(j.worked)} hrs × $${j.rate}</div></div><b>${money(paidHrs(j.worked) * j.rate * (1 - FEE))}</b></div>`).join("")}</div>
     <div class="kv"><div class="row"><span>Last week</span><b>$6,214</b></div><div class="row"><span>This year</span><b>$71,860</b></div></div>`);
@@ -604,7 +652,7 @@ function dSignup() {
   const s = D.signup;
   const head = (n, t) => `<div class="row"><button class="round" data-act="${n === 1 ? "su-close" : "su-prev"}" aria-label="Back" style="box-shadow:none;background:var(--chip)">←</button><span class="muted small">Step ${n} of 3</span></div><h1>${t}</h1>`;
   if (s.step === 1) return `<div class="full">${head(1, "Drive with Trucks2U")}
-    <p class="muted">Get dump truck jobs near you. No broker, and you keep 95%.</p>
+    <p class="muted">Get dump truck jobs near you. No broker. You keep 93%, not 88 to 90%.</p>
     <label class="f">Full name<input id="su-name" value="${esc(s.name || "")}"></label>
     <label class="f">Mobile number<input id="su-phone" inputmode="tel" value="${esc(s.phone || "")}"></label>
     <label class="f">City<input id="su-city" value="${esc(s.city || "")}" placeholder="e.g. Hayward, CA"></label>
@@ -753,7 +801,7 @@ function aMenu() {
 function startJob() {
   const wantByType = { ...C.counts };
   if (job && sched() && job.status !== "cancelled") C_JOBS.push({ dayN: job.dayN, start: job.start, hours: job.hours, place: job.place, material: job.material, need: job.need, crew: job.crew });
-  job = { place: C.place, material: C.material, when: C.day ? `${dayLabel(C.day)} · ${C.time}` : "Now", dayN: C.day, date: dayLabel(C.day), start: C.time, hours: C.hours, wantByType, need: totalTrucks(), crew: [], status: "searching", radius: C.radius, sentTo: TYPES.reduce((s, t) => s + (C.counts[t] ? nearby(t) : 0), 0), contact: "Al, (510) 555-0100", notes: [] };
+  job = { place: C.place, material: C.material, when: C.day ? `${dayLabel(C.day)} · ${C.time}` : "Now", dayN: C.day, date: dayLabel(C.day), start: C.time, hours: C.hours, wantByType, need: totalTrucks(), crew: [], status: "searching", radius: C.radius, sentTo: TYPES.reduce((s, t) => s + (C.counts[t] ? nearby(t) : 0), 0), contact: "Al, (510) 555-0100", notes: [], note: C.note.trim(), plantN: Math.min(C.plantN, totalTrucks()), plant: C.plant, updates: [], unread: 0, dayT0: Date.now(), dayMin: C.day ? toMin(C.time) : new Date().getHours() * 60 + new Date().getMinutes() };
   // Other drivers accept one by one; leave a 12-wheeler spot for "me" if one was requested and I'm online soon
   const queue = [];
   TYPES.forEach(t => { const pool = DRIVERS.filter(d => d.type === t).sort((a, b) => dist(a, job.place) - dist(b, job.place)); for (let i = 0; i < wantByType[t]; i++) queue.push(pool[i % pool.length]); });
@@ -801,7 +849,7 @@ function render() {
     if (C.menu) h += cMenu();
   } else {
     const me = job && !sched() && job.status === "live" && job.crew.find(m => m.id === "me");
-    if (me && D.screen === "home" && me.status !== "Done for the day") D.screen = "job";
+    if (me && D.screen === "home" && me.status !== "Done for the day") { D.screen = "job"; D.page = null; }
     maybeOffer();
     if (D.signup) h = dSignup();
     else if (D.page) h = { profile: dProfile, jobs: dJobs, earn: dEarn, board: dBoard }[D.page]();
@@ -810,6 +858,8 @@ function render() {
   }
   const keepQ = $("#q") ? $("#q").value : null;
   $("#ui").innerHTML = h;
+  if (mode === "contractor" && C.screen === "live" && job && job.unread) { const n = job.unread; setTimeout(() => { if (job) job.unread = 0; }, 6000); if (!job.toldUnread) { job.toldUnread = true; toast(`${n} new update${n === 1 ? "" : "s"} from your drivers`); } }
+  if (job && job.unread === 0) job.toldUnread = false;
   $("#who").textContent = { contractor: "For contractors", driver: "For drivers", fleet: "For fleets and brokers", admin: "Admin" }[mode] || "";
   $("#site-switch").hidden = !mode;
   if (keepQ !== null && $("#q")) { $("#q").value = keepQ; }
@@ -827,6 +877,8 @@ function act(name, arg) {
     case "c-home": C.screen = "home"; C.place = null; break;
     case "c-openjob": if (arg === "demo") C.screen = job.status === "live" ? "live" : "searching"; else { C.screen = "sample"; C.sample = +arg; C.place = C_JOBS[+arg].place; } break;
     case "c-day": C.day = +arg; break;
+    case "c-plant+": C.plantN = Math.min(totalTrucks(), C.plantN + 1); break;
+    case "c-plant-": C.plantN = Math.max(0, C.plantN - 1); break;
     case "c-drop": {
       const m = job.crew.find(x => x.id !== "me" && !x.fleet); if (!m) break;
       job.crew = job.crew.filter(x => x !== m); job.crew.forEach((x, i) => x.slot = i); job.status = "searching"; C.screen = "searching";
@@ -834,7 +886,8 @@ function act(name, arg) {
       setTimeout(() => { const r = job && DRIVERS.find(d => d.type === m.type && d.id !== m.id && !job.crew.some(c => c.id === d.id)); if (r && job.status === "searching") addCrew(r); }, 4500);
       break;
     }
-    case "c-morning": job.when = "Now"; job.crew.forEach(m => { m.t0 = Date.now(); m.status = "On the way"; m.arrived = false; }); C.screen = "live"; toast("It's the morning of the job. Your trucks are on the way."); break;
+    case "c-morning": job.when = "Now"; job.dayT0 = Date.now(); job.crew.forEach(m => { m.t0 = Date.now(); m.status = "On the way"; m.arrived = false; m.at = null; m.leg = null; });
+      setTimeout(() => { const o = job && job.crew.find(x => x.id !== "me" && startOf(x) === "plant") || job && job.crew.find(x => x.id !== "me"); if (o && job.status === "live") { const pl = PLANTS[job.plant], e = etaMin(pl, job.place); if (startOf(o) === "plant") { o.arrived = true; o.at = null; o.leg = { from: pl, to: job.place, t0: Date.now(), mins: e }; postUpdate(o, "Loaded, on the way", `Loaded at ${pl.name}. On the way to the job, about ${e} min.`, e); } else postUpdate(o, "Clocked in", `Clocked in at the job site, ${fmtMin(dayMin())}.`); render(); } }, 9000); C.screen = "live"; toast("It's the morning of the job. Your trucks are on the way."); break;
     case "c-where": C.screen = "where"; render(); setTimeout(() => $("#q") && $("#q").focus(), 30); return;
     case "c-sched": C.when = C.when === "Now" ? "Tomorrow 6:00 AM" : C.when === "Tomorrow 6:00 AM" ? "Mon 5:30 AM" : "Now"; if (C.screen === "home") { C.screen = "where"; } toast("Start: " + C.when); break;
     case "c-pick": C.place = PLACES[+arg]; C.screen = "options"; break;
@@ -860,7 +913,7 @@ function act(name, arg) {
         job.crew.push({ id: "me", name: ME.name, type: ME.type, rating: ME.rating, plate: ME.plate, phone: "(510) 555-0142", start: { x: ME.x, y: ME.y }, t0: Date.now(), eta: etaMin(ME, job.place), status: "On the way", slot: job.crew.length, arrived: false, reconfirmed: false });
       } else {
         const b = BOARD.splice(+arg, 1)[0];
-        UPCOMING.push({ dayN: b.dayN, hours: b.hours, start: b.start, place: b.place.name, sub: b.place.sub, material: b.material, contractor: b.contractor, trucks: b.trucks, rate: b.rate, contact: b.contact, note: "" });
+        UPCOMING.push({ dayN: b.dayN, hours: b.hours, start: b.start, place: b.place.name, sub: b.place.sub, material: b.material, contractor: b.contractor, trucks: b.trucks, rate: b.rate, contact: b.contact, note: b.note || "", startAt: b.startAt || "" });
       }
       D.page = "jobs"; D.jobTab = "up"; D.openJob = null; toast("Accepted. It's in My jobs, and the contractor can see you.");
       if (arg === "demo") { checkFilled(); return; } break;
@@ -882,8 +935,20 @@ function act(name, arg) {
       D.screen = "job"; toast("Job accepted. The contractor can see you."); checkFilled(); return;
     }
     case "d-decline": job.declined = true; closeOffer(); toast("Declined."); break;
-    case "d-arrive": { const m = job.crew.find(x => x.id === "me"); m.arrived = true; m.status = "Arrived"; toast("Checked in. You're on the clock."); break; }
-    case "d-finish": D.earnedToday += 9.5 * TRUCKS[ME.type].rate * (1 - FEE); D.screen = "done"; break;
+    case "d-clockin": { const m = job.crew.find(x => x.id === "me"), sp = startPt(m); m.arrived = true; m.leg = null; m.at = sp; m.status = "On the clock"; m.clockIn = dayMin();
+      postUpdate(m, "Clocked in", `Clocked in at ${sp === job.place ? "the job site" : sp.name}, ${fmtMin(m.clockIn)}.`); toast("You're on the clock."); break; }
+    case "d-upd": {
+      const m = job.crew.find(x => x.id === "me"), pl = PLANTS[job.plant] || PLANTS[0], from = m.at || job.place;
+      if (arg === "loaded") { m.loads = (m.loads || 0) + 1; const e = etaMin(pl, job.place); m.at = null; m.leg = { from: pl, to: job.place, t0: Date.now(), mins: e }; postUpdate(m, "Loaded, on the way", `Loaded at ${pl.name}. On the way back to the job, about ${e} min.`, e); }
+      else if (arg === "atJob") { m.leg = null; m.at = job.place; postUpdate(m, "Back at the job", "Back at the job with a load."); }
+      else if (arg === "dumped") { const e = etaMin(job.place, pl); m.at = null; m.leg = { from: job.place, to: pl, t0: Date.now(), mins: e }; postUpdate(m, "Heading to the plant", `Left the job. Heading to ${pl.name}, about ${e} min.`, e); }
+      else if (arg === "atPlant") { m.leg = null; m.at = pl; postUpdate(m, "At the plant", `At ${pl.name}, waiting to load.`); }
+      else postUpdate(m, arg, arg + ".");
+      toast("Sent to the contractor."); break;
+    }
+    case "d-clockout": { const m = job.crew.find(x => x.id === "me"); m.clockOut = dayMin(); m.hours = (m.clockOut - m.clockIn) / 60; m.status = "Clocked out";
+      postUpdate(m, "Clocked out", `Clocked out at ${fmtMin(m.clockOut)} after ${m.hours.toFixed(1)} hours.`);
+      D.earnedToday += paidHrs(m.hours) * TRUCKS[ME.type].rate * (1 - FEE); D.screen = "done"; break; }
     case "d-back": D.screen = "home"; D.tickets = []; if (job) { const m = job.crew.find(x => x.id === "me"); if (m) m.status = "Done for the day"; } break;
     case "f-menu": F.menu = true; break;
     case "f-menu-close": F.menu = false; break;
@@ -940,11 +1005,13 @@ document.addEventListener("click", e => {
 document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("opt")) { e.preventDefault(); e.target.click(); } });
 document.addEventListener("input", e => {
   if (e.target.id === "q") $("#results").innerHTML = placeList(e.target.value);
+  if (e.target.id === "c-note") C.note = e.target.value;
   if (e.target.id === "su-dot") { saveSu(); const b = $("[data-act=su-submit]"); if (b) b.disabled = Object.keys(D.signup.files).length < 4; }
 });
 document.addEventListener("change", e => {
   if (e.target.dataset && e.target.dataset.pick) { const id = e.target.dataset.pick; F.picked = e.target.checked ? [...F.picked, id] : F.picked.filter(x => x !== id); render(); return; }
   if (e.target.id === "ticket" && e.target.files[0]) { D.tickets.push(String(448800 + D.tickets.length * 13)); toast("Ticket saved. The contractor can see it."); render(); }
+  if (e.target.id === "c-plant") { C.plant = +e.target.value; render(); return; }
   if (e.target.id === "c-time") { C.time = e.target.value; render(); return; }
   if (e.target.id === "c-hours") { C.hours = +e.target.value; render(); return; }
   if (e.target.dataset && e.target.dataset.mydoc && e.target.files[0]) { MYDOCS[2] = ["Insurance certificate", "New certificate sent for review", "ok"]; toast("Got it. We'll check it within a day."); render(); return; }
@@ -968,7 +1035,8 @@ render();
 // Keep the map and ETAs moving
 tick = setInterval(() => {
   if (job && (job.status === "searching" || job.status === "live")) {
-    if (((mode === "contractor" && (C.screen === "live" || C.screen === "searching")) || (mode === "fleet" && F.tab === "requests" && !F.picked.length)) && !document.activeElement?.matches("input, select")) render(); else drawMap();
+    if (mode === "driver" && D.screen === "job" && !D.menu && !D.page && !D.signup) render();
+    else if (((mode === "contractor" && (C.screen === "live" || C.screen === "searching")) || (mode === "fleet" && F.tab === "requests" && !F.picked.length)) && !document.activeElement?.matches("input, select")) render(); else drawMap();
   }
 }, 1000);
 </script>
