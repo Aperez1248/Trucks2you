@@ -130,11 +130,36 @@ button:focus-visible, .opt:focus-visible, label:focus-within { outline: 3px soli
 @keyframes pulse { from { r: 20; opacity: .55; } to { r: 140; opacity: 0; } }
 .pulse { fill: var(--fg); animation: pulse 1.8s ease-out infinite; }
 .pulse.b { animation-delay: .9s; }
+/* ---------- Website layout on computers: full-screen map, panel on the left ---------- */
+.site { display: none; }
+@media (min-width: 960px) {
+  .wrap { max-width: none; padding: 0; gap: 0; }
+  .foot { display: none; }
+  .phone { height: 100vh; max-height: none; min-height: 560px; border-radius: 0; border: 0; }
+  .site { display: flex; position: absolute; top: 0; left: 0; right: 0; height: 64px; z-index: 10; background: #000; color: #fff; align-items: center; gap: 28px; padding: 0 28px; }
+  .site b { font: 800 22px/1 var(--font); letter-spacing: -.4px; }
+  .site .who { color: #b3b3b3; font-weight: 600; }
+  .site button { margin-left: auto; background: #fff; color: #000; border: 0; border-radius: 999px; padding: 10px 18px; font: 700 14px var(--font); cursor: pointer; }
+  .site button[hidden] { display: none; }
+  .top { top: 82px; left: 24px; right: auto; width: 440px; }
+  .sheet { top: 142px; left: 24px; right: auto; bottom: auto; width: 440px; max-height: calc(100% - 166px); border-radius: 16px; align-content: start; padding: 20px 22px; box-shadow: 0 6px 30px rgb(0 0 0 / .18); }
+  .sheet::before { display: none; }
+  .full { top: 64px; padding: 36px max(24px, calc(50% - 380px)) 48px; }
+  .gobtn { left: calc(50% + 232px); bottom: 56px; }
+  .offer { left: calc(50% + 232px); right: auto; bottom: 40px; width: 460px; transform: translateX(-50%); }
+  .menu { top: 64px; }
+  .menu > div { width: 380px; }
+  .toast { top: 82px; left: calc(50% + 232px); }
+  .welcome { top: 64px; align-content: center; padding: 40px max(24px, calc(50% - 280px)); }
+  .welcome .logo { display: none; }
+  .welcome h1 { font-size: 52px; }
+}
 @media (prefers-reduced-motion: reduce) { .pulse { animation: none; opacity: .12; } .bar i { transition: none; } }
 </style>
 
 <div class="wrap">
   <div class="phone" id="phone">
+    <header class="site"><b>Trucks2U</b><span class="who" id="who"></span><button data-mode="welcome" id="site-switch" hidden>Switch account</button></header>
     <svg class="map" id="map" viewBox="0 0 400 760" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
     <div id="ui"></div>
   </div>
@@ -214,12 +239,16 @@ function toast(msg) {
 function drawBaseMap() {
   // A simple city: water on the west, a freeway, a street grid and a couple of parks
   const g = [];
-  g.push(`<rect width="400" height="760" fill="var(--land)"/>`);
-  g.push(`<path d="M0 0 H70 C60 120 40 180 55 260 C70 340 30 420 20 520 C10 620 30 700 0 760 Z" fill="var(--water)"/>`);
+  g.push(`<rect x="-2000" y="-300" width="4400" height="1400" fill="var(--land)"/>`);
+  g.push(`<path d="M-170 -300 H70 V0 C60 120 40 180 55 260 C70 340 30 420 20 520 C10 620 30 700 0 760 V1100 H-150 C-190 900 -130 700 -160 500 C-190 300 -140 100 -170 -300 Z" fill="var(--water)"/>`);
+  for (let y = -250; y < 1100; y += 58) g.push(`<path d="M-2000 ${y} H-185" stroke="var(--road-edge)" stroke-width="9"/><path d="M-2000 ${y} H-185" stroke="var(--road)" stroke-width="7"/>`);
+  for (let x = -230; x > -2000; x -= 64) g.push(`<path d="M${x} -300 V1100" stroke="var(--road-edge)" stroke-width="9"/><path d="M${x} -300 V1100" stroke="var(--road)" stroke-width="7"/>`);
+  g.push(`<rect x="420" y="120" width="90" height="70" rx="6" fill="var(--park)"/><rect x="560" y="520" width="120" height="80" rx="6" fill="var(--park)"/>`);
   g.push(`<rect x="230" y="360" width="70" height="55" rx="6" fill="var(--park)"/><rect x="120" y="560" width="90" height="60" rx="6" fill="var(--park)"/>`);
-  for (let y = 40; y < 760; y += 58) g.push(`<path d="M60 ${y} H400" stroke="var(--road-edge)" stroke-width="9"/><path d="M60 ${y} H400" stroke="var(--road)" stroke-width="7"/>`);
-  for (let x = 90; x < 400; x += 64) g.push(`<path d="M${x} 0 V760" stroke="var(--road-edge)" stroke-width="9"/><path d="M${x} 0 V760" stroke="var(--road)" stroke-width="7"/>`);
-  g.push(`<path d="M80 760 C140 560 170 420 260 300 C320 220 360 120 400 60" fill="none" stroke="var(--hwy-edge)" stroke-width="15"/><path d="M80 760 C140 560 170 420 260 300 C320 220 360 120 400 60" fill="none" stroke="var(--hwy)" stroke-width="11"/>`);
+  for (let y = -250; y < 1100; y += 58) g.push(`<path d="M60 ${y} H2400" stroke="var(--road-edge)" stroke-width="9"/><path d="M60 ${y} H2400" stroke="var(--road)" stroke-width="7"/>`);
+  for (let x = 90; x < 2400; x += 64) g.push(`<path d="M${x} -300 V1100" stroke="var(--road-edge)" stroke-width="9"/><path d="M${x} -300 V1100" stroke="var(--road)" stroke-width="7"/>`);
+  const hwy = "M40 1100 L80 760 C140 560 170 420 260 300 C320 220 360 120 400 60 L620 -300";
+  g.push(`<path d="${hwy}" fill="none" stroke="var(--hwy-edge)" stroke-width="15"/><path d="${hwy}" fill="none" stroke="var(--hwy)" stroke-width="11"/>`);
   g.push(`<text x="300" y="230" fill="var(--label)" font-size="11" font-weight="700" transform="rotate(-50 300 230)">I-880</text>`);
   g.push(`<text x="22" y="320" fill="var(--label)" font-size="11" font-weight="600" transform="rotate(-90 22 320)">San Francisco Bay</text>`);
   g.push(`<g id="overlay"></g><g id="cars"></g>`);
@@ -705,6 +734,8 @@ function render() {
   }
   const keepQ = $("#q") ? $("#q").value : null;
   $("#ui").innerHTML = h;
+  $("#who").textContent = { contractor: "For contractors", driver: "For drivers", fleet: "For fleets and brokers", admin: "Admin" }[mode] || "";
+  $("#site-switch").hidden = !mode;
   if (keepQ !== null && $("#q")) { $("#q").value = keepQ; }
   drawMap();
 }
@@ -823,6 +854,16 @@ document.addEventListener("change", e => {
 });
 
 drawBaseMap();
+// On a computer the map fills the screen and the work area sits to the right of the panel
+const wide = matchMedia("(min-width: 960px)");
+function fitMap() {
+  const m = $("#map");
+  if (!wide.matches) { m.setAttribute("viewBox", "0 0 400 760"); m.setAttribute("preserveAspectRatio", "xMidYMid slice"); return; }
+  const W = innerWidth, H = innerHeight, sc = (H - 64) / 700, cx = 488 + (W - 488) / 2;
+  m.setAttribute("viewBox", `${(200 - cx / sc).toFixed(1)} ${(380 - (64 + (H - 64) / 2) / sc).toFixed(1)} ${(W / sc).toFixed(1)} ${(H / sc).toFixed(1)}`);
+  m.setAttribute("preserveAspectRatio", "xMinYMin meet");
+}
+fitMap(); addEventListener("resize", fitMap);
 if (["#driver", "#contractor", "#fleet", "#admin"].includes(location.hash)) mode = location.hash.slice(1);
 render();
 // Keep the map and ETAs moving
