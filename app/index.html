@@ -115,6 +115,16 @@ input:focus, select:focus { border-color: var(--fg); outline: none; }
 .menu > div { background: var(--sheet); width: 78%; height: 100%; padding: 22px 18px; display: grid; gap: 4px; align-content: start; }
 .menu .place { border-bottom: 0; }
 .toast { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); z-index: 9; background: var(--btn); color: var(--btn-fg); padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; width: max-content; max-width: calc(100% - 32px); text-align: center; }
+.welcome { position: absolute; inset: 0; z-index: 6; background: #000; color: #fff; padding: 28px 20px; display: grid; gap: 12px; align-content: end; }
+.welcome .logo { font: 800 30px/1 var(--font); letter-spacing: -.6px; position: absolute; top: 28px; left: 20px; }
+.welcome h1 { font-size: 34px; letter-spacing: -.8px; margin-bottom: 8px; }
+.role { display: grid; grid-template-columns: 46px 1fr 16px; gap: 14px; align-items: center; background: #1c1c1c; border: 0; color: #fff; border-radius: 14px; padding: 16px; text-align: left; font: inherit; cursor: pointer; }
+.role:hover { background: #2a2a2a; }
+.role .ic { width: 46px; height: 46px; border-radius: 50%; background: #fff; color: #000; display: grid; place-items: center; font-size: 22px; }
+.role b { display: block; font-size: 18px; }
+.role span { color: #b3b3b3; font-size: 14px; }
+.check { display: grid; grid-template-columns: 24px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); cursor: pointer; }
+.check input { width: 22px; height: 22px; accent-color: var(--fg); padding: 0; }
 .foot { font-size: 12px; color: var(--muted); text-align: center; }
 button:focus-visible, .opt:focus-visible, label:focus-within { outline: 3px solid var(--route); outline-offset: 2px; }
 @keyframes pulse { from { r: 20; opacity: .55; } to { r: 140; opacity: 0; } }
@@ -124,15 +134,11 @@ button:focus-visible, .opt:focus-visible, label:focus-within { outline: 3px soli
 </style>
 
 <div class="wrap">
-  <div class="switch" role="group" aria-label="Which app">
-    <button type="button" data-mode="contractor">Contractor app</button>
-    <button type="button" data-mode="driver">Driver app</button>
-  </div>
   <div class="phone" id="phone">
     <svg class="map" id="map" viewBox="0 0 400 760" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
     <div id="ui"></div>
   </div>
-  <p class="foot">Prototype with sample drivers and addresses. Switch apps to see both sides of the same job.</p>
+  <p class="foot">Prototype with sample drivers and addresses. To see another side of the same job, open the menu (☰) and tap Switch account.</p>
 </div>
 
 <script>
@@ -159,10 +165,22 @@ const DRIVERS = NAMES.map((n, i) => ({
   plate: ["8", "7", "6"][i % 3] + "ABC" + (100 + i * 37) % 900,
   x: 40 + ((i * 97) % 320), y: 120 + ((i * 151) % 520), phone: "(510) 555-01" + String(10 + i).padStart(2, "0")
 }));
+// The fleet in the fleet (broker) side of the app
+const FLEET = { name: "Summit Hauling", owner: "Rick S.", trucks: [
+  { id: "SH-01", driver: "Pete A.", type: "w10", x: 120, y: 520, status: "online" },
+  { id: "SH-02", driver: "Gus M.", type: "w12", x: 160, y: 470, status: "online" },
+  { id: "SH-03", driver: "Lou F.", type: "w12", x: 250, y: 560, status: "online" },
+  { id: "SH-04", driver: "Ray T.", type: "w12", x: 330, y: 640, status: "job" },
+  { id: "SH-05", driver: "Nick D.", type: "sd", x: 210, y: 650, status: "online" },
+  { id: "SH-06", driver: "Hal B.", type: "sd", x: 290, y: 380, status: "job" },
+  { id: "SH-07", driver: "Eddie K.", type: "w10", x: 360, y: 520, status: "offline" },
+  { id: "SH-08", driver: "Walt J.", type: "sd", x: 100, y: 640, status: "online" }
+] };
 const ME = { name: "Marco R.", type: "w12", plate: "8XKD218", rating: "4.9", x: 330, y: 190 };   // the driver in the driver app
 
 /* ---------- State ---------- */
-let mode = "contractor";
+let mode = null;   // null = welcome screen; "contractor", "driver" or "fleet" once signed in
+let F = { tab: "requests", picked: [], menu: false };
 let C = { screen: "home", place: null, material: MATERIALS[0], counts: { w10: 0, w12: 2, sd: 0 }, focus: "w12", when: "Now", menu: false };
 let D = { online: false, screen: "home", offerLeft: 0, earnedToday: 0, tickets: [], menu: false, signup: null, approved: true };
 let job = null;   // the one live request, shared by both apps
@@ -223,7 +241,15 @@ function drawMap() {
     } else {
       DRIVERS.forEach(d => c += truckIcon(d.x, d.y, (d.x * 3) % 360));
     }
-  } else {
+  } else if (mode === "fleet") {
+    if (live && job.status === "searching") o += `<circle class="pulse" cx="${job.place.x}" cy="${job.place.y}" r="20"/>` + pin(job.place);
+    FLEET.trucks.forEach(k => {
+      const m = live && job.crew.find(x => x.id === k.id);
+      if (m) { const q = crewPos(m); if (!m.arrived) o += `<path d="M${q.x} ${q.y} L${job.place.x} ${job.place.y}" stroke="var(--route)" stroke-width="3" stroke-linecap="round"/>`; c += truckIcon(q.x, q.y, q.angle); }
+      else c += `<g opacity="${k.status === "offline" ? .35 : 1}">${truckIcon(k.x, k.y, (k.x * 3) % 360)}</g>`;
+    });
+    if (live && job.crew.some(m => m.fleet)) o += pin(job.place);
+  } else if (mode === "driver") {
     const mine = live && job.crew.find(m => m.id === "me");
     if (mine) {
       const q = crewPos(mine);
@@ -282,14 +308,14 @@ function cOptions() {
     </div>`;
 }
 function crewRows() {
-  return job.crew.map(m => `<div class="driver"><div class="avatar">${m.name.split(" ").map(x => x[0]).join("")}</div>
+  return job.crew.map(m => `<div class="driver"><div class="avatar">${m.name.split(" · ")[0].split(" ").map(x => x[0]).join("")}</div>
     <div><b>${esc(m.name)}</b> <span class="muted small">★ ${m.rating}</span><div class="muted small">${TRUCKS[m.type].name} · ${esc(m.plate)}</div></div>
     <div style="text-align:right">${m.arrived ? '<span class="tag go">Arrived</span>' : `<span class="tag">${m.status === "Accepted" ? "Accepted" : Math.max(1, Math.round(m.eta * (1 - movePos(m.start, job.place, m.t0, m.eta).f))) + " min"}</span>`}
       <div class="small muted" style="margin-top:6px;user-select:all">${m.phone}</div></div></div>`).join("");
 }
 function cSearching() {
   const got = job.crew.length, need = job.need;
-  return `<div class="top"><span></span><span class="pill">${esc(job.place.name)}</span><span style="width:44px"></span></div>
+  return `<div class="top"><button class="round" data-act="c-menu" aria-label="Menu">☰</button><span class="pill">${esc(job.place.name)}</span><span style="width:44px"></span></div>
     <div class="sheet">
       <div class="stack" style="gap:6px"><h2>${got ? `${got} of ${need} trucks accepted` : "Sending your request…"}</h2>
         <p class="muted small">Sent to ${job.sentTo} vetted drivers nearby. First to accept get the job.</p></div>
@@ -326,6 +352,7 @@ function cMenu() {
     <button class="place" data-act="c-hist"><span class="ic">🧾</span><span><b>Your jobs</b><span>Past requests and invoices</span></span></button>
     <button class="place" data-act="c-pay"><span class="ic">🏦</span><span><b>Payment</b><span>Bank account ending 4417</span></span></button>
     <button class="place" data-act="c-help"><span class="ic">?</span><span><b>Help</b><span>Talk to Trucks2U</span></span></button>
+    <button class="place" data-mode="welcome"><span class="ic">⇄</span><span><b>Switch account</b><span>Demo: see the driver or fleet side</span></span></button>
   </div></div>`;
 }
 
@@ -363,7 +390,7 @@ function dJob() {
       ${job.notes.length ? `<div class="stack" style="gap:6px">${job.notes.map(n => `<div class="small" style="background:var(--chip);padding:10px 12px;border-radius:10px"><b>From dispatch:</b> ${esc(n)}</div>`).join("")}</div>` : ""}
       <div class="doc"><div><b>Load tickets</b><div class="muted small">${D.tickets.length} today${D.tickets.length ? " · last #" + esc(D.tickets[D.tickets.length - 1]) : ""}</div></div><label>Snap ticket<input type="file" accept="image/*" capture="environment" id="ticket"></label></div>
       <button class="btn" data-act="d-finish">End my day</button>`;
-  return `<div class="top"><span></span><span class="pill">${money(D.earnedToday)}</span><span style="width:44px"></span></div>
+  return `<div class="top"><button class="round" data-act="d-menu" aria-label="Menu">☰</button><span class="pill">${money(D.earnedToday)}</span><span style="width:44px"></span></div>
     <div class="sheet">${body}</div>`;
 }
 function dDone() {
@@ -383,6 +410,7 @@ function dMenu() {
     <button class="place" data-act="d-earn"><span class="ic">$</span><span><b>Earnings</b><span>${money(D.earnedToday)} today · paid every week</span></span></button>
     <button class="place" data-act="d-docs"><span class="ic">✓</span><span><b>Documents</b><span>All verified</span></span></button>
     <button class="place" data-act="d-signup"><span class="ic">+</span><span><b>Sign up as a new driver</b><span>See what new drivers fill in</span></span></button>
+    <button class="place" data-mode="welcome"><span class="ic">⇄</span><span><b>Switch account</b><span>Demo: see the contractor or fleet side</span></span></button>
   </div></div>`;
 }
 /* Driver sign-up: three short steps */
@@ -416,6 +444,63 @@ function dPending() {
     <button class="btn" data-act="su-approve">Approve now (demo)</button></div>`;
 }
 
+/* ---------- Welcome (everyone downloads the same app) ---------- */
+function welcome() {
+  return `<div class="welcome"><div class="logo">Trucks2U</div>
+    <h1>Dump trucks on demand.</h1>
+    <button class="role" data-mode="contractor"><span class="ic">🏗</span><span><b>I need trucks</b><span>Paving and construction companies</span></span><span>›</span></button>
+    <button class="role" data-mode="driver"><span class="ic">🚛</span><span><b>I drive a truck</b><span>Owner-operators and drivers</span></span><span>›</span></button>
+    <button class="role" data-mode="fleet"><span class="ic">▦</span><span><b>I run a fleet</b><span>Brokers and companies with several trucks</span></span><span>›</span></button>
+    <p style="color:#8a8a8a;font-size:13px;text-align:center;margin-top:6px">Every driver and truck is checked before they can take jobs.</p>
+  </div>`;
+}
+
+/* ---------- Fleet (broker) side ---------- */
+const freeTrucks = t => FLEET.trucks.filter(k => k.status === "online" && (!t || k.type === t));
+function openSpots() {
+  if (!job || job.status !== "searching") return {};
+  const o = {}; TYPES.forEach(t => { const n = job.wantByType[t] - job.crew.filter(m => m.type === t).length; if (n > 0) o[t] = n; }); return o;
+}
+function fHome() {
+  const spots = openSpots(), fits = Object.keys(spots).filter(t => freeTrucks(t).length);
+  const working = FLEET.trucks.filter(k => k.status === "job").length, on = FLEET.trucks.filter(k => k.status !== "offline").length;
+  let body = "";
+  if (F.tab === "requests") {
+    if (fits.length) {
+      const picked = F.picked.map(id => FLEET.trucks.find(k => k.id === id));
+      body = `<div class="stack" style="gap:4px"><span class="tag go" style="justify-self:start">New job request</span><h2>${esc(job.place.name)}</h2>
+          <p class="muted small">${esc(job.place.sub)} · ${esc(job.material)} · starts ${job.when.toLowerCase()}</p>
+          <p class="small"><b>Open spots:</b> ${Object.entries(spots).map(([t, n]) => `${n} × ${TRUCKS[t].name} at $${TRUCKS[t].rate}/hr`).join(", ")}</p></div>
+        <div>${fits.flatMap(t => freeTrucks(t)).map(k => { const on = F.picked.includes(k.id); const full = !on && F.picked.filter(id => FLEET.trucks.find(x => x.id === id).type === k.type).length >= spots[k.type];
+          return `<label class="check" style="${full ? "opacity:.4" : ""}"><input type="checkbox" data-pick="${k.id}" ${on ? "checked" : ""} ${full ? "disabled" : ""}><span><b>${k.id} · ${esc(k.driver)}</b><span class="muted small" style="display:block">${TRUCKS[k.type].name} · ${etaMin(k, job.place)} min away</span></span><span class="tag">${TRUCKS[k.type].short}</span></label>`; }).join("")}</div>
+        <button class="btn" data-act="f-send" ${picked.length ? "" : "disabled"}>Send ${picked.length || ""} truck${picked.length === 1 ? "" : "s"}</button>
+        <p class="muted small">Your drivers get the job details on their phone right away.</p>`;
+    } else body = `<h2>No open requests</h2><p class="muted small">When a contractor nearby needs trucks you have free, the request shows up here and you choose which trucks to send. ${job && job.status === "searching" ? "" : "Try it: switch to the contractor account and request trucks."}</p>`;
+  } else if (F.tab === "trucks") {
+    body = `<div>${FLEET.trucks.map(k => `<div class="driver"><div class="avatar">${TRUCKS[k.type].short}</div><div><b>${k.id} · ${esc(k.driver)}</b><div class="muted small">${TRUCKS[k.type].name}${k.jobName ? " · " + esc(k.jobName) : ""}</div></div>
+        <span class="tag ${k.status === "job" ? "go" : ""}">${{ online: "Free", job: "On a job", offline: "Offline" }[k.status]}</span></div>`).join("")}</div>
+      <button class="btn light" data-act="f-add">Add a truck or driver</button>`;
+  } else {
+    const rows = FLEET.trucks.filter(k => k.status !== "offline").map((k, i) => ({ k, amt: [1180, 1340, 1240, 1410, 1560, 1490, 0, 1520][i] || 0 }));
+    const week = 31840;
+    body = `<div class="stack" style="gap:4px"><span class="muted small">This week</span><div class="big">${money(week)}</div><p class="muted small">After the Trucks2U fee. Paid out every Friday.</p></div>
+      <div>${rows.map(({ k, amt }) => `<div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><span>${k.id} · ${esc(k.driver)}</span><b>${money(amt)} today</b></div>`).join("")}</div>`;
+  }
+  return `<div class="top"><button class="round" data-act="f-menu" aria-label="Menu">☰</button><span class="pill">${working} of ${on} trucks working</span><span style="width:44px"></span></div>
+    <div class="sheet">
+      <div class="chips">${[["requests", `Requests${fits.length ? " · 1" : ""}`], ["trucks", "My trucks"], ["earn", "Earnings"]].map(([k, l]) => `<button class="chip" data-act="f-tab:${k}" aria-pressed="${F.tab === k}">${l}</button>`).join("")}</div>
+      ${body}
+    </div>`;
+}
+function fMenu() {
+  return `<div class="menu" data-act="f-menu-close"><div>
+    <div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:14px"><div class="avatar">SH</div><div><b>${FLEET.name}</b><div class="muted small">Fleet · ${FLEET.trucks.length} trucks</div></div></div>
+    <button class="place" data-act="f-tab:trucks"><span class="ic">🚛</span><span><b>My trucks</b><span>Drivers, documents and status</span></span></button>
+    <button class="place" data-act="f-tab:earn"><span class="ic">$</span><span><b>Earnings</b><span>Weekly payouts to one bank account</span></span></button>
+    <button class="place" data-mode="welcome"><span class="ic">⇄</span><span><b>Switch account</b><span>Demo: see the contractor or driver side</span></span></button>
+  </div></div>`;
+}
+
 /* ---------- Job engine ---------- */
 function startJob() {
   const wantByType = { ...C.counts };
@@ -423,24 +508,21 @@ function startJob() {
   // Other drivers accept one by one; leave a 12-wheeler spot for "me" if one was requested and I'm online soon
   const queue = [];
   TYPES.forEach(t => { const pool = DRIVERS.filter(d => d.type === t).sort((a, b) => dist(a, job.place) - dist(b, job.place)); for (let i = 0; i < wantByType[t]; i++) queue.push(pool[i % pool.length]); });
-  let reservedMe = wantByType[ME.type] > 0;
+  // Sample drivers accept one by one, but leave the last spots open for 25 seconds so you can
+  // take one from the driver or fleet side of the demo.
+  const reserve = job.need > 2 ? 2 : job.need - 1, t0 = Date.now();
   let i = 0;
   const next = () => {
-    if (!job || job.status !== "searching") return;
-    if (i >= queue.length) return;
+    if (!job || job.status !== "searching" || i >= queue.length) return;
+    if (job.crew.length >= job.need - reserve && Date.now() - t0 < 25000) { setTimeout(next, 2000); return; }
     const d = queue[i++];
-    if (reservedMe && d.type === ME.type && job.crew.filter(m => m.type === ME.type).length === wantByType[ME.type] - 1 && !job.declined && !job.crew.some(m => m.id === "me")) {
-      // hold the last spot of my truck type for a few seconds so the driver app can take it
-      setTimeout(() => { if (job && job.status === "searching" && !job.crew.some(m => m.id === "me") && job.crew.filter(m => m.type === ME.type).length < wantByType[ME.type]) { addCrew(d); } next(); }, D.online ? 14000 : 9000);
-      return;
-    }
-    addCrew(d);
+    if (job.crew.filter(m => m.type === d.type).length < job.wantByType[d.type]) addCrew(d);
     setTimeout(next, 1600 + Math.random() * 1400);
   };
   setTimeout(next, 1800);
 }
 function addCrew(d) {
-  if (!job) return;
+  if (!job || job.crew.filter(m => m.type === d.type).length >= job.wantByType[d.type]) return;
   job.crew.push({ id: d.id, name: d.name, type: d.type, rating: d.rating, plate: d.plate, phone: d.phone, start: { x: d.x, y: d.y }, t0: Date.now(), eta: etaMin(d, job.place), status: "On the way", slot: job.crew.length, arrived: false });
   if (mode === "contractor") toast(`${d.name} accepted · ${TRUCKS[d.type].name}`);
   checkFilled();
@@ -460,9 +542,10 @@ function closeOffer() { clearInterval(offerTimer); D.screen = "home"; }
 
 /* ---------- Render ---------- */
 function render() {
-  document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mode));
   let h = "";
-  if (mode === "contractor") {
+  if (!mode) h = welcome();
+  else if (mode === "fleet") { h = fHome(); if (F.menu) h += fMenu(); }
+  else if (mode === "contractor") {
     h = { home: cHome, where: cWhere, options: cOptions, searching: cSearching, live: cLive, done: cDone }[C.screen]();
     if (C.menu) h += cMenu();
   } else {
@@ -515,6 +598,17 @@ function act(name, arg) {
     case "d-arrive": { const m = job.crew.find(x => x.id === "me"); m.arrived = true; m.status = "Arrived"; toast("Checked in. You're on the clock."); break; }
     case "d-finish": D.earnedToday += 9.5 * TRUCKS[ME.type].rate * (1 - FEE); D.screen = "done"; break;
     case "d-back": D.screen = "home"; D.tickets = []; if (job) { const m = job.crew.find(x => x.id === "me"); if (m) m.status = "Done for the day"; } break;
+    case "f-menu": F.menu = true; break;
+    case "f-menu-close": F.menu = false; break;
+    case "f-tab": F.tab = arg; F.menu = false; break;
+    case "f-add": toast("New trucks and drivers upload their documents and get checked first."); return;
+    case "f-send": {
+      const spots = openSpots(); let sent = 0;
+      F.picked.forEach(id => { const k = FLEET.trucks.find(x => x.id === id); if (spots[k.type] > 0 && job.status === "searching") {
+        spots[k.type]--; sent++; k.status = "job"; k.jobName = job.place.name;
+        job.crew.push({ id: k.id, fleet: true, name: k.driver + " · " + FLEET.name, type: k.type, rating: "4.8", plate: k.id, phone: "(510) 555-0199", start: { x: k.x, y: k.y }, t0: Date.now(), eta: etaMin(k, job.place), status: "On the way", slot: job.crew.length, arrived: false }); } });
+      F.picked = []; toast(sent ? `${sent} truck${sent === 1 ? "" : "s"} sent. Drivers got the job on their phones.` : "Those spots just filled."); checkFilled(); return;
+    }
     case "su-close": D.signup = null; break;
     case "su-prev": saveSu(); D.signup.step--; break;
     case "su-next": saveSu(); D.signup.step++; break;
@@ -532,7 +626,7 @@ function saveSu() {
 
 document.addEventListener("click", e => {
   const m = e.target.closest("[data-mode]");
-  if (m) { mode = m.dataset.mode; C.menu = D.menu = false; render(); return; }
+  if (m) { mode = m.dataset.mode === "welcome" ? null : m.dataset.mode; C.menu = D.menu = F.menu = false; render(); return; }
   const a = e.target.closest("[data-act]");
   if (a && a.dataset.act.endsWith("menu-close") && e.target !== a) return;   // clicks inside the menu panel don't close it
   if (a && !(e.target.closest("label") && e.target.tagName === "INPUT")) { const [n, ...rest] = a.dataset.act.split(":"); act(n, rest.join(":")); }
@@ -543,18 +637,19 @@ document.addEventListener("input", e => {
   if (e.target.id === "su-dot") { saveSu(); const b = $("[data-act=su-submit]"); if (b) b.disabled = Object.keys(D.signup.files).length < 4; }
 });
 document.addEventListener("change", e => {
+  if (e.target.dataset && e.target.dataset.pick) { const id = e.target.dataset.pick; F.picked = e.target.checked ? [...F.picked, id] : F.picked.filter(x => x !== id); render(); return; }
   if (e.target.id === "ticket" && e.target.files[0]) { D.tickets.push(String(448800 + D.tickets.length * 13)); toast("Ticket saved. The contractor can see it."); render(); }
   const k = e.target.dataset && e.target.dataset.doc;
   if (k && e.target.files[0]) { saveSu(); D.signup.files[k] = e.target.files[0].name; render(); }
 });
 
 drawBaseMap();
-if (location.hash === "#driver") mode = "driver";
+if (["#driver", "#contractor", "#fleet"].includes(location.hash)) mode = location.hash.slice(1);
 render();
 // Keep the map and ETAs moving
 tick = setInterval(() => {
   if (job && (job.status === "searching" || job.status === "live")) {
-    if (mode === "contractor" && (C.screen === "live" || C.screen === "searching") && !document.activeElement?.matches("input")) render(); else drawMap();
+    if (((mode === "contractor" && (C.screen === "live" || C.screen === "searching")) || (mode === "fleet" && F.tab === "requests" && !F.picked.length)) && !document.activeElement?.matches("input")) render(); else drawMap();
   }
 }, 1000);
 </script>
