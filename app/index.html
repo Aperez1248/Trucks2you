@@ -647,28 +647,66 @@ function dEarn() {
 }
 
 /* Driver sign-up: three short steps */
-const DOCS = [["cdl", "Driver's license (CDL)", "Front photo"], ["med", "DOT medical card", "Photo or PDF"], ["ins", "Insurance certificate", "Liability, $1M or more"], ["reg", "Truck registration", "Photo or PDF"], ["dot", "USDOT number", "We check it with FMCSA"]];
+/* Driver sign-up: four short steps. Drivers type the key details; the app fills them in from the photo first. */
+const DOCS = [["cdl", "Driver's license (CDL)", "Front photo"], ["med", "DOT medical card", "Photo or PDF"], ["ins", "Insurance certificate", "Liability, $1M or more"], ["reg", "Truck registration", "Photo or PDF"]];
+const DOC_FIELDS = {
+  cdl: [["num", "License number", "text"], ["state", "State", "text"], ["cls", "Class", "A|B"], ["exp", "Expires", "date"]],
+  med: [["exp", "Expires", "date"]],
+  ins: [["co", "Insurance company", "text"], ["pol", "Policy number", "text"], ["amt", "Liability coverage", "$750,000|$1,000,000|$2,000,000"], ["exp", "Expires", "date"]],
+  reg: [["exp", "Expires", "date"]]
+};
+const SCAN = { cdl: { num: "D4829173", state: "CA", cls: "A", exp: "2028-03-14" }, med: { exp: "2027-08-02" }, ins: { co: "Progressive Commercial", pol: "PC-0193384", amt: "$1,000,000", exp: "2026-12-03" }, reg: { exp: "2027-06-30" } };
+const MAKES = ["Peterbilt", "Kenworth", "Mack", "Freightliner", "International", "Volvo", "Western Star", "Other"];
+const isoDay = n => { const d = dateOf(n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+const fmtDate = iso => iso ? new Date(iso + "T12:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "";
+const daysTo = iso => Math.round((new Date(iso + "T12:00") - new Date(isoDay(0) + "T12:00")) / 864e5);
+function expNote(iso) { if (!iso) return ""; const d = daysTo(iso); return d < 0 ? `<span style="color:#e11900">Expired ${fmtDate(iso)}. Upload a current one.</span>` : d <= 30 ? `<span style="color:var(--warn)">Expires in ${d} days. You'll need a new one soon.</span>` : ""; }
+function suValid() {
+  const s = D.signup;
+  if (s.step === 1) return !!(s.name && s.phone && s.email);
+  if (s.step === 2) return !!(s.type && s.make && s.model && /^\d{4}$/.test(s.year || "") && s.plate);
+  if (s.step === 3) return DOCS.every(([k]) => s.files[k] && DOC_FIELDS[k].every(([f]) => s.det[k] && s.det[k][f]) && daysTo(s.det[k].exp) >= 0) && (s.dotNum || "").replace(/\D/g, "").length >= 6;
+  return !!(s.terms && s.mvr);
+}
 function dSignup() {
   const s = D.signup;
-  const head = (n, t) => `<div class="row"><button class="round" data-act="${n === 1 ? "su-close" : "su-prev"}" aria-label="Back" style="box-shadow:none;background:var(--chip)">←</button><span class="muted small">Step ${n} of 3</span></div><h1>${t}</h1>`;
-  if (s.step === 1) return `<div class="full">${head(1, "Drive with Trucks2U")}
+  const head = (n, t) => `<div class="row"><button class="round" data-act="${n === 1 ? "su-close" : "su-prev"}" aria-label="Back" style="box-shadow:none;background:var(--chip)">←</button><span class="muted small">Step ${n} of 4</span></div><h1>${t}</h1>`;
+  const inp = (k, label, extra = "") => `<label class="f">${label}<input id="su-${k}" value="${esc(s[k] || "")}" ${extra}></label>`;
+  const next = `<button class="btn" data-act="su-next" ${suValid() ? "" : "disabled"}>Continue</button>`;
+  if (s.step === 1) return `<div class="full" data-su>${head(1, "Drive with Trucks2U")}
     <p class="muted">Get dump truck jobs near you. No broker. You keep 93%, not 88 to 90%.</p>
-    <label class="f">Full name<input id="su-name" value="${esc(s.name || "")}"></label>
-    <label class="f">Mobile number<input id="su-phone" inputmode="tel" value="${esc(s.phone || "")}"></label>
-    <label class="f">City<input id="su-city" value="${esc(s.city || "")}" placeholder="e.g. Hayward, CA"></label>
-    <button class="btn" data-act="su-next">Continue</button></div>`;
-  if (s.step === 2) return `<div class="full">${head(2, "Your truck")}
-    <div class="stack" style="gap:4px">${TYPES.map(t => `<div class="opt ${s.type === t ? "on" : ""}" data-act="su-type:${t}" tabindex="0"><span class="tag">${TRUCKS[t].short}</span><div><div class="name">${TRUCKS[t].name}</div><div class="meta">${TRUCKS[t].seat}</div></div><span></span></div>`).join("")}</div>
-    <label class="f">License plate<input id="su-plate" value="${esc(s.plate || "")}"></label>
-    <button class="btn" data-act="su-next" ${s.type ? "" : "disabled"}>Continue</button></div>`;
-  const done = DOCS.filter(([k]) => s.files[k]).length;
-  return `<div class="full">${head(3, "Documents")}
-    <p class="muted">We check every driver before they can take jobs. Most are approved within a day.</p>
-    <div>${DOCS.map(([k, t, sub]) => k === "dot"
-      ? `<div class="doc"><div><b>${t}</b><div class="muted small">${sub}</div></div><input id="su-dot" inputmode="numeric" placeholder="1234567" style="width:120px" value="${esc(s.files.dot ? s.dotNum : "")}"></div>`
-      : `<div class="doc"><div><b>${t}</b><div class="muted small">${s.files[k] ? esc(s.files[k]) : sub}</div></div>${s.files[k] ? '<span class="ok">✓ Added</span>' : `<label>Add<input type="file" accept="image/*,application/pdf" capture="environment" data-doc="${k}"></label>`}</div>`).join("")}</div>
-    <button class="btn" data-act="su-submit" ${done >= 4 ? "" : "disabled"}>Submit for review</button>
-    <p class="muted small" style="text-align:center">${done >= 4 ? "" : "Add all four documents and your DOT number to continue."}</p></div>`;
+    ${inp("name", "Full legal name")}${inp("phone", "Mobile number", 'inputmode="tel"')}${inp("email", "Email", 'inputmode="email"')}
+    ${inp("city", "Home base (city)", 'placeholder="e.g. Hayward, CA"')}${inp("company", "Company name (if you have one)")}
+    <label class="f">Years driving dump trucks<select id="su-years">${["Less than 1", "1 to 3", "3 to 5", "5 to 10", "More than 10"].map(y => `<option ${s.years === y ? "selected" : ""}>${y}</option>`).join("")}</select></label>
+    ${next}</div>`;
+  if (s.step === 2) return `<div class="full" data-su>${head(2, "Your truck")}
+    <div class="stack" style="gap:2px">${TYPES.map(t => `<div class="opt ${s.type === t ? "on" : ""}" data-act="su-type:${t}" tabindex="0" style="padding:6px 12px"><span class="tag">${TRUCKS[t].short}</span><div><div class="name" style="font-size:15px">${TRUCKS[t].name}</div><div class="meta">${TRUCKS[t].seat}</div></div><span></span></div>`).join("")}</div>
+    <div class="row" style="gap:10px;align-items:end"><label class="f" style="flex:1">Make<select id="su-make"><option value="">Choose</option>${MAKES.map(m => `<option ${s.make === m ? "selected" : ""}>${m}</option>`).join("")}</select></label>${inp("year", "Year", 'inputmode="numeric" maxlength="4" placeholder="2019" style="width:100px"').replace('class="f"', 'class="f" style="width:110px"')}</div>
+    ${inp("model", "Model", 'placeholder="e.g. 567, T880, Granite"')}
+    <div class="row" style="gap:10px;align-items:end">${inp("plate", "License plate").replace('class="f"', 'class="f" style="flex:1"')}${inp("cap", "Capacity (tons)", 'inputmode="numeric" placeholder="19"').replace('class="f"', 'class="f" style="width:130px"')}</div>
+    ${inp("vin", "VIN (17 characters, on the registration)", 'maxlength="17" style="text-transform:uppercase"')}
+    <label class="check" style="grid-template-columns:24px 1fr"><input type="checkbox" id="su-tarp" ${s.tarp ? "checked" : ""}><span>My truck has a working tarp</span></label>
+    <div class="doc"><div><b>Truck photo</b><div class="muted small">${s.files.truck ? esc(s.files.truck) : "Side view, with the plate showing"}</div></div>${s.files.truck ? '<span class="ok">✓ Added</span>' : '<label>Add<input type="file" accept="image/*" capture="environment" data-doc="truck"></label>'}</div>
+    ${next}</div>`;
+  if (s.step === 3) return `<div class="full" data-su>${head(3, "Documents")}
+    <p class="muted">Take a photo of each one. We fill in the details from the photo. Check them and fix anything that's wrong.</p>
+    ${DOCS.map(([k, t, sub]) => !s.files[k]
+      ? `<div class="doc"><div><b>${t}</b><div class="muted small">${sub}</div></div><label>Add<input type="file" accept="image/*,application/pdf" capture="environment" data-doc="${k}"></label></div>`
+      : `<div class="stack" style="gap:8px;padding:12px 0;border-bottom:1px solid var(--line)"><div class="row"><b>${t}</b><span class="ok">✓ ${esc(s.files[k])}</span></div>
+          <span class="muted small">Read from your photo. Please check.</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${DOC_FIELDS[k].map(([f, l, ty]) => `<label class="f" style="font-size:13px${DOC_FIELDS[k].length === 1 ? ";grid-column:1/-1" : ""}">${l}${ty === "text" ? `<input id="sd-${k}-${f}" value="${esc(s.det[k][f] || "")}">` : ty === "date" ? `<input type="date" id="sd-${k}-${f}" value="${esc(s.det[k][f] || "")}">` : `<select id="sd-${k}-${f}">${ty.split("|").map(o => `<option ${s.det[k][f] === o ? "selected" : ""}>${o}</option>`).join("")}</select>`}</label>`).join("")}</div>
+          <span class="small">${expNote(s.det[k].exp)}</span></div>`).join("")}
+    <div class="row" style="gap:10px;align-items:end"><label class="f" style="flex:1">USDOT number<input id="su-dot" inputmode="numeric" placeholder="1234567" value="${esc(s.dotNum || "")}"></label><label class="f" style="flex:1">MC number (if you have one)<input id="su-mc" value="${esc(s.mc || "")}"></label></div>
+    <p class="muted small" style="margin-top:-6px">We check your USDOT number with the FMCSA.</p>
+    ${next}</div>`;
+  return `<div class="full" data-su>${head(4, "Last step")}
+    <div class="kv"><div class="row"><span>Driver</span><b>${esc(s.name)}</b></div><div class="row"><span>Truck</span><b>${esc(s.year)} ${esc(s.make)} ${esc(s.model)}, ${TRUCKS[s.type].name}</b></div>
+      <div class="row"><span>Plate</span><b>${esc(s.plate)}</b></div><div class="row"><span>CDL</span><b>Class ${esc(s.det.cdl.cls)}, expires ${fmtDate(s.det.cdl.exp)}</b></div>
+      <div class="row"><span>Insurance</span><b>${esc(s.det.ins.amt)}, expires ${fmtDate(s.det.ins.exp)}</b></div><div class="row"><span>USDOT</span><b>${esc(s.dotNum)}</b></div></div>
+    <label class="check" style="grid-template-columns:24px 1fr"><input type="checkbox" id="su-terms" ${s.terms ? "checked" : ""}><span>I agree to the Trucks2U driver terms.</span></label>
+    <label class="check" style="grid-template-columns:24px 1fr"><input type="checkbox" id="su-mvr" ${s.mvr ? "checked" : ""}><span>I allow Trucks2U to check my driving record and the FMCSA Drug and Alcohol Clearinghouse.</span></label>
+    <button class="btn" data-act="su-submit" ${suValid() ? "" : "disabled"}>Submit for review</button>
+    <p class="muted small" style="text-align:center">Our team checks everything, usually within 1 business day.</p></div>`;
 }
 function dPending() {
   return `<div class="full" style="align-content:center;text-align:center">
@@ -739,12 +777,18 @@ function fMenu() {
 /* ---------- Trucks2U admin (staff only) ---------- */
 const DOC_NAMES = { cdl: "Driver's license (CDL)", med: "DOT medical card", ins: "Insurance certificate", reg: "Truck registration" };
 const APPS = [
-  { id: "a1", name: "Tina Morales", city: "Concord, CA", phone: "(925) 555-0131", type: "bd", plate: "9TMB441", dot: "3301987", when: "2 hours ago",
-    docs: { cdl: ["CDL_front.jpg", "ok"], med: ["Medical_card.jpg", "ok"], ins: ["COI_2026.pdf", "ok"], reg: ["Registration.jpg", "ok"] } },
-  { id: "a2", name: "Ray Kim", city: "Antioch, CA", phone: "(925) 555-0177", type: "wt", plate: "7RKW210", dot: "2984410", when: "Yesterday",
-    docs: { cdl: ["License.jpg", "ok"], med: ["Med_card.jpg", "ok"], ins: ["Insurance.pdf", "warn:Expires in 12 days"], reg: ["Reg.jpg", "ok"] } },
-  { id: "a3", name: "Bill Porter", city: "Livermore, CA", phone: "(925) 555-0190", type: "w10", plate: "6BPX902", dot: "3110256", when: "Yesterday",
-    docs: { cdl: ["CDL.jpg", "ok"], med: ["Medical.jpg", "bad:Expired Oct 30, 2026"], ins: ["COI.pdf", "ok"], reg: ["Registration.pdf", "ok"] } }
+  { id: "a1", name: "Tina Morales", city: "Concord, CA", phone: "(925) 555-0131", email: "tina.m@example.com", company: "TM Hauling", years: "5 to 10", type: "bd", plate: "9TMB441", dot: "3301987", mc: "MC-118204", when: "2 hours ago",
+    truck: { make: "Kenworth", model: "T880", year: "2020", vin: "1NKZL40X0LJ123456", cap: "25", tarp: true, photo: "truck.jpg" },
+    docs: { cdl: ["CDL_front.jpg", "ok", "CA · Class A · #E5512094 · expires Jun 9, 2029"], med: ["Medical_card.jpg", "ok", "Expires Apr 2, 2028"], ins: ["COI_2026.pdf", "ok", "Progressive Commercial · #PC-2201847 · $1,000,000 · expires Aug 1, 2027"], reg: ["Registration.jpg", "ok", "Expires Feb 28, 2027"] },
+    checks: { fmcsa: "ok:USDOT 3301987 is active, with insurance on file", mvr: "ok:Clean. No violations in 3 years." } },
+  { id: "a2", name: "Ray Kim", city: "Antioch, CA", phone: "(925) 555-0177", email: "raykim@example.com", company: "", years: "More than 10", type: "wt", plate: "7RKW210", dot: "2984410", mc: "", when: "Yesterday",
+    truck: { make: "Mack", model: "Granite", year: "2017", vin: "1M2AX07C7HM012345", cap: "4,000 gal", tarp: false, photo: "truck.jpg" },
+    docs: { cdl: ["License.jpg", "ok", "CA · Class A · #B7720391 · expires Jan 22, 2028"], med: ["Med_card.jpg", "ok", "Expires Sep 15, 2027"], ins: ["Insurance.pdf", "warn:Expires in 12 days", "Great West Casualty · #GW-551902 · $1,000,000 · expires Nov 25, 2026"], reg: ["Reg.jpg", "ok", "Expires May 31, 2027"] },
+    checks: { fmcsa: "ok:USDOT 2984410 is active, with insurance on file", mvr: "warn:1 speeding ticket in 2024" } },
+  { id: "a3", name: "Bill Porter", city: "Livermore, CA", phone: "(925) 555-0190", email: "billp@example.com", company: "Porter Trucking", years: "3 to 5", type: "w10", plate: "6BPX902", dot: "3110256", mc: "", when: "Yesterday",
+    truck: { make: "Peterbilt", model: "567", year: "2016", vin: "1NPCX4TX5GD123987", cap: "15", tarp: true, photo: "truck.jpg" },
+    docs: { cdl: ["CDL.jpg", "ok", "CA · Class A · #C3381720 · expires Dec 3, 2027"], med: ["Medical.jpg", "bad:Expired Oct 30, 2026", "Expired Oct 30, 2026"], ins: ["COI.pdf", "ok", "Progressive Commercial · #PC-0827713 · $1,000,000 · expires Jul 1, 2027"], reg: ["Registration.pdf", "ok", "Expires Mar 31, 2027"] },
+    checks: { fmcsa: "ok:USDOT 3110256 is active, with insurance on file", mvr: "wait:Driving record check in progress" } }
 ];
 const EXPIRING = [
   { name: "Luis O.", doc: "Insurance certificate", when: "in 9 days" },
@@ -752,11 +796,13 @@ const EXPIRING = [
   { name: "Omar A.", doc: "Truck registration", when: "in 27 days" }
 ];
 const ROSTER = DRIVERS.slice(0, 12).map(d => ({ name: d.name, type: d.type, city: ["Oakland", "Hayward", "Richmond", "San Leandro", "Fremont", "Concord"][d.name.length % 6] + ", CA", status: "Approved" }));
+const stColor = kind => kind === "bad" ? "#e11900" : kind === "warn" || kind === "wait" ? "var(--warn)" : "var(--go)";
 function docRow(k, d, id) {
-  const [file, st] = d, [kind, note] = st.split(":");
-  return `<div class="doc"><div><b>${DOC_NAMES[k]}</b><div class="small" style="color:${kind === "bad" ? "#e11900" : kind === "warn" ? "var(--warn)" : "var(--muted)"}">${kind === "ok" ? esc(file || "Uploaded") : esc(note)}</div></div>
-    <button class="chip" data-act="a-view:${id}">View</button></div>`;
+  const [file, st, detail] = d, [kind, note] = st.split(":");
+  return `<div class="doc"><div><b>${DOC_NAMES[k]}</b><div class="small" ${kind !== "ok" && note === detail ? `style="color:${stColor(kind)}"` : ""}>${esc(detail || file || "Uploaded")}</div>${kind !== "ok" && note !== detail ? `<div class="small" style="color:${stColor(kind)}">${esc(note)}</div>` : ""}</div>
+    <button class="chip" data-act="a-view:${id}">Photo</button></div>`;
 }
+function checkRow(label, st) { const [kind, note] = st.split(":"); return `<div class="doc"><div><b>${label}</b><div class="small" style="color:${stColor(kind)}">${kind === "ok" ? "✓ " : kind === "wait" ? "… " : "! "}${esc(note)}</div></div></div>`; }
 function aHome() {
   if (A.open) {
     const a = APPS.find(x => x.id === A.open);
@@ -764,9 +810,15 @@ function aHome() {
     return `<div class="full">
       <div class="row"><button class="round" data-act="a-back" aria-label="Back" style="box-shadow:none;background:var(--chip)">←</button><span class="muted small">Applied ${esc(a.when.toLowerCase())}</span></div>
       <div class="row" style="justify-content:flex-start;gap:12px"><div class="avatar">${a.name.split(" ").map(x => x[0]).join("")}</div><div><h2>${esc(a.name)}</h2><div class="muted small">${esc(a.city)} · ${esc(a.phone)}</div></div></div>
-      <div class="kv"><div class="row"><span>Truck</span><b>${TRUCKS[a.type].name}</b></div><div class="row"><span>Plate</span><b>${esc(a.plate)}</b></div>
-        <div class="row"><span>USDOT</span><b>${esc(a.dot)} <span class="ok" style="color:var(--go)">✓ Active on FMCSA</span></b></div></div>
-      <div>${Object.entries(a.docs).map(([k, d]) => docRow(k, d, a.id)).join("")}</div>
+      <div class="kv">${a.company ? `<div class="row"><span>Company</span><b>${esc(a.company)}</b></div>` : ""}<div class="row"><span>Email</span><b>${esc(a.email || "")}</b></div><div class="row"><span>Experience</span><b>${esc(a.years || "")} years</b></div></div>
+      <div class="stack" style="gap:6px"><b>Truck</b>
+        <div class="kv"><div class="row"><span>Type</span><b>${TRUCKS[a.type].name}</b></div><div class="row"><span>Truck</span><b>${esc(a.truck.year)} ${esc(a.truck.make)} ${esc(a.truck.model)}</b></div>
+          <div class="row"><span>Plate</span><b>${esc(a.plate)}</b></div><div class="row"><span>VIN</span><b>${esc(a.truck.vin || "Not given")}</b></div>
+          <div class="row"><span>Capacity</span><b>${esc(a.truck.cap || "")}${/^\d+$/.test(a.truck.cap || "") ? " tons" : ""}</b></div><div class="row"><span>Tarp</span><b>${a.truck.tarp ? "Yes" : "No"}</b></div>
+          <div class="row"><span>USDOT${a.mc ? " / MC" : ""}</span><b>${esc(a.dot)}${a.mc ? " / " + esc(a.mc) : ""}</b></div></div>
+        <button class="chip" data-act="a-view:${a.id}" style="justify-self:start">See truck photo</button></div>
+      <div class="stack" style="gap:0"><b>Documents</b><span class="muted small">What the driver entered. Tap Photo to compare it with the document.</span>${Object.entries(a.docs).map(([k, d]) => docRow(k, d, a.id)).join("")}</div>
+      <div class="stack" style="gap:0"><b>Automatic checks</b>${checkRow("FMCSA (USDOT)", a.checks.fmcsa)}${checkRow("Driving record", a.checks.mvr)}</div>
       ${problem ? `<p class="small" style="color:#e11900;margin:0">A document is expired. Ask for a new one before approving.</p>` : ""}
       <button class="btn" data-act="a-approve:${a.id}" ${problem ? "disabled" : ""}>Approve driver</button>
       <div class="row" style="gap:10px"><button class="btn light" style="flex:1" data-act="a-ask:${a.id}">Ask for a document</button><button class="btn light" style="flex:1" data-act="a-reject:${a.id}">Reject</button></div>
@@ -926,7 +978,7 @@ function act(name, arg) {
     case "d-cantmake": if (arg === "demo") { job.crew = job.crew.filter(m => m.id !== "me"); job.crew.forEach((m, i) => m.slot = i); job.status = "searching"; } else UPCOMING.splice(+arg, 1); D.openJob = null; toast("Removed. The contractor was told and your spot reopened for other drivers."); break;
     case "d-radius": D.radius = +arg; toast(`You'll get requests up to ${arg} miles away.`); break;
     case "d-days": D.avail = D.avail.includes(arg) ? D.avail.filter(a => a !== arg) : [...D.avail, arg]; break;
-    case "d-signup": D.menu = false; D.signup = { step: 1, files: {} }; break;
+    case "d-signup": D.menu = false; D.signup = { step: 1, files: {}, det: { cdl: {}, med: {}, ins: {}, reg: {} }, years: "5 to 10" }; break;
     case "d-go": D.online = !D.online; toast(D.online ? "You'll also get same-day requests." : "Same-day requests are off."); break;
     case "d-accept": {
       clearInterval(offerTimer);
@@ -964,8 +1016,14 @@ function act(name, arg) {
     case "su-close": D.signup = null; break;
     case "su-prev": saveSu(); D.signup.step--; break;
     case "su-next": saveSu(); D.signup.step++; break;
-    case "su-type": saveSu(); D.signup.type = arg; break;
-    case "su-submit": { saveSu(); const s = D.signup; APPS.unshift({ id: "me", name: s.name || "New driver", city: s.city || "Bay Area", phone: s.phone || "", type: s.type || "w12", plate: s.plate || "", dot: s.dotNum || "", docs: { cdl: [s.files.cdl, "ok"], med: [s.files.med, "ok"], ins: [s.files.ins, "ok"], reg: [s.files.reg, "ok"] }, when: "Just now" }); D.signup = null; D.approved = false; D.online = false; break; }
+    case "su-type": saveSu(); D.signup.type = arg; if (!D.signup.cap) D.signup.cap = (TRUCKS[arg].seat.match(/~(\d+) tons/) || [])[1] || ""; break;
+    case "su-submit": { saveSu(); const s = D.signup, st = iso => daysTo(iso) <= 30 ? `warn:Expires in ${daysTo(iso)} days` : "ok";
+      APPS.unshift({ id: "me", name: s.name, city: s.city || "Bay Area", phone: s.phone, email: s.email, company: s.company, years: s.years, type: s.type, plate: s.plate, dot: s.dotNum, mc: s.mc, when: "Just now",
+        truck: { make: s.make, model: s.model, year: s.year, vin: s.vin, cap: s.cap, tarp: s.tarp, photo: s.files.truck },
+        docs: { cdl: [s.files.cdl, st(s.det.cdl.exp), `${s.det.cdl.state} · Class ${s.det.cdl.cls} · #${s.det.cdl.num} · expires ${fmtDate(s.det.cdl.exp)}`], med: [s.files.med, st(s.det.med.exp), `Expires ${fmtDate(s.det.med.exp)}`],
+          ins: [s.files.ins, st(s.det.ins.exp), `${s.det.ins.co} · #${s.det.ins.pol} · ${s.det.ins.amt} · expires ${fmtDate(s.det.ins.exp)}`], reg: [s.files.reg, st(s.det.reg.exp), `Expires ${fmtDate(s.det.reg.exp)}`] },
+        checks: { fmcsa: `ok:USDOT ${s.dotNum} is active, with insurance on file`, mvr: "wait:Driving record check in progress, usually 1 to 2 days" } });
+      D.signup = null; D.approved = false; D.online = false; break; }
     case "su-approve": D.approved = true; { const i = APPS.findIndex(a => a.id === "me"); if (i >= 0) APPS.splice(i, 1); } toast("Approved. Tap GO to start getting jobs."); break;
     case "c-more": C.more = true; break;
     case "c-radius": C.radius = +arg; break;
@@ -991,8 +1049,10 @@ function act(name, arg) {
 }
 function saveSu() {
   const s = D.signup; if (!s) return;
-  ["name", "phone", "city", "plate"].forEach(k => { const el = $("#su-" + k); if (el) s[k] = el.value; });
-  const dot = $("#su-dot"); if (dot) { s.dotNum = dot.value; if (dot.value.replace(/\D/g, "").length >= 6) s.files.dot = "USDOT " + dot.value; else delete s.files.dot; }
+  ["name", "phone", "email", "city", "company", "years", "make", "model", "year", "plate", "cap", "vin", "mc"].forEach(k => { const el = $("#su-" + k); if (el) s[k] = k === "vin" ? el.value.toUpperCase() : el.value; });
+  ["tarp", "terms", "mvr"].forEach(k => { const el = $("#su-" + k); if (el) s[k] = el.checked; });
+  const dot = $("#su-dot"); if (dot) s.dotNum = dot.value;
+  DOCS.forEach(([k]) => DOC_FIELDS[k].forEach(([f]) => { const el = $(`#sd-${k}-${f}`); if (el) s.det[k][f] = el.value; }));
 }
 
 document.addEventListener("click", e => {
@@ -1006,7 +1066,7 @@ document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === 
 document.addEventListener("input", e => {
   if (e.target.id === "q") $("#results").innerHTML = placeList(e.target.value);
   if (e.target.id === "c-note") C.note = e.target.value;
-  if (e.target.id === "su-dot") { saveSu(); const b = $("[data-act=su-submit]"); if (b) b.disabled = Object.keys(D.signup.files).length < 4; }
+  if (e.target.closest && e.target.closest("[data-su]")) { saveSu(); const b = $("[data-act=su-next], [data-act=su-submit]"); if (b) b.disabled = !suValid(); }
 });
 document.addEventListener("change", e => {
   if (e.target.dataset && e.target.dataset.pick) { const id = e.target.dataset.pick; F.picked = e.target.checked ? [...F.picked, id] : F.picked.filter(x => x !== id); render(); return; }
@@ -1016,7 +1076,8 @@ document.addEventListener("change", e => {
   if (e.target.id === "c-hours") { C.hours = +e.target.value; render(); return; }
   if (e.target.dataset && e.target.dataset.mydoc && e.target.files[0]) { MYDOCS[2] = ["Insurance certificate", "New certificate sent for review", "ok"]; toast("Got it. We'll check it within a day."); render(); return; }
   const k = e.target.dataset && e.target.dataset.doc;
-  if (k && e.target.files[0]) { saveSu(); D.signup.files[k] = e.target.files[0].name; render(); }
+  if (k && e.target.files[0]) { saveSu(); D.signup.files[k] = e.target.files[0].name; if (SCAN[k]) D.signup.det[k] = { ...SCAN[k] }; render(); return; }
+  if (e.target.closest && e.target.closest("[data-su]")) { saveSu(); if (["su-tarp", "su-terms", "su-mvr", "su-make", "su-years"].includes(e.target.id) || e.target.id.startsWith("sd-")) render(); }
 });
 
 drawBaseMap();
