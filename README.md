@@ -6,6 +6,10 @@ This repo holds **clickable prototypes** with sample data. There are no real log
 
 **The current design is `app/index.html`**: a simple Uber-style app. Contractors pick a job site on a map, choose trucks and tap Request. Nearby vetted drivers get the request, then tap Accept or Decline, and the contractor watches the trucks arrive. Everyone downloads the same app and picks **I need trucks**, **I drive a truck**, or **I run a fleet** (brokers and companies with several trucks, who choose which of their trucks to send to a job). In the demo, the menu has a "Switch account" item so you can see each side of the same job. Add `#contractor`, `#driver` or `#fleet` to the address to skip the welcome screen.
 
+## See it online
+
+The website is published free with GitHub Pages at **https://aperez1248.github.io/trucks2you/**. It always shows the latest `app/index.html` on the `main` branch, and updates a minute or two after a change is merged. The first prototype is at https://aperez1248.github.io/trucks2you/prototype/.
+
 ## What's here
 
 | Folder | What it is |
