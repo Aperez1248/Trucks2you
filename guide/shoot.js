@@ -65,17 +65,19 @@ const SEED = () => { let s = 7; Math.random = () => (s = (s * 16807) % 214748364
   await p.click('[data-act=c-reset]');
   // Admin
   await sw('admin'); await shot('23-a-review');
-  await p.click('[data-act="a-open:a3"]'); await shot('24-a-driver');
+  await p.click('[data-act="a-open:a3"]'); await p.evaluate(() => document.querySelectorAll('.full, .sheet').forEach(e => e.scrollTop = 9999)); await shot('24-a-driver');
   await p.click('[data-act=a-back]'); await p.click('[data-act="a-tab:expiring"]'); await shot('25-a-expiring');
   // New driver sign-up
   await sw('driver'); await p.click('[data-act=d-menu]'); await p.click('[data-act=d-signup]');
-  await p.fill('#su-name', 'Jose Ramirez'); await p.fill('#su-phone', '(510) 555-0177'); await p.fill('#su-city', 'Hayward, CA'); await shot('26-s-you');
-  await p.click('[data-act=su-next]'); await p.click('[data-act="su-type:w12"]'); await p.fill('#su-plate', '8JRT442'); await shot('27-s-truck');
+  await p.fill('#su-name', 'Jose Ramirez'); await p.fill('#su-phone', '(510) 555-0177'); await p.fill('#su-email', 'jose@example.com'); await p.fill('#su-city', 'Hayward, CA'); await p.evaluate(() => document.activeElement.blur()); await shot('26-s-you');
+  await p.click('[data-act=su-next]'); await p.click('[data-act="su-type:w12"]'); await p.selectOption('#su-make', 'Peterbilt'); await p.fill('#su-model', '567'); await p.fill('#su-year', '2019');
+  await p.fill('#su-plate', '8JRT442'); await p.fill('#su-vin', '1NPCX4TX5KD123456'); await p.check('#su-tarp'); await p.setInputFiles('[data-doc=truck]', fake('Truck_side.jpg'));
+  await p.evaluate(() => document.querySelectorAll('.full').forEach(e => e.scrollTop = 9999)); await shot('27-s-truck');
   await p.click('[data-act=su-next]');
   const names = { cdl: 'CDL_front.jpg', med: 'Medical_card.jpg', ins: 'Insurance_COI.pdf', reg: 'Registration.jpg' };
   for (const k of Object.keys(names)) await p.setInputFiles(`[data-doc=${k}]`, fake(names[k]));
-  await p.fill('#su-dot', '3184472'); await shot('28-s-docs');
-  await p.click('[data-act=su-submit]'); await shot('29-s-pending');
+  await p.fill('#su-dot', '3184472'); await p.evaluate(() => { document.activeElement.blur(); document.querySelectorAll('.full').forEach(e => e.scrollTop = 120); }); await shot('28-s-docs');
+  await p.click('[data-act=su-next]'); await p.check('#su-terms'); await p.check('#su-mvr'); await shot('29-s-pending');
 
   // The website view on a computer
   const w = await b.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, colorScheme: 'light', timezoneId: 'America/Los_Angeles' });
