@@ -1,0 +1,560 @@
+<title>Trucks2U</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: a phone-shaped app; full-bleed map underneath, a white bottom sheet on top, like a ride-hailing app. */
+:root {
+  --bg: #e9ebee;
+  --sheet: #ffffff;
+  --fg: #000000;
+  --muted: #5e5e5e;
+  --line: #e2e2e2;
+  --chip: #f3f3f3;
+  --btn: #000000;
+  --btn-fg: #ffffff;
+  --go: #06c167;
+  --route: #276ef1;
+  --warn: #c76a00;
+  --land: #eef0f3;
+  --park: #dcefe0;
+  --water: #c9def2;
+  --road: #ffffff;
+  --road-edge: #d6dae0;
+  --hwy: #f6d98f;
+  --hwy-edge: #e3c06a;
+  --label: #8a9099;
+  --font: "Figtree", "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0b; --sheet: #161616; --fg: #ffffff; --muted: #a6a6a6; --line: #2c2c2c; --chip: #262626;
+    --btn: #ffffff; --btn-fg: #000000; --go: #1fd47f; --route: #5b93ff; --warn: #f0a640;
+    --land: #1e2126; --park: #1f2b23; --water: #142233; --road: #33373e; --road-edge: #2a2d33; --hwy: #6b5a2c; --hwy-edge: #59491f; --label: #7c828b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0b0b; --sheet: #161616; --fg: #ffffff; --muted: #a6a6a6; --line: #2c2c2c; --chip: #262626;
+  --btn: #ffffff; --btn-fg: #000000; --go: #1fd47f; --route: #5b93ff; --warn: #f0a640;
+  --land: #1e2126; --park: #1f2b23; --water: #142233; --road: #33373e; --road-edge: #2a2d33; --hwy: #6b5a2c; --hwy-edge: #59491f; --label: #7c828b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.4 var(--font); }
+.wrap { max-width: 440px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px 20px; display: grid; gap: 10px; }
+.switch { display: grid; grid-template-columns: 1fr 1fr; background: var(--sheet); border-radius: 999px; padding: 4px; border: 1px solid var(--line); }
+.switch button { border: 0; background: none; color: var(--muted); font: 600 14px/1 var(--font); padding: 11px 8px; border-radius: 999px; cursor: pointer; }
+.switch button[aria-pressed="true"] { background: var(--btn); color: var(--btn-fg); }
+.phone { position: relative; height: 760px; max-height: calc(100vh - 110px); min-height: 600px; border-radius: 28px; overflow: hidden; background: var(--land); border: 1px solid var(--line); }
+.map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.top { position: absolute; top: 14px; left: 14px; right: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; z-index: 3; pointer-events: none; }
+.top > * { pointer-events: auto; }
+.round { width: 44px; height: 44px; border-radius: 50%; background: var(--sheet); color: var(--fg); border: 0; display: grid; place-items: center; box-shadow: 0 2px 10px rgb(0 0 0 / .18); cursor: pointer; font: 700 15px var(--font); }
+.pill { background: var(--sheet); color: var(--fg); border-radius: 999px; padding: 10px 16px; font-weight: 700; box-shadow: 0 2px 10px rgb(0 0 0 / .18); font-variant-numeric: tabular-nums; }
+.brand { font: 800 19px/1 var(--font); letter-spacing: -.3px; background: var(--sheet); padding: 11px 16px; border-radius: 999px; box-shadow: 0 2px 10px rgb(0 0 0 / .18); }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; background: var(--sheet); border-radius: 20px 20px 0 0; box-shadow: 0 -4px 24px rgb(0 0 0 / .14); padding: 10px 18px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 14px; max-height: 78%; overflow-y: auto; }
+.sheet::before { content: ""; width: 38px; height: 5px; border-radius: 9px; background: var(--line); justify-self: center; }
+.full { position: absolute; inset: 0; z-index: 6; background: var(--sheet); padding: 18px; display: grid; gap: 14px; align-content: start; overflow-y: auto; }
+h1 { font: 800 26px/1.15 var(--font); margin: 0; letter-spacing: -.4px; text-wrap: balance; }
+h2 { font: 700 20px/1.2 var(--font); margin: 0; letter-spacing: -.2px; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.row > * { min-width: 0; }
+.stack { display: grid; gap: 8px; }
+.btn { border: 0; background: var(--btn); color: var(--btn-fg); font: 700 17px/1 var(--font); padding: 17px; border-radius: 10px; width: 100%; cursor: pointer; }
+.btn.light { background: var(--chip); color: var(--fg); }
+.btn.go { background: var(--go); color: #fff; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.search { display: flex; align-items: center; gap: 12px; background: var(--chip); border: 0; border-radius: 10px; padding: 15px 16px; font: 700 18px var(--font); color: var(--fg); width: 100%; cursor: pointer; text-align: left; }
+.search i { width: 10px; height: 10px; background: var(--fg); flex: none; }
+.place { display: flex; gap: 14px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); cursor: pointer; background: none; border-left: 0; border-right: 0; border-top: 0; width: 100%; text-align: left; color: var(--fg); font: inherit; }
+.place .ic { width: 38px; height: 38px; border-radius: 50%; background: var(--chip); display: grid; place-items: center; flex: none; font-size: 16px; }
+.place b { display: block; font-weight: 600; }
+.place span { font-size: 14px; color: var(--muted); }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.chip { border: 0; background: var(--chip); color: var(--fg); font: 600 14px var(--font); padding: 10px 14px; border-radius: 999px; white-space: nowrap; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--btn); color: var(--btn-fg); }
+.opt { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border: 2px solid transparent; border-radius: 12px; cursor: pointer; }
+.opt.on { border-color: var(--fg); }
+.opt .name { font-weight: 700; font-size: 17px; }
+.opt .meta { font-size: 13px; color: var(--muted); }
+.opt .price { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.step { display: flex; align-items: center; gap: 6px; justify-content: flex-end; margin-top: 4px; }
+.step button { width: 30px; height: 30px; border-radius: 50%; border: 0; background: var(--chip); color: var(--fg); font: 700 18px/1 var(--font); cursor: pointer; }
+.step output { width: 20px; text-align: center; font-weight: 800; }
+.driver { display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--chip); display: grid; place-items: center; font-weight: 800; }
+.tag { font: 700 12px/1 var(--font); padding: 6px 9px; border-radius: 6px; background: var(--chip); white-space: nowrap; }
+.tag.go { background: var(--go); color: #fff; }
+.bar { height: 4px; background: var(--chip); border-radius: 4px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--fg); transition: width .4s; }
+.gobtn { position: absolute; left: 50%; transform: translateX(-50%); bottom: 150px; z-index: 5; width: 84px; height: 84px; border-radius: 50%; border: 5px solid var(--sheet); background: var(--route); color: #fff; font: 800 24px var(--font); cursor: pointer; box-shadow: 0 4px 18px rgb(0 0 0 / .3); }
+.gobtn.stop { background: #e11900; font-size: 15px; }
+.offer { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 7; background: #000; color: #fff; border-radius: 18px; padding: 18px; display: grid; gap: 14px; box-shadow: 0 10px 40px rgb(0 0 0 / .45); }
+.offer .muted { color: #b3b3b3; }
+.offer .btn { background: var(--route); color: #fff; }
+.offer .btn.light { background: #2b2b2b; color: #fff; }
+.ring { width: 56px; height: 56px; flex: none; }
+.big { font: 800 34px/1 var(--font); letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.kv { display: grid; gap: 10px; }
+.kv .row span:first-child { color: var(--muted); }
+.kv .row span:last-child { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+.stars button { background: none; border: 0; font-size: 30px; color: var(--line); cursor: pointer; padding: 0 2px; }
+.stars button.on { color: var(--fg); }
+label.f { display: grid; gap: 6px; font-weight: 600; font-size: 14px; }
+input, select { width: 100%; font: 500 16px var(--font); color: var(--fg); background: var(--chip); border: 2px solid transparent; border-radius: 10px; padding: 13px 14px; }
+input:focus, select:focus { border-color: var(--fg); outline: none; }
+.doc { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.doc input[type=file] { display: none; }
+.doc label { background: var(--chip); padding: 9px 14px; border-radius: 999px; font: 700 14px var(--font); cursor: pointer; }
+.doc .ok { color: var(--go); font-weight: 700; font-size: 14px; }
+.menu { position: absolute; inset: 0; z-index: 8; background: rgb(0 0 0 / .4); }
+.menu > div { background: var(--sheet); width: 78%; height: 100%; padding: 22px 18px; display: grid; gap: 4px; align-content: start; }
+.menu .place { border-bottom: 0; }
+.toast { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); z-index: 9; background: var(--btn); color: var(--btn-fg); padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; width: max-content; max-width: calc(100% - 32px); text-align: center; }
+.foot { font-size: 12px; color: var(--muted); text-align: center; }
+button:focus-visible, .opt:focus-visible, label:focus-within { outline: 3px solid var(--route); outline-offset: 2px; }
+@keyframes pulse { from { r: 20; opacity: .55; } to { r: 140; opacity: 0; } }
+.pulse { fill: var(--fg); animation: pulse 1.8s ease-out infinite; }
+.pulse.b { animation-delay: .9s; }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; opacity: .12; } .bar i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <div class="switch" role="group" aria-label="Which app">
+    <button type="button" data-mode="contractor">Contractor app</button>
+    <button type="button" data-mode="driver">Driver app</button>
+  </div>
+  <div class="phone" id="phone">
+    <svg class="map" id="map" viewBox="0 0 400 760" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+    <div id="ui"></div>
+  </div>
+  <p class="foot">Prototype with sample drivers and addresses. Switch apps to see both sides of the same job.</p>
+</div>
+
+<script>
+/* ---------- Data ---------- */
+const TRUCKS = {
+  w10: { name: "10 wheeler", short: "10W", seat: "~15 tons a load", rate: 115 },
+  w12: { name: "12 wheeler", short: "12W", seat: "~19 tons a load", rate: 130 },
+  sd:  { name: "Super dumper", short: "SD", seat: "~26 tons a load", rate: 150 }
+};
+const FEE = 0.05;
+const MATERIALS = ["Haul off grindings", "Bring asphalt", "Both"];
+const PLACES = [
+  { name: "Main St & Oak Ave", sub: "Oakland, CA", x: 205, y: 300 },
+  { name: "Lakeside Plaza parking lot", sub: "300 Shore Rd, San Leandro", x: 140, y: 420 },
+  { name: "Harbor Blvd & 2nd St", sub: "Richmond, CA", x: 95, y: 215 },
+  { name: "Mission Blvd resurfacing", sub: "Hayward, CA", x: 285, y: 470 },
+  { name: "Elm St school lot", sub: "Fremont, CA", x: 300, y: 600 }
+];
+const NAMES = ["Marco R.", "Luis O.", "Dana K.", "Tam N.", "Ben C.", "Ana R.", "Raj P.", "Mike H.", "Joe S.", "Carlos M.", "Steve B.", "Rosa G.", "Dev P.", "Frank T.", "Lena W.", "Omar A.", "Jim W.", "Tony V.", "Kim L.", "Sal D."];
+const TYPES = Object.keys(TRUCKS);
+// Sample drivers spread around the map (positions in map units)
+const DRIVERS = NAMES.map((n, i) => ({
+  id: "d" + i, name: n, type: TYPES[i % 3], rating: (4.7 + ((i * 7) % 3) / 10).toFixed(1),
+  plate: ["8", "7", "6"][i % 3] + "ABC" + (100 + i * 37) % 900,
+  x: 40 + ((i * 97) % 320), y: 120 + ((i * 151) % 520), phone: "(510) 555-01" + String(10 + i).padStart(2, "0")
+}));
+const ME = { name: "Marco R.", type: "w12", plate: "8XKD218", rating: "4.9", x: 330, y: 190 };   // the driver in the driver app
+
+/* ---------- State ---------- */
+let mode = "contractor";
+let C = { screen: "home", place: null, material: MATERIALS[0], counts: { w10: 0, w12: 2, sd: 0 }, focus: "w12", when: "Now", menu: false };
+let D = { online: false, screen: "home", offerLeft: 0, earnedToday: 0, tickets: [], menu: false, signup: null, approved: true };
+let job = null;   // the one live request, shared by both apps
+let toastTimer, offerTimer, tick;
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = n => "$" + Math.round(n).toLocaleString("en-US");
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const etaMin = (a, b) => Math.max(2, Math.round(dist(a, b) / 9));
+const totalTrucks = () => TYPES.reduce((s, t) => s + C.counts[t], 0);
+const nearby = t => DRIVERS.filter(d => d.type === t).length * 6 + 4;
+
+function toast(msg) {
+  const old = $(".toast"); if (old) old.remove();
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg; $("#phone").appendChild(t);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.remove(), 2600);
+}
+
+/* ---------- Map ---------- */
+function drawBaseMap() {
+  // A simple city: water on the west, a freeway, a street grid and a couple of parks
+  const g = [];
+  g.push(`<rect width="400" height="760" fill="var(--land)"/>`);
+  g.push(`<path d="M0 0 H70 C60 120 40 180 55 260 C70 340 30 420 20 520 C10 620 30 700 0 760 Z" fill="var(--water)"/>`);
+  g.push(`<rect x="230" y="360" width="70" height="55" rx="6" fill="var(--park)"/><rect x="120" y="560" width="90" height="60" rx="6" fill="var(--park)"/>`);
+  for (let y = 40; y < 760; y += 58) g.push(`<path d="M60 ${y} H400" stroke="var(--road-edge)" stroke-width="9"/><path d="M60 ${y} H400" stroke="var(--road)" stroke-width="7"/>`);
+  for (let x = 90; x < 400; x += 64) g.push(`<path d="M${x} 0 V760" stroke="var(--road-edge)" stroke-width="9"/><path d="M${x} 0 V760" stroke="var(--road)" stroke-width="7"/>`);
+  g.push(`<path d="M80 760 C140 560 170 420 260 300 C320 220 360 120 400 60" fill="none" stroke="var(--hwy-edge)" stroke-width="15"/><path d="M80 760 C140 560 170 420 260 300 C320 220 360 120 400 60" fill="none" stroke="var(--hwy)" stroke-width="11"/>`);
+  g.push(`<text x="300" y="230" fill="var(--label)" font-size="11" font-weight="700" transform="rotate(-50 300 230)">I-880</text>`);
+  g.push(`<text x="22" y="320" fill="var(--label)" font-size="11" font-weight="600" transform="rotate(-90 22 320)">San Francisco Bay</text>`);
+  g.push(`<g id="overlay"></g><g id="cars"></g>`);
+  $("#map").innerHTML = g.join("");
+}
+function truckIcon(x, y, angle, cls = "") {
+  return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${angle.toFixed(0)})" class="${cls}">
+    <rect x="-11" y="-6" width="22" height="12" rx="3" fill="var(--fg)"/><rect x="5" y="-5" width="5" height="10" rx="1.5" fill="var(--sheet)" opacity=".85"/></g>`;
+}
+function pin(p) {
+  return `<g transform="translate(${p.x} ${p.y})"><rect x="-9" y="-9" width="18" height="18" fill="var(--fg)"/><rect x="-3.5" y="-3.5" width="7" height="7" fill="var(--sheet)"/></g>`;
+}
+// Positions of trucks moving toward the job, by elapsed time
+function movePos(start, target, t0, mins) {
+  const f = Math.min(1, (Date.now() - t0) / (mins * 1500));   // 1 "minute" = 1.5 s in the demo
+  return { x: start.x + (target.x - start.x) * f, y: start.y + (target.y - start.y) * f, f, angle: Math.atan2(target.y - start.y, target.x - start.x) * 180 / Math.PI };
+}
+function drawMap() {
+  const ov = $("#overlay"), cars = $("#cars"); if (!ov) return;
+  let o = "", c = "";
+  const live = job && job.status !== "done" && job.status !== "cancelled";
+  if (mode === "contractor") {
+    if (live && job.status === "searching") o += `<circle class="pulse" cx="${job.place.x}" cy="${job.place.y}" r="20"/><circle class="pulse b" cx="${job.place.x}" cy="${job.place.y}" r="20"/>`;
+    const p = C.place || (live && job.place);
+    if (p) o += pin(p);
+    if (live) {
+      job.crew.forEach(m => { const q = crewPos(m); o += m.arrived ? "" : `<path d="M${m.start.x} ${m.start.y} L${job.place.x} ${job.place.y}" stroke="var(--route)" stroke-width="3" stroke-dasharray="2 6" stroke-linecap="round" opacity=".7"/>`; c += truckIcon(q.x, q.y, q.angle); });
+      DRIVERS.filter(d => !job.crew.some(m => m.id === d.id)).slice(0, 8).forEach(d => c += truckIcon(d.x, d.y, (d.x * 3) % 360, "idle"));
+    } else {
+      DRIVERS.forEach(d => c += truckIcon(d.x, d.y, (d.x * 3) % 360));
+    }
+  } else {
+    const mine = live && job.crew.find(m => m.id === "me");
+    if (mine) {
+      const q = crewPos(mine);
+      o += `<path d="M${q.x} ${q.y} L${job.place.x} ${job.place.y}" stroke="var(--route)" stroke-width="6" stroke-linecap="round"/>` + pin(job.place);
+      c += truckIcon(q.x, q.y, q.angle);
+    } else {
+      if (D.online) o += `<circle class="pulse" cx="${ME.x}" cy="${ME.y}" r="20"/>`;
+      if (D.screen === "offer" && job) o += `<path d="M${ME.x} ${ME.y} L${job.place.x} ${job.place.y}" stroke="var(--route)" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 9"/>` + pin(job.place);
+      c += truckIcon(ME.x, ME.y, 200);
+    }
+  }
+  ov.innerHTML = o; cars.innerHTML = c;
+}
+function crewPos(m) {
+  if (m.arrived) return { x: job.place.x + m.slot * 16 - 20, y: job.place.y + 22, angle: 0 };
+  const p = movePos(m.start, job.place, m.t0, m.eta);
+  if (p.f >= 1 && m.id !== "me") { m.arrived = true; m.status = "Arrived"; }
+  return p;
+}
+
+/* ---------- Contractor app ---------- */
+function cHome() {
+  return `<div class="top"><button class="round" data-act="c-menu" aria-label="Menu">☰</button><span class="brand">Trucks2U</span><span style="width:44px"></span></div>
+    <div class="sheet">
+      <h2>Need trucks?</h2>
+      <button class="search" data-act="c-where"><i></i>Where's the job?</button>
+      <div class="chips"><button class="chip" data-act="c-where">🕒 Now</button><button class="chip" data-act="c-sched">Schedule for later</button></div>
+      <div>${PLACES.slice(0, 2).map((p, i) => `<button class="place" data-act="c-pick:${i}"><span class="ic">⟲</span><span><b>${esc(p.name)}</b><span>${esc(p.sub)}</span></span></button>`).join("")}</div>
+      <p class="muted small">${DRIVERS.length * 6 + 12} vetted trucks are near you right now.</p>
+    </div>`;
+}
+function cWhere() {
+  return `<div class="full">
+    <div class="row"><button class="round" data-act="c-home" aria-label="Back" style="box-shadow:none;background:var(--chip)">←</button><h2 style="flex:1">Job site</h2></div>
+    <input id="q" placeholder="Enter the job site address" autocomplete="off">
+    <div id="results">${placeList("")}</div>
+  </div>`;
+}
+function placeList(q) {
+  const list = PLACES.filter(p => (p.name + " " + p.sub).toLowerCase().includes(q.toLowerCase()));
+  return list.map(p => `<button class="place" data-act="c-pick:${PLACES.indexOf(p)}"><span class="ic">📍</span><span><b>${esc(p.name)}</b><span>${esc(p.sub)}</span></span></button>`).join("") || '<p class="muted">No matches. In the full app any address works.</p>';
+}
+function cOptions() {
+  const n = totalTrucks();
+  const est = TYPES.reduce((s, t) => s + C.counts[t] * TRUCKS[t].rate * 10, 0);
+  return `<div class="top"><button class="round" data-act="c-where" aria-label="Back">←</button><span class="pill">${esc(C.place.name)}</span><span style="width:44px"></span></div>
+    <div class="sheet">
+      <div class="chips">${MATERIALS.map(m => `<button class="chip" data-act="c-mat:${m}" aria-pressed="${C.material === m}">${m}</button>`).join("")}</div>
+      <div class="stack" style="gap:4px">${TYPES.map(t => `<div class="opt ${C.focus === t ? "on" : ""}" data-act="c-focus:${t}" tabindex="0">
+          <svg viewBox="0 0 58 30" width="58" height="30" aria-hidden="true"><rect x="2" y="6" width="34" height="16" rx="2" fill="var(--fg)"/><rect x="38" y="10" width="16" height="12" rx="3" fill="var(--fg)"/><circle cx="12" cy="25" r="4" fill="var(--muted)"/><circle cx="26" cy="25" r="4" fill="var(--muted)"/><circle cx="46" cy="25" r="4" fill="var(--muted)"/></svg>
+          <div><div class="name">${TRUCKS[t].name}</div><div class="meta">${nearby(t)} nearby · ${4 + TYPES.indexOf(t) * 3} min · ${TRUCKS[t].seat}</div></div>
+          <div><div class="price">$${TRUCKS[t].rate}/hr</div><div class="step"><button data-act="c-dec:${t}" aria-label="Fewer">−</button><output>${C.counts[t]}</output><button data-act="c-inc:${t}" aria-label="More">+</button></div></div>
+        </div>`).join("")}</div>
+      <div class="row small"><button class="chip" data-act="c-sched">🕒 ${esc(C.when)}</button><span class="muted">Est. ${money(est)} for 10 hrs</span></div>
+      <button class="btn" data-act="c-request" ${n ? "" : "disabled"}>Request ${n} truck${n === 1 ? "" : "s"}</button>
+    </div>`;
+}
+function crewRows() {
+  return job.crew.map(m => `<div class="driver"><div class="avatar">${m.name.split(" ").map(x => x[0]).join("")}</div>
+    <div><b>${esc(m.name)}</b> <span class="muted small">★ ${m.rating}</span><div class="muted small">${TRUCKS[m.type].name} · ${esc(m.plate)}</div></div>
+    <div style="text-align:right">${m.arrived ? '<span class="tag go">Arrived</span>' : `<span class="tag">${m.status === "Accepted" ? "Accepted" : Math.max(1, Math.round(m.eta * (1 - movePos(m.start, job.place, m.t0, m.eta).f))) + " min"}</span>`}
+      <div class="small muted" style="margin-top:6px;user-select:all">${m.phone}</div></div></div>`).join("");
+}
+function cSearching() {
+  const got = job.crew.length, need = job.need;
+  return `<div class="top"><span></span><span class="pill">${esc(job.place.name)}</span><span style="width:44px"></span></div>
+    <div class="sheet">
+      <div class="stack" style="gap:6px"><h2>${got ? `${got} of ${need} trucks accepted` : "Sending your request…"}</h2>
+        <p class="muted small">Sent to ${job.sentTo} vetted drivers nearby. First to accept get the job.</p></div>
+      <div class="bar"><i style="width:${Math.round(100 * got / need)}%"></i></div>
+      ${got ? `<div>${crewRows()}</div>` : ""}
+      <button class="btn light" data-act="c-cancel">Cancel request</button>
+    </div>`;
+}
+function cLive() {
+  const here = job.crew.filter(m => m.arrived).length;
+  return `<div class="top"><button class="round" data-act="c-menu" aria-label="Menu">☰</button><span class="pill">${esc(job.place.name)}</span><span style="width:44px"></span></div>
+    <div class="sheet">
+      <div class="stack" style="gap:4px"><h2>${here === job.crew.length ? "All trucks are on site" : `${here} of ${job.crew.length} trucks on site`}</h2>
+        <p class="muted small">${esc(job.material)} · ${job.when}</p></div>
+      <div>${crewRows()}</div>
+      <div class="row" style="gap:10px"><button class="btn light" data-act="c-note">Send a note to drivers</button></div>
+      <button class="btn" data-act="c-end">End job and pay</button>
+    </div>`;
+}
+function cDone() {
+  const hrs = 9.5, bill = job.crew.reduce((s, m) => s + hrs * TRUCKS[m.type].rate, 0);
+  return `<div class="full">
+    <h1>Job complete</h1><p class="muted">${esc(job.place.name)} · ${job.crew.length} trucks</p>
+    <div class="kv">${job.crew.map(m => `<div class="row"><span>${esc(m.name)} · ${TRUCKS[m.type].short} · ${hrs} hrs</span><span>${money(hrs * TRUCKS[m.type].rate)}</span></div>`).join("")}
+      <div class="row" style="border-top:1px solid var(--line);padding-top:10px"><span>Total, charged to your bank account</span><span class="big" style="font-size:24px">${money(bill)}</span></div></div>
+    <p class="muted small">A broker at 11% would have kept about ${money(bill * 0.11)}. Trucks2U's 5% is ${money(bill * FEE)}.</p>
+    <div class="stack"><b>Rate your drivers</b><div class="stars" role="group" aria-label="Rating">${[1, 2, 3, 4, 5].map(i => `<button data-act="c-star:${i}" class="${i <= (job.stars || 0) ? "on" : ""}" aria-label="${i} stars">★</button>`).join("")}</div></div>
+    <button class="btn" data-act="c-reset">Done</button>
+  </div>`;
+}
+function cMenu() {
+  return `<div class="menu" data-act="c-menu-close"><div>
+    <div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:14px"><div class="avatar">AL</div><div><b>Lucas Paving</b><div class="muted small">Contractor</div></div></div>
+    <button class="place" data-act="c-hist"><span class="ic">🧾</span><span><b>Your jobs</b><span>Past requests and invoices</span></span></button>
+    <button class="place" data-act="c-pay"><span class="ic">🏦</span><span><b>Payment</b><span>Bank account ending 4417</span></span></button>
+    <button class="place" data-act="c-help"><span class="ic">?</span><span><b>Help</b><span>Talk to Trucks2U</span></span></button>
+  </div></div>`;
+}
+
+/* ---------- Driver app ---------- */
+function myOpenSlot() { return job && job.status === "searching" && !job.crew.some(m => m.id === "me") && !job.declined && job.wantByType[ME.type] > job.crew.filter(m => m.type === ME.type).length; }
+function dHome() {
+  if (!D.approved) return dPending();
+  return `<div class="top"><button class="round" data-act="d-menu" aria-label="Menu">☰</button><span class="pill">${money(D.earnedToday)}</span><span style="width:44px"></span></div>
+    <button class="gobtn ${D.online ? "stop" : ""}" data-act="d-go">${D.online ? "STOP" : "GO"}</button>
+    <div class="sheet" style="padding-top:10px">
+      <div class="row"><h2>${D.online ? "Finding jobs near you" : "You're offline"}</h2><span class="tag">${TRUCKS[ME.type].short}</span></div>
+      ${D.online ? `<div class="bar"><i style="width:100%;opacity:.25"></i></div><p class="muted small">You'll get a request the moment a contractor nearby needs a ${TRUCKS[ME.type].name.toLowerCase()}. ${job && job.status === "searching" ? "" : "Switch to the contractor app and request trucks to see one come in."}</p>`
+        : `<p class="muted small">Tap GO to start getting job requests.</p>`}
+    </div>`;
+}
+function dOffer() {
+  const left = D.offerLeft, mi = (dist(ME, job.place) / 22).toFixed(1), rate = TRUCKS[ME.type].rate;
+  const C2 = 2 * Math.PI * 24;
+  return `<div class="offer" role="dialog" aria-label="New job request">
+    <div class="row"><div><span class="muted small">New job request</span><div class="big">$${rate}/hr</div><div class="muted small">About ${money(rate * 10 * (1 - FEE))} to you for a 10-hour day</div></div>
+      <svg class="ring" viewBox="0 0 56 56" aria-label="${left} seconds left"><circle cx="28" cy="28" r="24" fill="none" stroke="#333" stroke-width="5"/><circle cx="28" cy="28" r="24" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="${C2}" stroke-dashoffset="${C2 * (1 - left / 20)}" transform="rotate(-90 28 28)" stroke-linecap="round"/><text x="28" y="34" text-anchor="middle" fill="#fff" font-size="17" font-weight="800">${left}</text></svg></div>
+    <div class="stack" style="gap:4px"><b>${esc(job.material)}</b><span>${esc(job.place.name)}, ${esc(job.place.sub)}</span><span class="muted small">${mi} mi away · ${etaMin(ME, job.place)} min · starts ${job.when.toLowerCase()} · ${job.need} trucks on this job</span></div>
+    <button class="btn" data-act="d-accept">Accept</button>
+    <button class="btn light" data-act="d-decline">Decline</button>
+  </div>`;
+}
+function dJob() {
+  const m = job.crew.find(x => x.id === "me");
+  const st = m.status;
+  let body = "";
+  if (st === "Accepted" || st === "On the way") body = `<h2>Head to the job site</h2><p class="muted small">${esc(job.place.name)}, ${esc(job.place.sub)} · ${Math.max(1, Math.round(m.eta * (1 - movePos(m.start, job.place, m.t0, m.eta).f)))} min</p>
+      <button class="btn" data-act="d-arrive">I've arrived</button>`;
+  else if (st === "Arrived") body = `<div class="row"><h2>On the job</h2><span class="tag go">On the clock</span></div>
+      <p class="muted small">${esc(job.material)} · contact on site: ${esc(job.contact)}</p>
+      ${job.notes.length ? `<div class="stack" style="gap:6px">${job.notes.map(n => `<div class="small" style="background:var(--chip);padding:10px 12px;border-radius:10px"><b>From dispatch:</b> ${esc(n)}</div>`).join("")}</div>` : ""}
+      <div class="doc"><div><b>Load tickets</b><div class="muted small">${D.tickets.length} today${D.tickets.length ? " · last #" + esc(D.tickets[D.tickets.length - 1]) : ""}</div></div><label>Snap ticket<input type="file" accept="image/*" capture="environment" id="ticket"></label></div>
+      <button class="btn" data-act="d-finish">End my day</button>`;
+  return `<div class="top"><span></span><span class="pill">${money(D.earnedToday)}</span><span style="width:44px"></span></div>
+    <div class="sheet">${body}</div>`;
+}
+function dDone() {
+  const pay = 9.5 * TRUCKS[ME.type].rate;
+  return `<div class="full">
+    <h1>Nice work, ${ME.name.split(" ")[0]}</h1>
+    <div class="kv"><div class="row"><span>${esc(job.place.name)} · 9.5 hrs × $${TRUCKS[ME.type].rate}</span><span>${money(pay)}</span></div>
+      <div class="row"><span>Trucks2U fee (5%)</span><span>−${money(pay * FEE)}</span></div>
+      <div class="row" style="border-top:1px solid var(--line);padding-top:10px"><span>You earned</span><span class="big" style="font-size:26px">${money(pay * (1 - FEE))}</span></div></div>
+    <p class="muted small">Paid to your bank within 2 business days after the contractor approves your hours and ${D.tickets.length} ticket${D.tickets.length === 1 ? "" : "s"}.</p>
+    <button class="btn" data-act="d-back">Back to map</button>
+  </div>`;
+}
+function dMenu() {
+  return `<div class="menu" data-act="d-menu-close"><div>
+    <div class="row" style="justify-content:flex-start;gap:12px;margin-bottom:14px"><div class="avatar">MR</div><div><b>${ME.name}</b><div class="muted small">★ ${ME.rating} · ${TRUCKS[ME.type].name} · ${ME.plate}</div></div></div>
+    <button class="place" data-act="d-earn"><span class="ic">$</span><span><b>Earnings</b><span>${money(D.earnedToday)} today · paid every week</span></span></button>
+    <button class="place" data-act="d-docs"><span class="ic">✓</span><span><b>Documents</b><span>All verified</span></span></button>
+    <button class="place" data-act="d-signup"><span class="ic">+</span><span><b>Sign up as a new driver</b><span>See what new drivers fill in</span></span></button>
+  </div></div>`;
+}
+/* Driver sign-up: three short steps */
+const DOCS = [["cdl", "Driver's license (CDL)", "Front photo"], ["med", "DOT medical card", "Photo or PDF"], ["ins", "Insurance certificate", "Liability, $1M or more"], ["reg", "Truck registration", "Photo or PDF"], ["dot", "USDOT number", "We check it with FMCSA"]];
+function dSignup() {
+  const s = D.signup;
+  const head = (n, t) => `<div class="row"><button class="round" data-act="${n === 1 ? "su-close" : "su-prev"}" aria-label="Back" style="box-shadow:none;background:var(--chip)">←</button><span class="muted small">Step ${n} of 3</span></div><h1>${t}</h1>`;
+  if (s.step === 1) return `<div class="full">${head(1, "Drive with Trucks2U")}
+    <p class="muted">Get dump truck jobs near you. No broker, and you keep 95%.</p>
+    <label class="f">Full name<input id="su-name" value="${esc(s.name || "")}"></label>
+    <label class="f">Mobile number<input id="su-phone" inputmode="tel" value="${esc(s.phone || "")}"></label>
+    <label class="f">City<input id="su-city" value="${esc(s.city || "")}" placeholder="e.g. Hayward, CA"></label>
+    <button class="btn" data-act="su-next">Continue</button></div>`;
+  if (s.step === 2) return `<div class="full">${head(2, "Your truck")}
+    <div class="stack" style="gap:4px">${TYPES.map(t => `<div class="opt ${s.type === t ? "on" : ""}" data-act="su-type:${t}" tabindex="0"><span class="tag">${TRUCKS[t].short}</span><div><div class="name">${TRUCKS[t].name}</div><div class="meta">${TRUCKS[t].seat}</div></div><span></span></div>`).join("")}</div>
+    <label class="f">License plate<input id="su-plate" value="${esc(s.plate || "")}"></label>
+    <button class="btn" data-act="su-next" ${s.type ? "" : "disabled"}>Continue</button></div>`;
+  const done = DOCS.filter(([k]) => s.files[k]).length;
+  return `<div class="full">${head(3, "Documents")}
+    <p class="muted">We check every driver before they can take jobs. Most are approved within a day.</p>
+    <div>${DOCS.map(([k, t, sub]) => k === "dot"
+      ? `<div class="doc"><div><b>${t}</b><div class="muted small">${sub}</div></div><input id="su-dot" inputmode="numeric" placeholder="1234567" style="width:120px" value="${esc(s.files.dot ? s.dotNum : "")}"></div>`
+      : `<div class="doc"><div><b>${t}</b><div class="muted small">${s.files[k] ? esc(s.files[k]) : sub}</div></div>${s.files[k] ? '<span class="ok">✓ Added</span>' : `<label>Add<input type="file" accept="image/*,application/pdf" capture="environment" data-doc="${k}"></label>`}</div>`).join("")}</div>
+    <button class="btn" data-act="su-submit" ${done >= 4 ? "" : "disabled"}>Submit for review</button>
+    <p class="muted small" style="text-align:center">${done >= 4 ? "" : "Add all four documents and your DOT number to continue."}</p></div>`;
+}
+function dPending() {
+  return `<div class="full" style="align-content:center;text-align:center">
+    <div style="font-size:54px">⏳</div><h1>We're checking your documents</h1>
+    <p class="muted">Usually less than 1 business day. We'll text you as soon as you can start taking jobs.</p>
+    <button class="btn" data-act="su-approve">Approve now (demo)</button></div>`;
+}
+
+/* ---------- Job engine ---------- */
+function startJob() {
+  const wantByType = { ...C.counts };
+  job = { place: C.place, material: C.material, when: C.when, wantByType, need: totalTrucks(), crew: [], status: "searching", sentTo: 30 + Math.floor(Math.random() * 30), contact: "Al, (510) 555-0100", notes: [] };
+  // Other drivers accept one by one; leave a 12-wheeler spot for "me" if one was requested and I'm online soon
+  const queue = [];
+  TYPES.forEach(t => { const pool = DRIVERS.filter(d => d.type === t).sort((a, b) => dist(a, job.place) - dist(b, job.place)); for (let i = 0; i < wantByType[t]; i++) queue.push(pool[i % pool.length]); });
+  let reservedMe = wantByType[ME.type] > 0;
+  let i = 0;
+  const next = () => {
+    if (!job || job.status !== "searching") return;
+    if (i >= queue.length) return;
+    const d = queue[i++];
+    if (reservedMe && d.type === ME.type && job.crew.filter(m => m.type === ME.type).length === wantByType[ME.type] - 1 && !job.declined && !job.crew.some(m => m.id === "me")) {
+      // hold the last spot of my truck type for a few seconds so the driver app can take it
+      setTimeout(() => { if (job && job.status === "searching" && !job.crew.some(m => m.id === "me") && job.crew.filter(m => m.type === ME.type).length < wantByType[ME.type]) { addCrew(d); } next(); }, D.online ? 14000 : 9000);
+      return;
+    }
+    addCrew(d);
+    setTimeout(next, 1600 + Math.random() * 1400);
+  };
+  setTimeout(next, 1800);
+}
+function addCrew(d) {
+  if (!job) return;
+  job.crew.push({ id: d.id, name: d.name, type: d.type, rating: d.rating, plate: d.plate, phone: d.phone, start: { x: d.x, y: d.y }, t0: Date.now(), eta: etaMin(d, job.place), status: "On the way", slot: job.crew.length, arrived: false });
+  if (mode === "contractor") toast(`${d.name} accepted · ${TRUCKS[d.type].name}`);
+  checkFilled();
+}
+function checkFilled() {
+  if (job && job.crew.length >= job.need && job.status === "searching") { job.status = "live"; if (mode === "contractor") { C.screen = "live"; toast("All trucks found. They're on the way."); } if (D.screen === "offer") { closeOffer(); toast("That job just filled."); } }
+  render();
+}
+function maybeOffer() {
+  if (mode === "driver" && D.online && D.screen === "home" && myOpenSlot()) {
+    D.screen = "offer"; D.offerLeft = 20;
+    clearInterval(offerTimer);
+    offerTimer = setInterval(() => { D.offerLeft--; if (D.offerLeft <= 0) { job.declined = true; closeOffer(); toast("Request expired."); } render(); }, 1000);
+  }
+}
+function closeOffer() { clearInterval(offerTimer); D.screen = "home"; }
+
+/* ---------- Render ---------- */
+function render() {
+  document.querySelectorAll("[data-mode]").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mode));
+  let h = "";
+  if (mode === "contractor") {
+    h = { home: cHome, where: cWhere, options: cOptions, searching: cSearching, live: cLive, done: cDone }[C.screen]();
+    if (C.menu) h += cMenu();
+  } else {
+    maybeOffer();
+    if (D.signup) h = dSignup();
+    else h = { home: dHome, offer: () => dHome() + dOffer(), job: dJob, done: dDone }[D.screen]();
+    if (D.menu) h += dMenu();
+  }
+  const keepQ = $("#q") ? $("#q").value : null;
+  $("#ui").innerHTML = h;
+  if (keepQ !== null && $("#q")) { $("#q").value = keepQ; }
+  drawMap();
+}
+
+/* ---------- Actions ---------- */
+function act(name, arg) {
+  switch (name) {
+    case "c-menu": C.menu = true; break;
+    case "c-menu-close": C.menu = false; break;
+    case "c-hist": C.menu = false; toast("Your past jobs and invoices show here."); break;
+    case "c-pay": C.menu = false; toast("Jobs are paid by bank transfer, not card."); break;
+    case "c-help": C.menu = false; toast("Help chat opens here in the full app."); break;
+    case "c-home": C.screen = "home"; C.place = null; break;
+    case "c-where": C.screen = "where"; render(); setTimeout(() => $("#q") && $("#q").focus(), 30); return;
+    case "c-sched": C.when = C.when === "Now" ? "Tomorrow 6:00 AM" : C.when === "Tomorrow 6:00 AM" ? "Mon 5:30 AM" : "Now"; if (C.screen === "home") { C.screen = "where"; } toast("Start: " + C.when); break;
+    case "c-pick": C.place = PLACES[+arg]; C.screen = "options"; break;
+    case "c-mat": C.material = arg; break;
+    case "c-focus": C.focus = arg; break;
+    case "c-inc": C.counts[arg] = Math.min(25, C.counts[arg] + 1); C.focus = arg; break;
+    case "c-dec": C.counts[arg] = Math.max(0, C.counts[arg] - 1); C.focus = arg; break;
+    case "c-request": C.screen = "searching"; startJob(); toast(`Request sent to vetted drivers nearby`); break;
+    case "c-cancel": job.status = "cancelled"; job = null; C.screen = "options"; toast("Request cancelled. Drivers were told."); break;
+    case "c-note": { const n = ["Hold at staging on Oak Ave until the paver is ready.", "Plant is running 20 minutes behind.", "Tarp every load. Enter from 5th St."][job.notes.length % 3]; job.notes.push(n); toast("Sent to all drivers: " + n); break; }
+    case "c-end": job.status = "done"; C.screen = "done"; break;
+    case "c-star": job.stars = +arg; break;
+    case "c-reset": job = null; C = { ...C, screen: "home", place: null }; break;
+    case "d-menu": D.menu = true; break;
+    case "d-menu-close": D.menu = false; break;
+    case "d-earn": D.menu = false; toast(`${money(D.earnedToday)} today. Weekly payouts every Friday.`); break;
+    case "d-docs": D.menu = false; toast("License, medical card, insurance and registration all verified."); break;
+    case "d-signup": D.menu = false; D.signup = { step: 1, files: {} }; break;
+    case "d-go": D.online = !D.online; toast(D.online ? "You're online" : "You're offline"); break;
+    case "d-accept": {
+      clearInterval(offerTimer);
+      if (!myOpenSlot()) { D.screen = "home"; toast("Sorry, that job just filled."); break; }
+      job.crew.push({ id: "me", name: ME.name, type: ME.type, rating: ME.rating, plate: ME.plate, phone: "(510) 555-0142", start: { x: ME.x, y: ME.y }, t0: Date.now(), eta: etaMin(ME, job.place), status: "On the way", slot: job.crew.length, arrived: false });
+      D.screen = "job"; toast("Job accepted. The contractor can see you."); checkFilled(); return;
+    }
+    case "d-decline": job.declined = true; closeOffer(); toast("Declined."); break;
+    case "d-arrive": { const m = job.crew.find(x => x.id === "me"); m.arrived = true; m.status = "Arrived"; toast("Checked in. You're on the clock."); break; }
+    case "d-finish": D.earnedToday += 9.5 * TRUCKS[ME.type].rate * (1 - FEE); D.screen = "done"; break;
+    case "d-back": D.screen = "home"; D.tickets = []; if (job) { const m = job.crew.find(x => x.id === "me"); if (m) m.status = "Done for the day"; } break;
+    case "su-close": D.signup = null; break;
+    case "su-prev": saveSu(); D.signup.step--; break;
+    case "su-next": saveSu(); D.signup.step++; break;
+    case "su-type": saveSu(); D.signup.type = arg; break;
+    case "su-submit": D.signup = null; D.approved = false; D.online = false; break;
+    case "su-approve": D.approved = true; toast("Approved. Tap GO to start getting jobs."); break;
+  }
+  render();
+}
+function saveSu() {
+  const s = D.signup; if (!s) return;
+  ["name", "phone", "city", "plate"].forEach(k => { const el = $("#su-" + k); if (el) s[k] = el.value; });
+  const dot = $("#su-dot"); if (dot) { s.dotNum = dot.value; if (dot.value.replace(/\D/g, "").length >= 6) s.files.dot = "USDOT " + dot.value; else delete s.files.dot; }
+}
+
+document.addEventListener("click", e => {
+  const m = e.target.closest("[data-mode]");
+  if (m) { mode = m.dataset.mode; C.menu = D.menu = false; render(); return; }
+  const a = e.target.closest("[data-act]");
+  if (a && a.dataset.act.endsWith("menu-close") && e.target !== a) return;   // clicks inside the menu panel don't close it
+  if (a && !(e.target.closest("label") && e.target.tagName === "INPUT")) { const [n, ...rest] = a.dataset.act.split(":"); act(n, rest.join(":")); }
+});
+document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("opt")) { e.preventDefault(); e.target.click(); } });
+document.addEventListener("input", e => {
+  if (e.target.id === "q") $("#results").innerHTML = placeList(e.target.value);
+  if (e.target.id === "su-dot") { saveSu(); const b = $("[data-act=su-submit]"); if (b) b.disabled = Object.keys(D.signup.files).length < 4; }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "ticket" && e.target.files[0]) { D.tickets.push(String(448800 + D.tickets.length * 13)); toast("Ticket saved. The contractor can see it."); render(); }
+  const k = e.target.dataset && e.target.dataset.doc;
+  if (k && e.target.files[0]) { saveSu(); D.signup.files[k] = e.target.files[0].name; render(); }
+});
+
+drawBaseMap();
+if (location.hash === "#driver") mode = "driver";
+render();
+// Keep the map and ETAs moving
+tick = setInterval(() => {
+  if (job && (job.status === "searching" || job.status === "live")) {
+    if (mode === "contractor" && (C.screen === "live" || C.screen === "searching") && !document.activeElement?.matches("input")) render(); else drawMap();
+  }
+}, 1000);
+</script>

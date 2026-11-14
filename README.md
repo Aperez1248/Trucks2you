@@ -2,17 +2,20 @@
 
 Trucks2U connects paving contractors with vetted dump truck owner-operators: 10 wheelers, 12 wheelers and super dumpers. It's built for jobs like hauling asphalt grindings out and bringing asphalt back in. Contractors post a job, it goes out to every vetted driver with the right truck, and the first drivers to accept get the spots. The platform takes a 5% fee, about half of what a broker charges.
 
-This repo holds the **clickable prototype** with sample data. There are no real logins, payments or texts yet.
+This repo holds **clickable prototypes** with sample data. There are no real logins, payments or texts yet.
+
+**The current design is `app/index.html`**: a simple Uber-style app. Contractors pick a job site on a map, choose trucks and tap Request. Nearby vetted drivers get the request, then tap Accept or Decline, and the contractor watches the trucks arrive. A switch at the top flips between the contractor app and the driver app. Add `#driver` to the address to open the driver app directly.
 
 ## What's here
 
 | Folder | What it is |
 | --- | --- |
-| `prototype/index.html` | The whole prototype in one file. Open it in any browser. |
+| `app/index.html` | **Current design.** The simple Uber-style app for contractors and drivers, in one file. Open it in any browser. |
+| `prototype/index.html` | First prototype (Oct 2026), with more screens: broker view, admin vetting, plant directory, load planner. Kept for reference. |
 | `data/Trucks2U_Plant_Directory.xlsx` | 19 Bay Area asphalt plants (Caltrans active plant list, Sep 2025, merged with Al's list) |
 | `manual/` | The user manual PDF, plus the scripts that rebuild it from screenshots of the prototype |
 
-## Try the prototype
+## Try the first prototype
 
 Open `prototype/index.html` in a browser. A switch at the top changes who you are:
 
