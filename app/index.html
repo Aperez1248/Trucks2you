@@ -393,6 +393,28 @@ main { --mp: 16px; }
 .bk-types { font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 8px; }
 .bk-full { flex-direction: row; }
 .bk-full strong { font-size: 15px; }
+.cdot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 3px; vertical-align: 1px; }
+.cdot.g { background: var(--good); }
+.cdot.o { background: #e8890c; }
+.dday.on .cdot { box-shadow: 0 0 0 1.5px #fff; }
+.dday.call { flex-basis: 56px; }
+.dday.call .dn { font-size: 15px; padding: 2px 0; }
+.clegend { display: flex; gap: 14px; font-size: 12px; margin-top: -4px; }
+.cday-h { margin-top: 6px; }
+.cday-h .muted { font-size: 13px; }
+.cmonth { display: none; }
+:root[data-layout="wide"] .cstrip, :root[data-layout="wide"] .clegend { display: none; }
+:root[data-layout="wide"] .cmonth { display: block; border: 1px solid var(--line); border-radius: 16px; padding: 10px; }
+.cm-head, .cm-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cm-head span { font-size: 11px; font-weight: 600; color: var(--muted); text-align: center; padding-bottom: 4px; }
+.cm-cell { min-height: 74px; background: var(--tile); border-radius: 10px; padding: 4px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cm-cell.past { opacity: .5; }
+.cm-cell.today { box-shadow: inset 0 0 0 2px #000; }
+.cm-cell.on { background: #e4e4e4; }
+.cm-num { border: 0; background: none; font: 700 12px var(--body); text-align: left; padding: 2px; cursor: pointer; color: var(--ink); }
+.cm-ev { border: 0; border-radius: 6px; padding: 3px 5px; font: 600 11px/1.2 var(--body); text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cm-ev.g { background: #e3f4e7; color: #16692c; }
+.cm-ev.o { background: #fff4e5; color: #8a4b00; }
 .seg2 { display: inline-flex; background: var(--tile); border-radius: 999px; padding: 3px; gap: 3px; flex: none; margin-left: auto; }
 .seg2 button { border: 0; background: none; font: 700 13px/1 var(--body); color: var(--muted); padding: 9px 14px; border-radius: 999px; cursor: pointer; min-height: 36px; }
 .seg2 button[aria-pressed="true"] { background: var(--fg); color: #fff; }
@@ -2038,8 +2060,41 @@ function contractorJobs() {
     ${contractorWorkingNow()}
     ${installCard()}
     <div class="stack" style="gap:2px"><h1>Your jobs</h1><p class="muted" style="font-size:14px">${active.length ? `${active.length} open${finding ? ` · ${finding} still finding trucks` : " · all booked"}` : "No jobs yet"}</p></div>
-    ${active.map(card).join("") || '<div class="note">No upcoming jobs. Tap Where\'s the job? to book trucks.</div>'}
+    ${jobsCalendar(active, card)}
     ${done.length ? `<p class="eyebrow">Approved and billed</p>${done.map(card).join("")}` : ""}</div>`;
+}
+/* Jobs tab calendar: a two-week strip on the phone (opens on "All"), a 4-week month grid on the Computer layout.
+   Dots: green = every truck booked, orange = still short. An empty day offers "Request trucks" for that day. */
+const CAL_DAYS = 14;
+const shortJob = j => filled(j) < needed(j);
+const calLabel = n => n === 0 ? "Today" : n === 1 ? "Tomorrow" : n === -1 ? "Yesterday" : dateOf(n).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+function jobsCalendar(active, card) {
+  const sel = ui.cday == null ? "all" : ui.cday, on = n => active.filter(j => j.dayN === n);
+  const dot = js => js.length ? `<span class="cdot ${js.some(shortJob) ? "o" : "g"}"></span>${js.length}` : "";
+  const strip = `<div class="dstrip cstrip" aria-label="Pick a day">
+      <button type="button" class="dday call${sel === "all" ? " on" : ""}" data-act="c-day:all" aria-pressed="${sel === "all"}"><span class="dw">${dateOf(0).toLocaleDateString("en-US", { month: "short" })}</span><span class="dn">All</span><span class="dc">${active.length}</span></button>
+      ${Array.from({ length: CAL_DAYS }, (_, n) => { const d = dateOf(n), js = on(n);
+        return `<button type="button" class="dday${sel === n ? " on" : ""}" data-act="c-day:${n}" aria-pressed="${sel === n}" aria-label="${esc(calLabel(n))}: ${js.length ? js.length + " job" + (js.length === 1 ? "" : "s") + (js.some(shortJob) ? ", still short" : ", all booked") : "no jobs"}">
+          <span class="dw">${n === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday: "short" })}</span><span class="dn">${d.getDate()}</span><span class="dc">${dot(js)}</span></button>`; }).join("")}</div>
+    <div class="clegend muted"><span><span class="cdot g"></span> all booked</span><span><span class="cdot o"></span> still short</span></div>`;
+  // Month grid (Computer layout): from the Sunday of this week, 4 weeks
+  const start = -dateOf(0).getDay();
+  const month = `<div class="cmonth"><div class="cm-head">${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(x => `<span>${x}</span>`).join("")}</div><div class="cm-grid">
+      ${Array.from({ length: 28 }, (_, i) => { const n = start + i, d = dateOf(n), js = on(n), past = n < 0;
+        return `<div class="cm-cell${past ? " past" : ""}${n === 0 ? " today" : ""}${sel === n ? " on" : ""}"><button type="button" class="cm-num" data-act="c-day:${n}">${d.getDate() === 1 || i === 0 ? d.toLocaleDateString("en-US", { month: "short" }) + " " : ""}${d.getDate()}</button>
+          ${js.map(j => `<button type="button" class="cm-ev ${shortJob(j) ? "o" : "g"}" data-go="job:${j.id}">${filled(j)}/${needed(j)} ${esc(pinName(j.name))}</button>`).join("")}</div>`; }).join("")}</div></div>`;
+  let list;
+  if (sel === "all") {
+    const days = [...new Set(active.map(j => j.dayN))].sort((a, b) => a - b);
+    list = days.map(n => { const js = on(n); return `<div class="row cday-h"><strong>${esc(calLabel(n))}</strong><span class="muted">${js.length} job${js.length === 1 ? "" : "s"}</span></div>${js.map(card).join("")}`; }).join("")
+      || `<div class="note">No upcoming jobs. Tap Request trucks to book some.</div>`;
+  } else {
+    const js = on(sel), past = sel < 0;
+    list = `<div class="row cday-h"><strong>${esc(calLabel(sel))}</strong><span class="muted">${js.length ? js.length + " job" + (js.length === 1 ? "" : "s") : ""}</span></div>`
+      + (js.length ? js.map(card).join("") : `<p class="muted" style="font-size:14px">Nothing booked this day yet.</p>`)
+      + (past ? "" : `<button class="btn${js.length ? " ghost" : ""}" type="button" data-act="c-reqday:${sel}">${js.length ? "+ " : ""}Request trucks for ${esc(sel === 0 ? "today" : sel === 1 ? "tomorrow" : chipDay(sel))}</button>`);
+  }
+  return strip + month + list;
 }
 const pinName = n => n.length > 18 ? n.slice(0, 17).trim() + "…" : n;
 
@@ -2197,7 +2252,7 @@ function reqOptions() {
         <div class="stepper"><button type="button" data-act="rq-pl-" aria-label="Fewer trucks start at the plant">−</button><output class="num">${d.plantN}</output><button type="button" data-act="rq-pl+" aria-label="More trucks start at the plant">+</button></div></div>
       <p class="muted" style="font-size:13px">${d.plantN ? `${d.plantN} start at ${esc(pl.name)}, ${Math.max(0, n - d.plantN)} at the job site.` : `All ${n} start at the job site.`}</p></div>` : ""}
     <div class="card"><h2>When?</h2>
-      <div class="chips">${[1, 2, 3, 4, 5].map(x => `<button class="pick" type="button" data-act="rq-day:${x}" aria-pressed="${d.day === x}">${chipDay(x)}</button>`).join("")}<button class="pick" type="button" data-act="rq-day:0" aria-pressed="${d.day === 0}">Today, right now</button></div>
+      <div class="chips">${[1, 2, 3, 4, 5].concat(d.day > 5 ? [d.day] : []).map(x => `<button class="pick" type="button" data-act="rq-day:${x}" aria-pressed="${d.day === x}">${chipDay(x)}</button>`).join("")}<button class="pick" type="button" data-act="rq-day:0" aria-pressed="${d.day === 0}">Today, right now</button></div>
       <div class="grid2">${d.day ? `<label class="field">Start time<select id="rq-time">${TIMES.map(t => `<option ${t === d.time ? "selected" : ""}>${t}</option>`).join("")}</select></label>` : ""}
         <label class="field">About how many hours<select id="rq-hours">${hrs.map(h => `<option value="${h}" ${h === d.hours ? "selected" : ""}>${h} hours</option>`).join("")}</select></label></div></div>
     <div class="card"><h2>Notes for drivers</h2>
@@ -2298,6 +2353,8 @@ Object.assign(ACTS, {
   "rq-pl+": () => { ui.req.plantN = Math.min(reqTotal(), ui.req.plantN + 1); },
   "rq-pl-": () => { ui.req.plantN = Math.max(0, ui.req.plantN - 1); },
   "rq-day": n => { ui.req.day = +n; },
+  "c-day": n => { ui.cday = n === "all" ? null : +n; },
+  "c-reqday": n => { ACTS["rq-new"](); ui.req.day = +n; },
   "rq-send": () => { if (!reqTotal()) return false; sendRequest(); window.scrollTo(0, 0); },
   "bk-toggle": () => { bkSetOpen(!bkOpen()); },
   "c-broker": id => { const j = job(id); j.toBrokers = true; toast("Sent to the brokers on Trucks2U. They can send trucks from their fleets."); },
