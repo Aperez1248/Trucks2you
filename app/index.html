@@ -72,8 +72,10 @@ button, label, a { touch-action: manipulation; }   /* no double-tap zoom delay o
 /* overflow: clip (not hidden) rounds the corners without breaking the sticky tab bar and buttons */
 .app { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; overflow: clip; display: flex; flex-direction: column; min-height: 640px; }
 .bar { background: var(--surface); color: var(--fg); border-bottom: 1px solid var(--line); padding: 14px 16px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.logo { font: 800 24px/1 var(--display); letter-spacing: -.5px; }
-.logo b { color: inherit; }
+/* Logo: TRUCKS, the "2" in a green map pin, then a green U (the Option A wordmark) */
+.logo { display: inline-flex; align-items: flex-end; font: 800 23px/1 var(--display); letter-spacing: .2px; color: #111; }
+.logo-pin { width: .98em; height: 1.28em; margin: 0 .02em -.2em .04em; flex: none; }
+.logo-u { color: #22a454; }
 .bar small { font: 600 12px/1.2 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); text-align: right; }
 .demo { display: grid; gap: 6px; }
 .roles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
@@ -1143,7 +1145,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <button type="button" data-lay="wide">Computer</button>
   </div>
   <div class="app" id="app">
-    <header class="bar"><div class="logo">Trucks2U</div>
+    <header class="bar"><div class="logo" role="img" aria-label="Trucks2U"><span aria-hidden="true">TRUCKS</span><svg class="logo-pin" viewBox="0 0 26 34" aria-hidden="true"><path d="M13 0C5.8 0 0 5.6 0 12.6 0 21.5 13 34 13 34s13-12.5 13-21.4C26 5.6 20.2 0 13 0z" fill="#22a454"/><text x="13" y="17.6" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="Figtree, system-ui, sans-serif">2</text></svg><span class="logo-u" aria-hidden="true">U</span></div>
       <!-- Demo only: switch which side of the app you're looking at -->
       <details class="demo" id="demo">
         <summary aria-label="Viewing as"><span class="vl">Viewing as</span> <span id="roleName">Contractor</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
