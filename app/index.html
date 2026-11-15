@@ -479,6 +479,9 @@ main { --mp: 16px; }
 .jumps { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
 .jumps::-webkit-scrollbar { display: none; }
 .anchor { scroll-margin-top: 110px; }
+.talk { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.talk .btn { text-decoration: none; min-width: 64px; text-align: center; }
+.talk .muted { font-size: 13px; }
 .seg2 { display: inline-flex; background: var(--tile); border-radius: 999px; padding: 3px; gap: 3px; flex: none; margin-left: auto; }
 .seg2 button { border: 0; background: none; font: 700 13px/1 var(--body); color: var(--muted); padding: 9px 14px; border-radius: 999px; cursor: pointer; min-height: 36px; }
 .seg2 button[aria-pressed="true"] { background: var(--fg); color: #fff; }
@@ -1567,6 +1570,15 @@ const money0 = n => "$" + Math.round(n).toLocaleString("en-US");
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // Phone numbers become tap-to-call links (on a phone, tapping one starts the call)
 const tel = s => esc(s).replace(/\(?\d{3}\)?[ .-]?\d{3}-\d{4}/g, n => `<a class="tel" href="tel:+1${n.replace(/\D/g, "")}">${n}</a>`);
+// Tap to text: opens the phone's own Messages app with the message already written. It's sent from your own number.
+const digits10 = p => String(p || "").replace(/\D/g, "").replace(/^1(?=\d{10}$)/, "");
+const smsHref = (phone, body) => `sms:+1${digits10(phone)}?&body=${encodeURIComponent(body || "")}`;
+const firstName = n => String(n || "").replace(/\s*\(.*\)$/, "").split(/[ ,]/)[0];
+// Call and Text buttons for one person
+const talk = (phone, body, name = "") => digits10(phone).length === 10 ? `<div class="talk">
+    <a class="btn small ghost" href="tel:+1${digits10(phone)}" aria-label="Call ${esc(name)}">Call</a>
+    <a class="btn small" href="${esc(smsHref(phone, body))}" aria-label="Text ${esc(name)}">Text</a>
+    <span class="muted num">${esc(phone)}</span></div>` : "";
 const job = id => S.jobs.find(j => j.id === id);
 const myJobs = () => S.jobs.filter(j => j.by === ME_CONTRACTOR);
 const needed = j => Object.values(j.needs).reduce((a, b) => a + (b || 0), 0);
@@ -1885,9 +1897,10 @@ const DSP_FIELDS = [["contact", "On-site contact"], ["phone", "Contact phone"], 
 const dsp = j => (j.dsp ||= { notes: j.notes || "" });
 const updatesOf = j => (j.updates ||= []);
 const unreadFor = (j, truck) => updatesOf(j).filter(u => !u.readBy.includes(truck));
-function dspList(j) {
+function dspList(j, forDriver = false) {
   const d = dsp(j), rows = DSP_FIELDS.filter(([k]) => d[k]);
-  return rows.length ? `<div class="sum">${rows.map(([k, label]) => `<div class="row" style="align-items:flex-start"><span class="muted" style="flex:none;width:40%">${label}</span><span style="text-align:right">${tel(d[k])}</span></div>`).join("")}</div>` : '<p class="muted">No dispatch info yet.</p>';
+  const textContact = forDriver && digits10(d.phone).length === 10 ? talk(d.phone, `Hi ${firstName(d.contact)}, this is ${ME_DRIVER} with Trucks2U, truck on ${j.name}: `, d.contact) : "";
+  return rows.length ? `<div class="sum">${rows.map(([k, label]) => `<div class="row" style="align-items:flex-start"><span class="muted" style="flex:none;width:40%">${label}</span><span style="text-align:right">${tel(d[k])}</span></div>`).join("")}</div>${textContact}` : '<p class="muted">No dispatch info yet.</p>';
 }
 function dspEditor(j, drivers) {
   if (ui.dspEdit === j.id) return `<div class="card"><h2>Edit dispatch info</h2>
@@ -1906,7 +1919,7 @@ function dspDriverCard(j, truck) {
   return `<div class="card" style="${unread.length ? "border:2px solid var(--warn)" : ""}"><div class="row"><h2>Dispatch info</h2>${unread.length ? `<span class="pill warn">${unread.length} new</span>` : ""}</div>
     ${ups.length ? `<div class="list">${ups.slice().reverse().map(u => { const isNew = !u.readBy.includes(truck); return `<div class="stack" style="gap:6px"><div class="row"><span class="eyebrow">${esc(u.time)} · from dispatch</span>${isNew ? '<span class="pill warn">New</span>' : ""}</div><p style="font-size:14px${isNew ? ";font-weight:600" : ""}">${esc(u.text)}</p></div>`; }).join("")}</div>
       ${unread.length ? `<button class="btn small" type="button" data-act="dsp-ack:${j.id}:${truck}" style="justify-self:start">Got it</button>` : ""}` : ""}
-    <div style="${ups.length ? "border-top:1px solid var(--line);padding-top:10px" : ""}">${dspList(j)}</div></div>`;
+    <div style="${ups.length ? "border-top:1px solid var(--line);padding-top:10px" : ""}">${dspList(j, true)}</div></div>`;
 }
 // What drivers report during the day (loaded, at the plant, back at the job…), newest first
 function feedHtml(j) {
@@ -2456,7 +2469,7 @@ function contractorJob(j) {
           <div class="muted" style="font-size:13px">${esc(tname(a.type))}${a.checkIn ? " · in at " + esc(a.checkIn) : ""}${a.out ? " · out " + esc(a.out) : ""}${j.req && j.req.plantN && a.status !== "done" ? ` · starts at ${startsAt(j, a) === "plant" ? "the plant" : "the job"}` : ""}</div></div></div>
         ${asgPill(j, a)}</div>
       ${j.dayN === 0 && a.status !== "done" ? `<div class="stage" data-live="${esc(j.id + "|" + a.truck)}">${esc(liveText(j, a))}</div>` : ""}
-      ${a.phone ? `<div style="font-size:13px">${tel(a.phone)}</div>` : ""}
+      ${a.phone ? talk(a.phone, `Hi${a.driver ? " " + firstName(a.driver) : ""}, this is ${firstName(ME_CONTACT.name)} with ${ME_CONTRACTOR} about ${j.name} (${j.date}): `, a.driver || a.owner) : ""}
       ${j.dayN === 0 ? shiftLine(a.truck) : ""}
       ${a.tickets.length ? `<div class="muted num" style="font-size:13px">${a.tickets.length} load ticket${a.tickets.length > 1 ? "s" : ""} · ${tons(a).toFixed(1)} t${a.hours ? " · " + a.hours + " hrs" : ""}</div>` : ""}
     </div>`).join("");
@@ -3368,7 +3381,7 @@ function slotPicker(dayN, type, act) {
 function brokerJob(j) {
   if (!j) { ui.view = null; return brokerBoard(); }
   const sections = Object.keys(j.needs).filter(t => j.needs[t]).map(t => {
-    const rows = j.assigned[t].map(id => { const tr = bTruck(id); return `<div class="row"><div class="row" style="justify-content:flex-start">${truckPic(t, "tpic sm")}<div><strong>${id} · ${esc(tr.driver)}</strong><div class="muted" style="font-size:13px">${esc(tr.owner)} · ${tel(tr.phone)}</div></div></div>
+    const rows = j.assigned[t].map(id => { const tr = bTruck(id); return `<div class="row"><div class="row" style="justify-content:flex-start">${truckPic(t, "tpic sm")}<div><strong>${id} · ${esc(tr.driver)}</strong><div class="muted" style="font-size:13px">${esc(tr.owner)} · ${tel(tr.phone)}</div>${talk(tr.phone, `Hi ${firstName(tr.driver)}, this is ${B().name} about ${j.name}: `, tr.driver)}</div></div>
       <button class="btn small ghost" type="button" data-act="bun:${j.id}:${t}:${id}" style="flex:none">Remove</button></div>`; }).join("");
     const left = j.needs[t] - j.assigned[t].length;
     return `<div class="card"><div class="row"><h2>${esc(tname(t))}</h2><span class="muted num">${j.assigned[t].length} of ${j.needs[t]}</span></div>
@@ -3399,7 +3412,7 @@ function brokerT2Job(j) {
 function brokerTrucks() {
   const busy = bBusy(0);
   return `<h1>Your trucks</h1><p class="muted">Owner-operators you dispatch. Each one goes through the same Trucks2U vetting; a blocked truck can't be dispatched until its documents are current.</p>
-    <div class="card"><div class="list">${B().roster.map(t => `<div class="row"><div class="row" style="justify-content:flex-start">${truckPic(t.type, "tpic sm")}<div><strong>${t.id} · ${esc(t.driver)}</strong><div class="muted" style="font-size:13px">${esc(t.owner)} · ${busy.has(t.id) ? "Working today" : "Free today"} · ${tel(t.phone)}</div></div></div>${docsPill(t.docs)}</div>`).join("")}</div></div>
+    <div class="card"><div class="list">${B().roster.map(t => `<div class="row"><div class="row" style="justify-content:flex-start">${truckPic(t.type, "tpic sm")}<div><strong>${t.id} · ${esc(t.driver)}</strong><div class="muted" style="font-size:13px">${esc(t.owner)} · ${busy.has(t.id) ? "Working today" : "Free today"} · ${tel(t.phone)}</div>${talk(t.phone, `Hi ${firstName(t.driver)}, this is ${B().name}: `, t.driver)}</div></div>${docsPill(t.docs)}</div>`).join("")}</div></div>
     <button class="btn ghost" type="button" data-act="invite">Invite a truck owner</button>`;
 }
 function brokerBilling() {
