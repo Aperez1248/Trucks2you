@@ -337,6 +337,20 @@ main { --mp: 16px; }
 :root[data-layout="wide"] .sheet > .card { grid-column: auto; }
 :root[data-layout="wide"] .sheet::before { display: none; }
 @media (max-width: 600px) { main { --mp: 14px; } .hero { height: 270px; } }
+/* ---------- Welcome screen and sign-ups ---------- */
+.role-tile { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; background: var(--tile); border: 0; border-radius: 16px; padding: 14px 16px; min-height: 76px; cursor: pointer; color: var(--fg); font: inherit; }
+.role-tile:hover { box-shadow: inset 0 0 0 2px var(--fg); }
+.rt-pic { width: 64px; height: 44px; display: grid; place-items: center; flex: none; background: #fff; border-radius: 12px; }
+.rt-pic svg { width: 54px; height: auto; max-height: 38px; }
+.rt-txt { display: grid; gap: 3px; min-width: 0; }
+.rt-txt strong { font: 800 18px/1.15 var(--display); letter-spacing: -.3px; }
+.rt-txt span { font-size: 14px; color: var(--muted); }
+.rt-go { margin-left: auto; font: 700 24px/1 var(--body); color: var(--muted); }
+.linkbtn { background: none; border: 0; padding: 6px 2px; font: 700 15px/1 var(--body); color: var(--fg); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.truckpick { display: flex; align-items: center; gap: 12px; text-align: left; width: 100%; border-radius: 12px; padding: 8px 14px 8px 10px; }
+.truckpick[aria-pressed="true"] .tpic * { filter: invert(1); }
+.demo-menu #welcomeBtn { border: 0; border-top: 1px solid var(--line); background: none; color: var(--fg); font: 600 14px/1 var(--body); text-align: left; padding: 13px 10px 6px; margin-top: 4px; cursor: pointer; }
+.demo-menu #welcomeBtn + #reset { border-top: 0; margin-top: 0; padding-top: 8px; }
 /* Leaflet 1.9.4 stylesheet, inlined */
 .leaflet-pane,
 .leaflet-tile,
@@ -946,6 +960,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
             <button type="button" data-role="broker">Broker</button>
             <button type="button" data-role="admin">Admin</button>
           </div>
+          <button id="welcomeBtn" type="button" data-act="w-open">New user (welcome screen)</button>
           <button id="reset" type="button">Reset demo</button>
         </div>
       </details>
@@ -1095,7 +1110,8 @@ const PLACES = [
 ];
 
 /* ================= People and trucks ================= */
-const ME_CONTRACTOR = "Lucas Paving";
+const DEFAULT_CONTRACTOR = "Lucas Paving", DEFAULT_CONTACT = { name: "Al Perez", phone: "(510) 555-0100" };
+let ME_CONTRACTOR = DEFAULT_CONTRACTOR, ME_CONTACT = { ...DEFAULT_CONTACT };   // a new contractor who signs up becomes "me"
 const ME_OWNER = "Delgado Hauling";   // the truck owner we view as
 const MY_TRUCKS = [
   { id: "T-14", type: "w12", plate: "4XKD218" },
@@ -1107,6 +1123,7 @@ const MY_DRIVERS = [
   { name: "Marco Ruiz", cdl: "Class A", med: "Feb 2027" },
   { name: "Sam Diaz", cdl: "Class B", med: "Dec 2026" }
 ];
+const MY_DRIVERS_N = MY_DRIVERS.length;   // so Reset demo removes drivers added by invite
 const ME_DRIVER = "Marco Ruiz", ME_PHONE = "(510) 555-0142";   // the driver we view as; their truck follows the owner's Fleet tab
 // Sample owner-operators who accept requests in the demo
 const NAMES = ["Pedro V.", "Luis O.", "Dana K.", "Tam N.", "Ben C.", "Ana R.", "Raj P.", "Mike H.", "Joe S.", "Carlos M.", "Steve B.", "Rosa G.", "Dev P.", "Frank T.", "Lena W.", "Omar A.", "Jim W.", "Tony V.", "Kim L.", "Sal D."];
@@ -1277,7 +1294,7 @@ function seed() {
 }
 
 let S = seed();
-const freshUi = role => ({ role, tab: TABS[role][0][0], view: null, req: null, signup: null, dspEdit: null, offer: null });
+const freshUi = role => ({ role, tab: TABS[role][0][0], view: null, req: null, signup: null, dspEdit: null, offer: null, welcome: false, login: null, csu: null, bsu: null, dsu: null, inv: null });
 let ui;   // set once the tabs are defined (see the shell at the bottom)
 // Every button with data-act="name:arg:arg" runs ACTS[name](args); each part of the app adds its own handlers.
 const ACTS = {};
@@ -1721,7 +1738,7 @@ function contractorJobs() {
     + `<div class="sheet">
     <button class="whereto" type="button" data-act="rq-new"><i></i>Where's the job?<span>Tomorrow ▾</span></button>
     ${installCard()}
-    <div class="stack" style="gap:2px"><h1>Your jobs</h1><p class="muted" style="font-size:14px">${active.length} open${finding ? ` · ${finding} still finding trucks` : " · all booked"}</p></div>
+    <div class="stack" style="gap:2px"><h1>Your jobs</h1><p class="muted" style="font-size:14px">${active.length ? `${active.length} open${finding ? ` · ${finding} still finding trucks` : " · all booked"}` : "No jobs yet"}</p></div>
     ${active.map(card).join("") || '<div class="note">No upcoming jobs. Tap Where\'s the job? to book trucks.</div>'}
     ${done.length ? `<p class="eyebrow">Approved and billed</p>${done.map(card).join("")}` : ""}</div>`;
 }
@@ -1870,7 +1887,7 @@ function sendRequest() {
     pts: { pickup: del ? plPt : sitePt, dropoff: del ? sitePt : plPt }, pickup: del ? plTxt : siteTxt, dropoff: del ? siteTxt : plTxt,
     dayN: d.day, date: dayName(d.day), start: d.day ? d.time : nowTime(), hours: d.hours, needs,
     rate: Object.fromEntries(ON().map(t => [t, TYPES[t].rate])), notes: d.note.trim(), approved: false,
-    dsp: { contact: "Al Perez, Lucas Paving", phone: "(510) 555-0100", notes: d.note.trim() }, updates: [], feed: [], assignments: [],
+    dsp: { contact: `${ME_CONTACT.name}, ${ME_CONTRACTOR}`, phone: ME_CONTACT.phone, notes: d.note.trim() }, updates: [], feed: [], assignments: [],
     req: { status: "searching", radius: d.radius, sentTo, plantN: asphaltJob(d.kind) ? Math.min(d.plantN, n) : 0, t0: Date.now(), live: d.day === 0, now: d.day === 0 } };
   S.jobs.unshift(j); ui.req = null; ui.tab = "jobs"; ui.view = "job:" + id;
   toast(`Sent to ${sentTo} vetted drivers within ${d.radius} miles.`);
@@ -2094,7 +2111,15 @@ function ownerFleet() {
       <div class="grid2"><label class="field">Truck type<select id="typ-${t.id}">${[...new Set([...ON(), t.type])].map(k => `<option value="${k}" ${t.type === k ? "selected" : ""}>${esc(tname(k))}</option>`).join("")}</select></label>
         <label class="field">Driver<select id="drv-${t.id}">${MY_DRIVERS.map(d => `<option ${S.driverOf[t.id] === d.name ? "selected" : ""}>${esc(d.name)}</option>`).join("")}</select></label></div>
       <button class="btn small" type="button" data-act="driver:${t.id}" data-pick="drv-${t.id}" style="justify-self:start">Save</button></div>`).join("")}
-    <div class="card"><h2>Drivers</h2><div class="list">${MY_DRIVERS.map(d => `<div class="row"><div><strong>${esc(d.name)}</strong><div class="muted" style="font-size:13px">CDL ${d.cdl} · medical card to ${d.med}</div></div><span class="pill good">Verified</span></div>`).join("")}</div>
+    <div class="card"><div class="row"><h2>Drivers</h2>${ui.inv ? "" : '<button class="btn small" type="button" data-act="inv-new">+ Add a driver</button>'}</div>
+      ${ui.inv ? `<div class="stack" style="gap:10px;background:#fff;border-radius:12px;padding:12px"><strong>Invite a driver</strong>
+        <span class="muted" style="font-size:13px">We text them a link. They sign up with just their own CDL and medical card, and show up here once they're checked.</span>
+        <label class="field">Their name<input data-iv="name" value="${esc(ui.inv.name || "")}" autocomplete="off"></label>
+        <label class="field">Their mobile number<input data-iv="phone" type="tel" inputmode="tel" data-phone placeholder="(510) 555-0166" value="${esc(ui.inv.phone || "")}"></label>
+        <div class="row" style="justify-content:flex-start;gap:8px"><button class="btn small" type="button" data-act="inv-send">Text the invite</button><button class="btn small ghost" type="button" data-act="inv-cancel">Cancel</button></div></div>` : ""}
+      <div class="list">${MY_DRIVERS.map(d => `<div class="row"><div><strong>${esc(d.name)}</strong><div class="muted" style="font-size:13px">CDL ${d.cdl} · medical card to ${d.med}</div></div><span class="pill good">Verified</span></div>`).join("")}
+        ${invites().filter(i => i.owner === ME_OWNER && i.status !== "approved").map(i => `<div class="row"><div><strong>${esc(i.name)}</strong><div class="muted" style="font-size:13px">${tel(i.phone)} · ${i.status === "review" ? "signed up, being checked" : "invite texted"}</div>
+          ${i.status === "sent" ? `<button class="linkbtn" type="button" data-act="inv-open:${i.id}" style="font-size:13px;padding:4px 0">Open their invite (demo)</button>` : ""}</div>${i.status === "review" ? '<span class="pill warn">Checking</span>' : '<span class="pill info">Invite sent</span>'}</div>`).join("")}</div>
       <p class="muted" style="font-size:12.5px">Each driver goes through the CDL, medical card, MVR and drug testing checks.</p></div>`;
 }
 function ownerDocs() {
@@ -2568,7 +2593,7 @@ function signupScreen() {
     <button class="btn ghost" type="button" data-act="su-close">Close</button>`;
   }
   let body = "";
-  if (st === 1) body = `<p class="muted">Get dump truck jobs near you. No broker. You keep ${pct(1 - FEE)}, not 88 to 90%.</p>
+  if (st === 1) body = `<p class="muted">${s.kind === "fleet" ? "Start with your company and your first truck. After you're approved, add the rest of your trucks and drivers from your Fleet page." : `Get dump truck jobs near you. No broker. You keep ${pct(1 - FEE)}, not 88 to 90%.`}</p>
     ${fld("name", "Full legal name", 'autocomplete="name"')}
     <div class="grid2">${fld("phone", "Mobile number", 'type="tel" inputmode="tel" data-phone autocomplete="tel" placeholder="(510) 555-0142"')}${fld("email", "Email", 'type="email" inputmode="email" autocomplete="email"')}</div>
     ${fld("city", "Home base (city)", 'placeholder="e.g. Hayward, CA"')}${fld("company", "Company name (if you have one)")}
@@ -2596,7 +2621,7 @@ function signupScreen() {
     <label class="tick"><input type="checkbox" data-f="terms" ${f.terms ? "checked" : ""}><span>I agree to the Trucks2U driver and owner-operator terms.</span></label>
     <label class="tick"><input type="checkbox" data-f="consent" ${f.consent ? "checked" : ""}><span>I allow Trucks2U to check my driving record (MVR) and the FMCSA Drug and Alcohol Clearinghouse.</span></label>`; }
   return `<button class="back" type="button" data-act="${st === 1 ? "su-close" : "su-prev"}">‹ ${st === 1 ? "Cancel" : "Back"}</button>
-    <div class="stack" style="gap:6px"><span class="eyebrow">Driver sign-up · step ${st} of ${SU_STEPS.length}</span>
+    <div class="stack" style="gap:6px"><span class="eyebrow">${s.kind === "fleet" ? "Fleet" : "Driver"} sign-up · step ${st} of ${SU_STEPS.length}</span>
       <div class="steps" style="grid-template-columns:repeat(${SU_STEPS.length},1fr)">${SU_STEPS.map((_, i) => `<i class="${i < st ? "on" : ""}"></i>`).join("")}</div><h1>${SU_STEPS[st - 1]}</h1></div>
     ${body}
     <p class="muted" style="font-size:12.5px;text-align:center">${st < 4 ? "Nothing is shared until you send it." : "Our team checks everything, usually within 1 business day."}</p>
@@ -2625,16 +2650,287 @@ function submitSignup() {
 function approveApplicant(id) {
   const a = S.applicants.find(x => x.id === id); if (!a || S.approvedApplicants.includes(id)) return;
   S.approvedApplicants.push(id);
+  if (a.kind === "contractor") { if (S.csignup && S.csignup.id === id) S.csignup.status = "approved"; return; }
+  if (a.kind === "broker") { if (S.bsignup && S.bsignup.id === id) S.bsignup.status = "approved"; return; }
+  if (a.kind === "company") approveCompanyDriver(a);
   S.roster.unshift({ name: a.person || a.name, type: a.type || "w12", city: a.city || "Bay Area", status: "Approved" });
   if (S.signup && S.signup.id === id) S.signup.status = "approved";
 }
+
+/* ================= New users: welcome, log in, contractor sign-up ================= */
+// First time someone opens the app they see the welcome screen; after that it opens straight to their side.
+const SEEN_KEY = "t2u-seen";
+const seenWelcome = () => { try { return localStorage.getItem(SEEN_KEY) === "1"; } catch (e) { return true; } };
+const markSeen = () => { try { localStorage.setItem(SEEN_KEY, "1"); } catch (e) {} };
+const HEADSET = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 26v-4a14 14 0 0 1 28 0v4" fill="none" stroke="#000" stroke-width="4"/><rect x="6" y="24" width="9" height="14" rx="3" fill="#000"/><rect x="33" y="24" width="9" height="14" rx="3" fill="#000"/><path d="M38 38q0 5-9 5h-4" fill="none" stroke="#000" stroke-width="3"/><rect x="20" y="40" width="7" height="5" rx="2" fill="#000"/></svg>';
+const CONE = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M20 6h8l9 32H11z" fill="#000"/><path d="M17 17h14l2 7H15zM14 29h20l2 6H12z" fill="#fff"/><rect x="6" y="38" width="36" height="5" rx="2" fill="#000"/></svg>';
+function welcomeScreen() {
+  const tile = (act, pic, title, sub) => `<button type="button" class="role-tile" data-act="${act}"><span class="rt-pic">${pic}</span><span class="rt-txt"><strong>${title}</strong><span>${sub}</span></span><span class="rt-go" aria-hidden="true">›</span></button>`;
+  return heroMap("welcome", [], { trucks: 14, center: FROM.Oakland })
+    + `<div class="sheet">
+    <div class="stack" style="gap:6px"><h1 style="font-size:38px;line-height:1.02">Dump trucks on demand.</h1>
+      <p class="muted">Vetted 10 wheelers, 12 wheelers and super dumpers, booked in minutes. No broker in the middle.</p></div>
+    <div class="stack" style="gap:10px">
+      ${tile("w-contractor", CONE, "I need trucks", "Paving and construction companies")}
+      ${tile("w-driver", truckPic("w12"), "I drive my own truck", "Owner-operators")}
+      ${tile("w-fleet", truckPic("sd"), "I own several trucks", "Trucking companies with their own trucks and drivers")}
+      ${tile("w-broker", HEADSET, "I'm a broker", "I dispatch trucks for my customers")}
+    </div>
+    <p class="muted" style="text-align:center;font-size:13.5px">Driving for a trucking company? Use the invite link they texted you. <button type="button" class="linkbtn" style="font-size:13.5px" data-act="w-invite">See how it works</button></p>
+    <p style="text-align:center;font-size:15px">Already have an account? <button type="button" class="linkbtn" data-act="w-login">Log in</button></p>
+    ${installCard()}
+    <p class="muted" style="text-align:center;font-size:12.5px">Every driver and truck is checked before they can take jobs.</p></div>`;
+}
+// Log in with a text message code (demo: any 6 digits works)
+function loginScreen() {
+  const L = ui.login, digits = (L.phone || "").replace(/\D/g, "");
+  if (L.step === 1) return `<button class="back" type="button" data-act="w-back">‹ Back</button>
+    <div class="stack" style="gap:6px"><h1>Log in</h1><p class="muted">Enter the mobile number on your account. We'll text you a code.</p></div>
+    <label class="field">Mobile number<input data-lg="phone" type="tel" inputmode="tel" data-phone autocomplete="tel" placeholder="(510) 555-0100" value="${esc(L.phone || "")}"></label>
+    <button class="btn pin" type="button" id="lg-go" data-act="lg-send" ${digits.length === 10 ? "" : "disabled"}>Text me a code</button>`;
+  return `<button class="back" type="button" data-act="lg-back">‹ Back</button>
+    <div class="stack" style="gap:6px"><h1>Enter the code</h1><p class="muted">We texted a 6-digit code to ${esc(L.phone)}.</p></div>
+    <label class="field">Code<input data-lg="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" value="${esc(L.code || "")}" style="font-size:24px;letter-spacing:8px;text-align:center"></label>
+    <p class="muted" style="font-size:12.5px">Demo: any 6 digits work, and you're logged in as ${esc(DEFAULT_CONTRACTOR)}.</p>
+    <button class="btn pin" type="button" id="lg-go" data-act="lg-in" ${(L.code || "").replace(/\D/g, "").length === 6 ? "" : "disabled"}>Log in</button>`;
+}
+// Contractor sign-up: 3 short steps. Contractors can request trucks right away; trucks are sent once the license is verified.
+const CSU_STEPS = ["Your company", "Your work", "Payment"];
+const WORK = ["Paving", "Milling and grinding", "Grading and dirt", "Concrete", "Demolition", "Utilities and trenching"];
+const OFTEN = ["A few times a year", "Every month", "Every week", "Most days"];
+const newCsu = () => ({ step: 1, f: { work: [], trucks: [], often: "Every week", yard: "Oakland" }, lic: null });
+function csuValid() {
+  const c = ui.csu, f = c.f;
+  if (c.step === 1) return !!((f.company || "").trim() && (f.name || "").trim() && (f.phone || "").replace(/\D/g, "").length === 10 && /@/.test(f.email || ""));
+  if (c.step === 2) return f.work.length > 0 && f.trucks.length > 0 && !!f.yard;
+  return !!(f.bank && f.terms);
+}
+const cfld = (k, label, attrs = "") => `<label class="field">${label}<input data-cf="${k}" value="${esc(ui.csu.f[k] || "")}" ${attrs}></label>`;
+function csuScreen() {
+  const c = ui.csu, f = c.f, st = c.step;
+  if (c.done) {
+    const ok = S.csignup && S.csignup.status === "approved";
+    return `<div class="stack" style="gap:6px;text-align:center;justify-items:center;padding-top:16px"><span class="eyebrow">Welcome to Trucks2U</span><h1>You're all set, ${esc((f.name || "").split(" ")[0])}</h1></div>
+      <div class="card"><p>${ok ? "Your contractor license is verified. Trucks are dispatched as soon as you book them." : "You can request trucks now. We're checking your contractor license, usually within 1 business day, and send trucks as soon as it's verified."}</p></div>
+      <button class="btn" type="button" data-act="cs-go:req">Request your first trucks</button>
+      ${ok ? "" : '<button class="btn ghost" type="button" data-act="cs-admin">See it in the admin review queue</button>'}
+      <button class="btn ghost" type="button" data-act="cs-go">Go to my jobs</button>`;
+  }
+  let body = "";
+  if (st === 1) body = `<p class="muted">Book vetted dump trucks in minutes. No broker, and Trucks2U's fee comes out of the drivers' pay, not your bill.</p>
+    ${cfld("company", "Company name", 'autocomplete="organization"')}
+    <div class="grid2">${cfld("name", "Your name", 'autocomplete="name"')}${cfld("title", "Your title (optional)", 'placeholder="e.g. Owner, Superintendent"')}</div>
+    <div class="grid2">${cfld("phone", "Mobile number", 'type="tel" inputmode="tel" data-phone autocomplete="tel" placeholder="(510) 555-0100"')}${cfld("email", "Work email", 'type="email" inputmode="email" autocomplete="email"')}</div>
+    <div class="card"><div class="row" style="gap:8px;align-items:end"><div style="flex:1">${cfld("lic", "Contractor license (CSLB) number", 'inputmode="numeric" placeholder="1234567"')}</div><button class="btn small ghost" type="button" data-act="cs-lic" style="flex:none;margin-bottom:3px">Check</button></div>
+      ${c.lic ? `<div class="note" style="color:var(--good)">${esc(c.lic)}</div>` : '<p class="muted" style="font-size:12.5px">We check it with the Contractors State License Board. You can add it later, but trucks are only sent once it\'s verified.</p>'}</div>`;
+  if (st === 2) body = `<div class="card" style="gap:8px"><strong>What kind of work do you do?</strong><div class="chips">${WORK.map(w => `<button class="pick" type="button" data-act="cs-work:${w}" aria-pressed="${f.work.includes(w)}">${esc(w)}</button>`).join("")}</div></div>
+    <div class="card" style="gap:8px"><strong>Which trucks do you usually need?</strong>
+      <div class="stack" style="gap:6px">${ON().map(t => `<button class="pick truckpick" type="button" data-act="cs-truck:${t}" aria-pressed="${f.trucks.includes(t)}">${truckPic(t, "tpic sm")}<span>${esc(TYPES[t].name)}</span></button>`).join("")}</div></div>
+    <div class="grid2"><label class="field">Home yard<select data-cf="yard">${Object.keys(FROM).map(n => `<option ${f.yard === n ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>
+      <label class="field">How often you need trucks<select data-cf="often">${OFTEN.map(o => `<option ${f.often === o ? "selected" : ""}>${o}</option>`).join("")}</select></label></div>
+    <p class="muted" style="font-size:12.5px">We use your yard to show plants and trucks near you.</p>`;
+  if (st === 3) body = `<div class="card" style="gap:6px"><strong>How you pay</strong>
+      <p class="muted" style="font-size:13px">Jobs are paid by bank transfer after you approve the drivers' hours and tickets. No card fees. You connect your bank through our payment partner, so we never see your account number.</p>
+      <button class="btn small ${f.bank ? "" : "ghost"}" type="button" data-act="cs-bank" style="justify-self:start">${f.bank ? "✓ Bank connected" : "Connect bank"}</button></div>
+    ${cfld("billing", "Send invoices to", `type="email" inputmode="email" placeholder="${esc(f.email || "billing@company.com")}"`)}
+    ${cfld("approver", "Who approves drivers' hours?", `placeholder="${esc(f.name || "Name")}"`)}
+    <label class="tick"><input type="checkbox" data-cf="po" ${f.po ? "checked" : ""}><span>Put a PO or job number on every invoice</span></label>
+    <label class="tick"><input type="checkbox" data-cf="terms" ${f.terms ? "checked" : ""}><span>I agree to the Trucks2U contractor terms.</span></label>`;
+  return `<button class="back" type="button" data-act="${st === 1 ? "cs-cancel" : "cs-prev"}">‹ ${st === 1 ? "Cancel" : "Back"}</button>
+    <div class="stack" style="gap:6px"><span class="eyebrow">Contractor sign-up · step ${st} of ${CSU_STEPS.length}</span>
+      <div class="steps" style="grid-template-columns:repeat(${CSU_STEPS.length},1fr)">${CSU_STEPS.map((_, i) => `<i class="${i < st ? "on" : ""}"></i>`).join("")}</div><h1>${CSU_STEPS[st - 1]}</h1></div>
+    ${body}
+    <button class="btn pin" type="button" id="csu-go" data-act="${st < CSU_STEPS.length ? "cs-next" : "cs-submit"}" ${csuValid() ? "" : "disabled"}>${st < CSU_STEPS.length ? "Continue" : "Create my account"}</button>`;
+}
+function submitCsu() {
+  const c = ui.csu, f = c.f, id = "C" + (S.applicants.length + 1) + "-" + Date.now().toString(36);
+  S.applicants.unshift({ id, kind: "contractor", fresh: true, name: f.company.trim(), person: f.name.trim(), city: f.yard, trucks: "Contractor · " + f.work.join(", ").toLowerCase(),
+    info: [["Contact", esc(f.name) + (f.title ? ", " + esc(f.title) : "")], ["Phone", tel(f.phone)], ["Email", esc(f.email)], ["Home yard", esc(f.yard)], ["Work", esc(f.work.join(", "))],
+      ["Trucks they need", esc(f.trucks.map(tname).join(", "))], ["How often", esc(f.often)], ["Invoices to", esc(f.billing || f.email)], ["Approves hours", esc(f.approver || f.name)], ["PO on invoices", f.po ? "Yes" : "No"]],
+    checks: [
+      [`Contractor license${f.lic ? " #" + f.lic : ""}`, c.lic ? "good" : "warn", c.lic ? "Active with the CSLB, checked automatically" : f.lic ? "Not checked yet" : "Not given yet. Ask for it before dispatching trucks", null],
+      ["Business name and contact", "warn", `${f.company} · ${f.name} · ${f.phone}`, null],
+      ["Bank account for payments", "good", "Connected through the payment provider", null],
+      ["Contractor terms", "good", "Accepted at sign-up", null]
+    ] });
+  S.csignup = { id, status: "pending" }; c.done = true; markSeen();
+}
+// Switch the demo to the new contractor's own account (empty job list, their yard)
+function becomeContractor(f) {
+  ME_CONTRACTOR = f.company.trim(); ME_CONTACT = { name: f.name.trim(), phone: f.phone }; SITE = FROM[f.yard] || FROM.Oakland;
+}
+Object.assign(ACTS, {
+  "w-open": () => { $("#demo").removeAttribute("open"); ui = freshUi("contractor"); ui.welcome = true; window.scrollTo(0, 0); },
+  "w-back": () => { ui.login = null; ui.welcome = true; window.scrollTo(0, 0); },
+  "w-contractor": () => { markSeen(); ui = freshUi("contractor"); ui.csu = newCsu(); window.scrollTo(0, 0); },
+  "w-driver": () => { markSeen(); ui = freshUi("driver"); ui.signup = { ...newSignup(), fromWelcome: true }; window.scrollTo(0, 0); },
+  "w-fleet": () => { markSeen(); ui = freshUi("owner"); ui.signup = { ...newSignup(), kind: "fleet", fromWelcome: true }; window.scrollTo(0, 0); },
+  "w-login": () => { ui.welcome = false; ui.login = { step: 1 }; window.scrollTo(0, 0); },
+  "lg-send": () => { if ((ui.login.phone || "").replace(/\D/g, "").length !== 10) return false; ui.login.step = 2; toast("Code sent (demo: type any 6 digits)."); },
+  "lg-back": () => { ui.login.step = 1; ui.login.code = ""; },
+  "lg-in": () => { markSeen(); ME_CONTRACTOR = DEFAULT_CONTRACTOR; ME_CONTACT = { ...DEFAULT_CONTACT }; ui = freshUi("contractor"); toast(`Welcome back, ${DEFAULT_CONTACT.name.split(" ")[0]}.`); window.scrollTo(0, 0); },
+  "cs-cancel": () => { ui.csu = null; ui.welcome = true; window.scrollTo(0, 0); },
+  "cs-prev": () => { ui.csu.step--; window.scrollTo(0, 0); },
+  "cs-next": () => { if (!csuValid()) return false; ui.csu.step++; window.scrollTo(0, 0); },
+  "cs-work": w => { const a = ui.csu.f.work; a.includes(w) ? a.splice(a.indexOf(w), 1) : a.push(w); },
+  "cs-truck": t => { const a = ui.csu.f.trucks; a.includes(t) ? a.splice(a.indexOf(t), 1) : a.push(t); },
+  "cs-lic": () => { const n = (ui.csu.f.lic || "").replace(/\D/g, ""); if (n.length < 6) { toast("Enter your license number first."); return false; }
+    ui.csu.lic = `License #${n} is active: Class A, General Engineering. Workers' comp on file. (Sample check)`; },
+  "cs-bank": () => { ui.csu.f.bank = true; toast("Bank connected (sample)."); },
+  "cs-submit": () => { if (!csuValid()) return false; submitCsu(); window.scrollTo(0, 0); toast("Account created."); },
+  "cs-admin": () => { const id = S.csignup.id; ui = freshUi("admin"); ui.view = "app:" + id; window.scrollTo(0, 0); },
+  "cs-go": to => { becomeContractor(ui.csu.f); ui = freshUi("contractor"); if (to === "req") ACTS["rq-new"](); window.scrollTo(0, 0); }
+});
+
+/* ---------- Broker sign-up: 3 steps (company, broker authority, payment) ---------- */
+const BSU_STEPS = ["Your company", "Broker authority", "Payment"];
+const B_CUSTOMERS = ["Paving contractors", "General contractors", "Cities and counties", "Developers", "Utilities"];
+const B_SIZE = ["1 to 5 trucks", "6 to 20 trucks", "21 to 50 trucks", "More than 50 trucks"];
+const newBsu = () => ({ step: 1, f: { customers: [], size: "6 to 20 trucks", own: false }, mc: null });
+function bsuValid() {
+  const c = ui.bsu, f = c.f;
+  if (c.step === 1) return !!((f.company || "").trim() && (f.name || "").trim() && (f.phone || "").replace(/\D/g, "").length === 10 && /@/.test(f.email || ""));
+  if (c.step === 2) return (f.mcn || "").replace(/\D/g, "").length >= 5 && f.customers.length > 0;
+  return !!(f.bank && f.terms);
+}
+const bfld = (k, label, attrs = "") => `<label class="field">${label}<input data-bf="${k}" value="${esc(ui.bsu.f[k] || "")}" ${attrs}></label>`;
+function bsuScreen() {
+  const c = ui.bsu, f = c.f, st = c.step;
+  if (c.done) {
+    const ok = S.bsignup && S.bsignup.status === "approved";
+    return `<div class="stack" style="gap:6px;text-align:center;justify-items:center;padding-top:16px"><span class="eyebrow">Welcome to Trucks2U</span><h1>You're all set, ${esc((f.name || "").split(" ")[0])}</h1></div>
+      <div class="card"><p>${ok ? "Your broker authority and bond are verified. You can dispatch trucks to jobs now." : "We're checking your broker authority and bond with the FMCSA, usually within 1 business day. Meanwhile, add your carriers and trucks."}</p></div>
+      <button class="btn" type="button" data-act="bs-go">Go to my dispatch board</button>
+      ${ok ? "" : '<button class="btn ghost" type="button" data-act="bs-admin">See it in the admin review queue</button>'}`;
+  }
+  let body = "";
+  if (st === 1) body = `<p class="muted">Dispatch your trucks to your own customers, and pick up Trucks2U jobs to keep them busy. ${money(BFEE)} per truck per day for your own customers' jobs.</p>
+    ${bfld("company", "Company name", 'autocomplete="organization"')}
+    <div class="grid2">${bfld("name", "Your name", 'autocomplete="name"')}${bfld("city", "Office (city)", 'placeholder="e.g. Fremont, CA"')}</div>
+    <div class="grid2">${bfld("phone", "Mobile number", 'type="tel" inputmode="tel" data-phone autocomplete="tel" placeholder="(510) 555-0100"')}${bfld("email", "Work email", 'type="email" inputmode="email" autocomplete="email"')}</div>`;
+  if (st === 2) body = `<div class="card"><div class="row" style="gap:8px;align-items:end"><div style="flex:1">${bfld("mcn", "MC number (broker authority)", 'inputmode="numeric" placeholder="MC-123456"')}</div><button class="btn small ghost" type="button" data-act="bs-mc" style="flex:none;margin-bottom:3px">Check</button></div>
+      ${c.mc ? `<div class="note" style="color:var(--good)">${esc(c.mc)}</div>` : '<p class="muted" style="font-size:12.5px">We check your broker authority and your $75,000 surety bond (BMC-84) with the FMCSA. Brokers need both.</p>'}
+      ${bfld("usdot", "USDOT number (if you run your own trucks)", 'inputmode="numeric" placeholder="1234567"')}</div>
+    <div class="card" style="gap:8px"><strong>Who are your customers?</strong><div class="chips">${B_CUSTOMERS.map(w => `<button class="pick" type="button" data-act="bs-cust:${w}" aria-pressed="${f.customers.includes(w)}">${esc(w)}</button>`).join("")}</div></div>
+    <div class="grid2"><label class="field">Trucks you dispatch<select data-bf="size">${B_SIZE.map(o => `<option ${f.size === o ? "selected" : ""}>${o}</option>`).join("")}</select></label>
+      <label class="field">Your own trucks?<select data-bf="own"><option value="" ${f.own ? "" : "selected"}>No, other carriers'</option><option value="1" ${f.own ? "selected" : ""}>Yes, some of our own</option></select></label></div>
+    <p class="muted" style="font-size:12.5px">After you're approved, you invite your carriers. Every truck and driver goes through the same checks as anyone on Trucks2U.</p>`;
+  if (st === 3) body = `<div class="card" style="gap:6px"><strong>Getting paid</strong>
+      <p class="muted" style="font-size:13px">Pay for Trucks2U jobs your trucks work goes to one bank account every ${PAYDAY}, and you pay your carriers. Your own customers' jobs are billed through the app at ${money(BFEE)} per truck per day.</p>
+      <button class="btn small ${f.bank ? "" : "ghost"}" type="button" data-act="bs-bank" style="justify-self:start">${f.bank ? "✓ Bank connected" : "Connect bank"}</button></div>
+    ${bfld("billing", "Send invoices to", `type="email" inputmode="email" placeholder="${esc(f.email || "billing@company.com")}"`)}
+    <label class="tick"><input type="checkbox" data-bf="terms" ${f.terms ? "checked" : ""}><span>I agree to the Trucks2U broker terms.</span></label>`;
+  return `<button class="back" type="button" data-act="${st === 1 ? "bs-cancel" : "bs-prev"}">‹ ${st === 1 ? "Cancel" : "Back"}</button>
+    <div class="stack" style="gap:6px"><span class="eyebrow">Broker sign-up · step ${st} of ${BSU_STEPS.length}</span>
+      <div class="steps" style="grid-template-columns:repeat(${BSU_STEPS.length},1fr)">${BSU_STEPS.map((_, i) => `<i class="${i < st ? "on" : ""}"></i>`).join("")}</div><h1>${BSU_STEPS[st - 1]}</h1></div>
+    ${body}
+    <button class="btn pin" type="button" id="bsu-go" data-act="${st < BSU_STEPS.length ? "bs-next" : "bs-submit"}" ${bsuValid() ? "" : "disabled"}>${st < BSU_STEPS.length ? "Continue" : "Create my account"}</button>`;
+}
+function submitBsu() {
+  const c = ui.bsu, f = c.f, id = "B" + (S.applicants.length + 1) + "-" + Date.now().toString(36), mc = (f.mcn || "").replace(/\D/g, "");
+  S.applicants.unshift({ id, kind: "broker", fresh: true, name: f.company.trim(), person: f.name.trim(), city: f.city || "Bay Area", trucks: "Broker · " + f.size,
+    info: [["Contact", esc(f.name)], ["Phone", tel(f.phone)], ["Email", esc(f.email)], ["Office", esc(f.city || "Not given")], ["MC number", "MC-" + esc(mc)], ["USDOT", esc(f.usdot || "None (doesn't run own trucks)")],
+      ["Customers", esc(f.customers.join(", "))], ["Trucks dispatched", esc(f.size)], ["Own trucks", f.own ? "Yes" : "No"], ["Invoices to", esc(f.billing || f.email)]],
+    checks: [
+      [`Broker authority MC-${mc}`, c.mc ? "good" : "warn", c.mc ? "Active with the FMCSA, checked automatically" : "Not checked yet", null],
+      ["Surety bond (BMC-84), $75,000", c.mc ? "good" : "warn", c.mc ? "On file with the FMCSA" : "Check it's on file", null],
+      ["Business name and contact", "warn", `${f.company} · ${f.name} · ${f.phone}`, null],
+      ["Payout bank account", "good", "Connected through the payment provider", null],
+      ["Broker terms", "good", "Accepted at sign-up", null]
+    ] });
+  S.bsignup = { id, status: "pending" }; c.done = true; markSeen();
+}
+Object.assign(ACTS, {
+  "w-broker": () => { markSeen(); ui = freshUi("broker"); ui.bsu = newBsu(); window.scrollTo(0, 0); },
+  // Demo: show what a company driver sees after tapping the invite link the owner texted them
+  "w-invite": () => { location.hash = "invite"; return false; },
+  "bs-cancel": () => { ui.bsu = null; ui.welcome = true; window.scrollTo(0, 0); },
+  "bs-prev": () => { ui.bsu.step--; window.scrollTo(0, 0); },
+  "bs-next": () => { if (!bsuValid()) return false; ui.bsu.step++; window.scrollTo(0, 0); },
+  "bs-cust": w => { const a = ui.bsu.f.customers; a.includes(w) ? a.splice(a.indexOf(w), 1) : a.push(w); },
+  "bs-mc": () => { const n = (ui.bsu.f.mcn || "").replace(/\D/g, ""); if (n.length < 5) { toast("Enter your MC number first."); return false; }
+    ui.bsu.mc = `MC-${n}: broker authority active. $75,000 surety bond (BMC-84) on file. (Sample check)`; },
+  "bs-bank": () => { ui.bsu.f.bank = true; toast("Bank connected (sample)."); },
+  "bs-submit": () => { if (!bsuValid()) return false; submitBsu(); window.scrollTo(0, 0); toast("Account created."); },
+  "bs-admin": () => { const id = S.bsignup.id; ui = freshUi("admin"); ui.view = "app:" + id; window.scrollTo(0, 0); },
+  "bs-go": () => { S.broker.name = ui.bsu.f.company.trim(); ui = freshUi("broker"); window.scrollTo(0, 0); }
+});
+
+/* ---------- Company drivers: the truck owner invites them; they sign up with just their own details ---------- */
+const invites = () => (S.invites ||= []);
+const DSU_STEPS = ["About you", "Your documents"];
+const DSU_DOCS = [["cdl", "Driver's license (CDL)", "Front photo"], ["med", "DOT medical card", "Photo or PDF"]];
+const newDsu = inv => ({ step: 1, inv: inv.id, owner: inv.owner, f: { name: inv.name, phone: inv.phone, years: "5 to 10" }, files: {}, det: {} });
+function dsuValid() {
+  const d = ui.dsu, f = d.f;
+  if (d.step === 1) return !!((f.name || "").trim() && (f.phone || "").replace(/\D/g, "").length === 10);
+  return DSU_DOCS.every(([k]) => d.files[k] && (!d.det[k].exp || daysTo(d.det[k].exp) >= 0)) && !!f.consent;
+}
+const dfld = (k, label, attrs = "") => `<label class="field">${label}<input data-df="${k}" value="${esc(ui.dsu.f[k] || "")}" ${attrs}></label>`;
+function dsuScreen() {
+  const d = ui.dsu, f = d.f, st = d.step, inv = invites().find(x => x.id === d.inv);
+  if (d.done) {
+    const ok = inv && inv.status === "approved";
+    return `<div class="stack" style="gap:6px;text-align:center;justify-items:center;padding-top:16px"><span class="eyebrow">Sign-up sent</span><h1>${ok ? "You're approved" : `Thanks, ${esc((f.name || "").split(" ")[0])}`}</h1></div>
+      <div class="card"><p>${ok ? `You're on ${esc(d.owner)}'s team. They can put you on a truck now, and your jobs come by text and in the app.` : `We're checking your CDL, medical card and driving record, usually within 1 business day. ${esc(d.owner)} can put you on a truck as soon as you're approved.`}</p></div>
+      ${ok ? "" : '<button class="btn" type="button" data-act="ds-approve">Approve now (demo)</button><button class="btn ghost" type="button" data-act="ds-admin">See it in the admin review queue</button>'}
+      <button class="btn ghost" type="button" data-act="ds-close">Back to ${esc(d.owner)}'s fleet</button>`;
+  }
+  let body = "";
+  if (st === 1) body = `<div class="card" style="gap:4px"><strong>${esc(d.owner)} invited you to drive with them</strong><span class="muted" style="font-size:13px">You'll drive their trucks. They handle the truck, insurance and pay; you just need your own driver documents.</span></div>
+    ${dfld("name", "Full legal name", 'autocomplete="name"')}
+    <div class="grid2">${dfld("phone", "Mobile number", 'type="tel" inputmode="tel" data-phone autocomplete="tel"')}${dfld("email", "Email (optional)", 'type="email" inputmode="email" autocomplete="email"')}</div>
+    <label class="field">Years driving dump trucks<select data-df="years">${["Less than 1", "1 to 3", "3 to 5", "5 to 10", "More than 10"].map(y => `<option ${f.years === y ? "selected" : ""}>${y}</option>`).join("")}</select></label>`;
+  if (st === 2) body = `<p class="muted">Take a photo of each one. We fill in the details from the photo.</p>
+    <div class="card" style="gap:0">${DSU_DOCS.map(([k, title, sub]) => { const file = d.files[k], det = d.det[k] || {};
+      return `<div class="row" style="padding:10px 0;border-top:1px solid var(--line)"><div class="row" style="justify-content:flex-start">${file && file.url ? `<img class="thumb" src="${file.url}" alt="">` : ""}<div><strong>${title}</strong>
+        <div class="muted" style="font-size:13px">${file ? `<span style="color:var(--good)">✓ ${esc(file.name)}</span>${k === "cdl" ? ` · Class ${esc(det.cls)}, ${esc(det.state)}` : ""} · expires ${fmtDate(det.exp)}` : sub}</div>${file ? `<div style="font-size:13px">${expNote(det.exp)}</div>` : ""}</div></div>
+        <label class="btn small ghost" style="flex:none;display:inline-flex;align-items:center">${file ? "Retake" : "Add photo"}<input type="file" accept="image/*,application/pdf" capture="environment" data-dfile="${k}" hidden></label></div>`; }).join("")}</div>
+    <label class="tick"><input type="checkbox" data-df="consent" ${f.consent ? "checked" : ""}><span>I allow Trucks2U and ${esc(d.owner)} to check my driving record (MVR) and the FMCSA Drug and Alcohol Clearinghouse.</span></label>`;
+  return `<button class="back" type="button" data-act="${st === 1 ? "ds-close" : "ds-prev"}">‹ ${st === 1 ? "Cancel" : "Back"}</button>
+    <div class="stack" style="gap:6px"><span class="eyebrow">Driver sign-up · step ${st} of ${DSU_STEPS.length}</span>
+      <div class="steps" style="grid-template-columns:repeat(${DSU_STEPS.length},1fr)">${DSU_STEPS.map((_, i) => `<i class="${i < st ? "on" : ""}"></i>`).join("")}</div><h1>${DSU_STEPS[st - 1]}</h1></div>
+    ${body}
+    <button class="btn pin" type="button" id="dsu-go" data-act="${st < DSU_STEPS.length ? "ds-next" : "ds-submit"}" ${dsuValid() ? "" : "disabled"}>${st < DSU_STEPS.length ? "Continue" : "Send for review"}</button>`;
+}
+function submitDsu() {
+  const d = ui.dsu, f = d.f, c = d.det.cdl, m = d.det.med, inv = invites().find(x => x.id === d.inv), id = "D" + (S.applicants.length + 1) + "-" + Date.now().toString(36);
+  S.applicants.unshift({ id, kind: "company", fresh: true, invite: d.inv, name: f.name.trim(), person: f.name.trim(), city: "Bay Area", trucks: `Company driver for ${d.owner}`, cls: c.cls, medExp: m.exp,
+    info: [["Driver", esc(f.name)], ["Phone", tel(f.phone)], ["Email", esc(f.email || "Not given")], ["Experience", esc(f.years) + " years"], ["Drives for", esc(d.owner) + " (invited)"]],
+    checks: [
+      [`CDL Class ${c.cls}, ${c.state} #${c.num}`, "warn", `expires ${fmtDate(c.exp)} · needs review`, d.files.cdl],
+      ["DOT medical card", "warn", `expires ${fmtDate(m.exp)} · needs review`, d.files.med],
+      ["Driving record (MVR)", "warn", "Check running, usually 1 to 2 days", null],
+      ["FMCSA Clearinghouse query", "warn", "Consent given · query running", null],
+      [`Linked to ${d.owner}`, "good", "Invited by the owner, so their truck insurance covers this driver", null]
+    ] });
+  if (inv) { inv.status = "review"; inv.app = id; }
+  d.done = true;
+}
+function approveCompanyDriver(a) {
+  const inv = invites().find(x => x.id === a.invite); if (inv) inv.status = "approved";
+  if (!MY_DRIVERS.some(x => x.name === a.person)) MY_DRIVERS.push({ name: a.person, cdl: "Class " + (a.cls || "A"), med: fmtDate(a.medExp).replace(/ \d+,/, "") });
+}
+Object.assign(ACTS, {
+  "inv-new": () => { ui.inv = { name: "", phone: "" }; },
+  "inv-cancel": () => { ui.inv = null; },
+  "inv-send": () => { const n = (ui.inv.name || "").trim(), p = ui.inv.phone || ""; if (!n || p.replace(/\D/g, "").length !== 10) { toast("Enter their name and a 10-digit mobile number."); return false; }
+    invites().unshift({ id: "I" + Date.now().toString(36), name: n, phone: p, owner: ME_OWNER, status: "sent" }); ui.inv = null; toast(`Invite texted to ${n.split(" ")[0]}.`); },
+  "inv-open": id => { const inv = invites().find(x => x.id === id); if (!inv) return false; ui = freshUi("driver"); ui.dsu = newDsu(inv); window.scrollTo(0, 0); },
+  "ds-prev": () => { ui.dsu.step--; window.scrollTo(0, 0); },
+  "ds-next": () => { if (!dsuValid()) return false; ui.dsu.step++; window.scrollTo(0, 0); },
+  "ds-submit": () => { if (!dsuValid()) return false; submitDsu(); window.scrollTo(0, 0); toast("Sent for review."); },
+  "ds-approve": () => { const a = S.applicants.find(x => x.invite === ui.dsu.inv); if (!a) return false; a.checks.forEach(c => { c[1] = "good"; }); approveApplicant(a.id); toast("Approved."); },
+  "ds-admin": () => { const a = S.applicants.find(x => x.invite === ui.dsu.inv); ui = freshUi("admin"); if (a) ui.view = "app:" + a.id; window.scrollTo(0, 0); },
+  "ds-close": () => { ui = freshUi("owner"); ui.tab = "fleet"; window.scrollTo(0, 0); }
+});
 
 /* ================= Admin ================= */
 function adminVetting() {
   const pending = S.applicants.filter(a => !S.approvedApplicants.includes(a.id));
   const counts = a => ({ bad: a.checks.filter(c => c[1] === "bad").length, warn: a.checks.filter(c => c[1] === "warn").length });
   return `<h1>Vetting queue</h1><p class="muted">No driver or owner sees jobs until every check is green.</p>
-    <button class="btn small ghost" type="button" data-act="su-start" style="justify-self:start">Preview the sign-up form drivers fill in</button>
+    <div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap"><button class="btn small ghost" type="button" data-act="su-start">Preview the driver sign-up</button><button class="btn small ghost" type="button" data-act="w-contractor">Preview the contractor sign-up</button><button class="btn small ghost" type="button" data-act="w-broker">Preview the broker sign-up</button></div>
     ${pending.length ? pending.map(a => { const c = counts(a); return `<button type="button" class="card tap${a.fresh ? " hot" : ""}" data-go="app:${a.id}">
       <div class="row"><h2>${esc(a.name)}</h2>${c.bad ? `<span class="pill bad">${c.bad} failed</span>` : c.warn ? `<span class="pill warn">${c.warn} to review</span>` : '<span class="pill good">Ready</span>'}</div>
       <span class="muted" style="font-size:13px">${a.fresh ? "New sign-up · " : ""}${esc(a.trucks)} · ${a.checks.filter(x => x[1] === "good").length} of ${a.checks.length} checks passed</span></button>`; }).join("") : '<div class="note">Queue is clear. New sign-ups show up here.</div>'}
@@ -2646,14 +2942,14 @@ function adminApplicant(a) {
   return `<button class="back" type="button" data-go="back">‹ Queue</button>
     <div class="stack" style="gap:4px"><span class="eyebrow">Applicant · ${esc(a.trucks)}</span><h1>${esc(a.name)}</h1></div>
     ${a.info ? `<div class="card"><h2>What they entered</h2><div class="sum">${a.info.map(([k, v]) => `<div class="row" style="align-items:flex-start"><span class="muted" style="flex:none;width:38%">${k}</span><span style="text-align:right">${v}</span></div>`).join("")}</div></div>` : ""}
-    <div class="card"><h2>Checks</h2><p class="muted" style="font-size:13px">Compare what the driver typed with the photo of each document.</p><div class="list">${a.checks.map(([t, s, d, file], i) => `<div class="check"><span class="mark ${s}">${s === "good" ? "✓" : s === "bad" ? "✕" : "!"}</span>
+    <div class="card"><h2>Checks</h2><p class="muted" style="font-size:13px">${{ contractor: "Check the license and business details before trucks are sent to their jobs.", broker: "Brokers need active broker authority and a $75,000 bond on file before they can dispatch." }[a.kind] || "Compare what the driver typed with the photo of each document."}</p><div class="list">${a.checks.map(([t, s, d, file], i) => `<div class="check"><span class="mark ${s}">${s === "good" ? "✓" : s === "bad" ? "✕" : "!"}</span>
       <div class="stack" style="gap:6px"><div><strong style="font-size:14px">${esc(t)}</strong><div class="muted" style="font-size:13px">${esc(d)}</div></div>
         ${file ? (file.url ? `<img src="${file.url}" alt="${esc(file.name)}" style="max-width:100%;max-height:160px;border-radius:8px;border:1px solid var(--line);object-fit:contain;background:var(--surface-2)">` : `<span class="chip" style="justify-self:start">${esc(file.name)}</span>`) : ""}</div>
       ${s === "warn" && !done ? `<div class="stack" style="gap:6px"><button class="btn small ghost" type="button" data-act="verify:${a.id}:${i}">Mark OK</button><button class="btn small ghost danger" type="button" data-act="reject:${a.id}:${i}">Reject</button></div>` : "<span></span>"}</div>`).join("")}</div></div>
     ${bad ? '<div class="note">A failed check blocks approval. The driver gets a text asking for a current document.</div>' : ""}
     ${done ? '<span class="pill good" style="justify-self:start">Approved</span>' : `${warn && !bad ? `<button class="btn ghost" type="button" data-act="verify-all:${a.id}">Mark every check OK</button>` : ""}
       <button class="btn ghost" type="button" data-act="a-ask:${a.id}">Ask for a document</button>
-      <button class="btn good pin" type="button" data-act="approve-app:${a.id}" ${bad || warn ? "disabled" : ""}>Approve driver and truck</button>`}`;
+      <button class="btn good pin" type="button" data-act="approve-app:${a.id}" ${bad || warn ? "disabled" : ""}>${{ contractor: "Approve contractor", broker: "Approve broker", company: "Approve driver" }[a.kind] || "Approve driver and truck"}</button>`}`;
 }
 function adminOverview() {
   const trucksOut = S.jobs.filter(j => j.dayN === 0).reduce((s, j) => s + filled(j), 0);
@@ -2761,7 +3057,7 @@ function setDraftFrom(el) {
 
 Object.assign(ACTS, {
   "su-start": () => { ui.signup = newSignup(); ui.offer = null; renderOverlay(); window.scrollTo(0, 0); },
-  "su-close": () => { ui.signup = null; },
+  "su-close": () => { const back = ui.signup && ui.signup.fromWelcome; ui.signup = null; if (back) ui.welcome = true; },
   "su-next": () => { if (!suValid()) return false; ui.signup.step++; window.scrollTo(0, 0); },
   "su-prev": () => { ui.signup.step--; window.scrollTo(0, 0); },
   "su-type": t => { const f = ui.signup.f; f.type = t; if (!f.cap) f.cap = (TYPES[t].spec.match(/(\d+) tons/) || [])[1] || ""; },
@@ -2775,7 +3071,8 @@ Object.assign(ACTS, {
   "verify-all": id => { S.applicants.find(x => x.id === id).checks.forEach(c => { if (c[1] === "warn") { c[1] = "good"; c[2] += " · reviewed by admin"; } }); },
   "reject": (id, i) => { const a = S.applicants.find(x => x.id === id); a.checks[+i][1] = "bad"; a.checks[+i][2] = "Rejected. The driver got a text asking for a new document."; toast("Rejected. The driver was asked to upload a new one."); },
   "a-ask": id => { toast(`Text sent to ${S.applicants.find(x => x.id === id).name} asking for a new document.`); return false; },
-  "approve-app": id => { approveApplicant(id); ui.view = null; toast("Approved. They can take jobs now."); },
+  "approve-app": id => { const a = S.applicants.find(x => x.id === id); approveApplicant(id); ui.view = null;
+    toast(a && a.kind === "contractor" ? "Approved. Trucks will be sent to their jobs." : a && a.kind === "broker" ? "Approved. They can dispatch trucks now." : "Approved. They can take jobs now."); },
   "a-remind": i => { S.expiring[+i].reminded = true; toast("Reminder texted. If it expires, they can't take new jobs until it's renewed."); },
   "a-suspend": i => { const r = S.roster[+i]; r.status = r.status === "Suspended" ? "Approved" : "Suspended"; toast(r.status === "Suspended" ? `${r.name} suspended. They can't take jobs.` : `${r.name} reinstated.`); },
   "st-edit": i => { ui.editTruck = ui.editTruck === +i ? null : +i; },
@@ -2836,6 +3133,11 @@ ui = freshUi("driver");   // opens on the driver's time clock, like the prototyp
 function workView(v, driver) { const [, jid, t] = v.split(":"), j = job(jid); return ownerWork(j, j && j.assignments.find(a => a.truck === t), driver); }
 function screen() {
   const v = ui.view;
+  if (ui.welcome) return welcomeScreen();
+  if (ui.login) return loginScreen();
+  if (ui.csu) return csuScreen();
+  if (ui.bsu) return bsuScreen();
+  if (ui.dsu) return dsuScreen();
   if (ui.signup) return signupScreen();
   if (ui.role === "contractor") {
     if (ui.req) return ui.req.step === "where" ? reqWhere() : reqOptions();
@@ -2863,8 +3165,8 @@ function screen() {
 }
 function render() {
   document.querySelectorAll("[data-role]").forEach(b => b.setAttribute("aria-pressed", b.dataset.role === ui.role));
-  const rb = document.querySelector(`[data-role="${ui.role}"]`); if (rb) $("#roleName").textContent = rb.textContent;
-  const flow = !!(ui.signup || ui.req);   // step-by-step flows hide the tabs and have their own back button
+  const rb = document.querySelector(`[data-role="${ui.role}"]`); if (rb) $("#roleName").textContent = ui.welcome || ui.login || (ui.csu && !ui.csu.done) || (ui.bsu && !ui.bsu.done) ? "New user" : rb.textContent;
+  const flow = !!(ui.signup || ui.req || ui.welcome || ui.login || ui.csu || ui.bsu || ui.dsu);   // step-by-step flows hide the tabs and have their own back button
   $("#screen").innerHTML = screen();
   $("#screen").classList.toggle("form", flow);   // forms stay one readable column in computer view
   $("#app").classList.toggle("notabs", flow);
@@ -2928,8 +3230,36 @@ function suField(el) {
   const b = $("[data-act=su-next], [data-act=su-submit]"); if (b) b.disabled = !suValid();
   return true;
 }
+// Contractor sign-up and log-in fields: same idea as the driver sign-up
+function newUserField(el) {
+  if (!el.dataset) return false;
+  if (el.dataset.cf && ui.csu) {
+    ui.csu.f[el.dataset.cf] = el.type === "checkbox" ? el.checked : el.value;
+    const b = $("#csu-go"); if (b) b.disabled = !csuValid();
+    return true;
+  }
+  if (el.dataset.bf && ui.bsu) {
+    ui.bsu.f[el.dataset.bf] = el.type === "checkbox" ? el.checked : el.value;
+    const b = $("#bsu-go"); if (b) b.disabled = !bsuValid();
+    return true;
+  }
+  if (el.dataset.df && ui.dsu) {
+    ui.dsu.f[el.dataset.df] = el.type === "checkbox" ? el.checked : el.value;
+    const b = $("#dsu-go"); if (b) b.disabled = !dsuValid();
+    return true;
+  }
+  if (el.dataset.iv && ui.inv) { ui.inv[el.dataset.iv] = el.value; return true; }
+  if (el.dataset.lg && ui.login) {
+    ui.login[el.dataset.lg] = el.value;
+    const b = $("#lg-go"), n = el.value.replace(/\D/g, "").length;
+    if (b) b.disabled = el.dataset.lg === "phone" ? n !== 10 : n !== 6;
+    return true;
+  }
+  return false;
+}
 document.addEventListener("input", e => {
   const el = e.target;
+  if (newUserField(el)) return;
   if (suField(el)) return;
   if (setDraftFrom(el)) return;
   if (el.id === "rq-q" && ui.req) { ui.req.q = el.value; $("#rq-results").innerHTML = placeList(el.value.trim()); }
@@ -2937,8 +3267,15 @@ document.addEventListener("input", e => {
 });
 document.addEventListener("change", e => {
   const el = e.target;
+  if (newUserField(el)) return;
   if (suField(el)) { if (el.dataset.det && el.dataset.det.endsWith(".exp")) render(); return; }   // re-draw to show expiry warnings
   if (setDraftFrom(el)) { if (el.type === "checkbox" || el.tagName === "SELECT") render(); return; }
+  const dk = el.dataset && el.dataset.dfile;
+  if (dk && ui.dsu && el.files[0]) {
+    const file = el.files[0], d = ui.dsu, done = url => { d.files[dk] = { name: file.name, url }; d.det[dk] = { ...SCAN()[dk] }; render(); };
+    if (file.type.startsWith("image/")) { const r = new FileReader(); r.onload = () => done(r.result); r.readAsDataURL(file); } else done(null);
+    return;
+  }
   const fk = el.dataset && el.dataset.file;
   if (fk && ui.signup && el.files[0]) {
     const file = el.files[0], su = ui.signup, done = url => { su.files[fk] = { name: file.name, url }; if (SCAN()[fk] && !su.det[fk]) su.det[fk] = { ...SCAN()[fk] }; render(); };
@@ -2958,6 +3295,7 @@ $("#reset").addEventListener("click", () => {
   Object.keys(gpsStage).forEach(k => delete gpsStage[k]);
   S.jobs.forEach(j => j.req && clearTimeout(j.req.timer));
   S = seed(); MY_TRUCKS.forEach((t, i) => t.type = MY_TRUCKS_SEED[i]); SITE = FROM.Oakland;
+  ME_CONTRACTOR = DEFAULT_CONTRACTOR; ME_CONTACT = { ...DEFAULT_CONTACT }; MY_DRIVERS.length = MY_DRIVERS_N;
   ui = freshUi(ui.role); render(); window.scrollTo(0, 0);
   toast("Demo reset. Admin settings are kept; reset them in Admin › Settings.");
 });
@@ -2979,6 +3317,8 @@ applyLayout();
 function openFromHash() {
   const h = location.hash.slice(1).toLowerCase(), roles = { contractor: "contractor", owner: "owner", driver: "driver", broker: "broker", fleet: "broker", admin: "admin" };
   if (h === "signup") { ui = freshUi("driver"); ui.signup = newSignup(); }
+  else if (h === "welcome" || (!h && !seenWelcome())) { ui = freshUi("contractor"); ui.welcome = true; }
+  else if (h === "invite") { markSeen(); const inv = { id: "I-demo", name: "Sam Ortiz", phone: "(510) 555-0166", owner: ME_OWNER, status: "sent" }; if (!invites().some(x => x.id === inv.id)) invites().unshift(inv); ui = freshUi("driver"); ui.dsu = newDsu(inv); }
   else if (roles[h]) ui = freshUi(roles[h]);
   render();
 }
