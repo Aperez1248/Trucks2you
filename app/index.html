@@ -305,7 +305,16 @@ h2 { font: 800 20px/1.2 var(--display); letter-spacing: -.4px; }
 main { --mp: 16px; }
 :root[data-layout="wide"] main { --mp: 22px; }
 .hero { position: relative; margin: calc(-1 * var(--mp)) calc(-1 * var(--mp)) -38px; height: 290px; background: #e9eaec; isolation: isolate; z-index: 0; overflow: hidden; }
-.hero .hm { position: absolute; inset: 0; }
+.hero .hm { position: absolute; inset: 0 0 38px 0; }   /* stops where the sheet starts, so Google's logo stays visible */
+/* Pins on Google maps (drawn as HTML, anchored at the map point) */
+.gmk { position: absolute; width: 0; height: 0; }
+.gdot { position: absolute; left: -8px; top: -8px; width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 1px 4px rgb(0 0 0 / .35); }
+.glab { position: absolute; left: 13px; top: -11px; white-space: nowrap; background: #fff; color: #000; font: 700 11px/1 var(--body); padding: 5px 7px; border-radius: 999px; box-shadow: 0 1px 4px rgb(0 0 0 / .2); }
+.glab.top { left: 0; top: -36px; transform: translateX(-50%); }
+.gtk { position: absolute; left: -13px; top: -13px; width: 26px; height: 26px; }
+.gtk svg { width: 26px; height: 26px; filter: drop-shadow(0 1px 2px rgb(0 0 0 / .35)); }
+.gmk.pin .jobpin { position: absolute; left: 0; top: 0; }
+.gpowered { font: 600 11px/1 var(--body); color: var(--muted); text-align: right; padding-top: 8px; }
 .hero .hm .leaflet-control-attribution { font-size: 9px; }
 /* Muted, gray street maps (like Uber's) so black pins and the blue route stand out */
 .leaflet-tile-pane { filter: grayscale(1) contrast(.88) brightness(1.06); }
@@ -1379,27 +1388,154 @@ function jobMap(j, opts = {}) {
     <text class="scalel" x="${W - 14}" y="18" text-anchor="middle">N ↑</text>
   </svg><div class="lm"></div></div>`;
 }
+/* ================= Google Maps Platform =================
+   Maps, address search (Places API New) and road routes (Routes API) come from Google, using a browser key that is
+   locked in Google Cloud (project "Trucks2u") to this website and to 4 Maps APIs. Anything shown with Google data is
+   shown on a Google map, as Google's terms require. If Google can't load (no signal, key problem, daily cap reached),
+   the app falls back to the free Leaflet map and straight-line estimates, so nothing breaks. */
+const GKEY = "AIzaSyBLOKX0Lk9KImLyANe7MXQFqBKpAxQusVU";
+const G = { ok: false, settled: false, ready: null, noPlaces: false, noRoutes: false, noGeo: false };
+// A gray, uncluttered map (like Uber's): no business pins, no transit, no road-sign icons
+const GRAY = [{ stylers: [{ saturation: -100 }, { lightness: 6 }] }, { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] }, { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] }];
+function loadGoogle() {
+  if (G.ready) return G.ready;
+  G.ready = new Promise(res => {
+    const done = ok => { if (G.settled) return; G.settled = true; G.ok = ok; res(ok); };
+    if (!navigator.onLine) return done(false);
+    window.__t2uMaps = () => done(true);
+    // Google calls this if the key is refused (wrong website, API off, billing): switch to the backup map
+    window.gm_authFailure = () => { G.ok = false; G.settled = true; res(false); initMaps(); };
+    const s = document.createElement("script");
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${GKEY}&v=weekly&loading=async&callback=__t2uMaps`;
+    s.async = true; s.onerror = () => done(false);
+    document.head.appendChild(s);
+    setTimeout(() => done(false), 10000);
+  });
+  return G.ready;
+}
+// A safety net on top of the limits set in Google Cloud: at most this many lookups a day from one phone or computer
+function capOk(kind) {
+  const lim = { places: 300, routes: 150, geo: 100 }[kind] || 100, k = "t2u-cap-" + kind, day = new Date().toDateString();
+  try { const v = JSON.parse(localStorage.getItem(k) || "{}"), n = v.d === day ? v.n : 0; if (n >= lim) return false; localStorage.setItem(k, JSON.stringify({ d: day, n: n + 1 })); } catch (e) {}
+  return true;
+}
+const denied = e => /denied|disabled|not been used|not authorized|not allowed|REQUEST_DENIED|PERMISSION/i.test(String(e && e.message || e));
+// HTML pins on a Google map (pills, dots, truck icons), placed with Google's OverlayView
+let HtmlMarker = null;
+function htmlMarker(pos, html, cls = "") {
+  if (!HtmlMarker) HtmlMarker = class extends google.maps.OverlayView {
+    constructor(p, h, c) { super(); this.pos = p; this.el = document.createElement("div"); this.el.className = "gmk " + c; this.el.innerHTML = h; }
+    onAdd() { this.getPanes().overlayMouseTarget.appendChild(this.el); }
+    draw() { const pr = this.getProjection(); if (!pr) return; const p = pr.fromLatLngToDivPixel(new google.maps.LatLng(this.pos.lat, this.pos.lng)); if (p) { this.el.style.left = p.x + "px"; this.el.style.top = p.y + "px"; } }
+    onRemove() { this.el.remove(); }
+    setPos(lat, lng) { this.pos = { lat, lng }; this.draw(); }
+  };
+  return new HtmlMarker(pos, html, cls);
+}
+// Markers with one interface for both map kinds, so the live-truck code doesn't care which map is showing
+function gDot(map, q, color, label, top) {
+  const m = htmlMarker(q, `<span class="gdot" style="background:${color}"></span>${label ? `<span class="glab${top ? " top" : ""}">${esc(label)}</span>` : ""}`);
+  const o = { shown: false, setPos: (a, b) => m.setPos(a, b), setColor: c => { const d = m.el.querySelector(".gdot"); if (d) d.style.background = c; },
+    show: v => { if (v && !o.shown) { m.setMap(map); o.shown = true; } else if (!v && o.shown) { m.setMap(null); o.shown = false; } } };
+  return o;
+}
+function lDot(map, q, color, label, top) {
+  const m = L.circleMarker([q.lat, q.lng], { radius: top ? 9 : 7, color: "#fff", weight: 2, fillColor: color, fillOpacity: 1 });
+  if (label) m.bindTooltip(label, { permanent: true, direction: top ? "top" : "right", offset: top ? [0, -9] : [8, 0] });
+  const o = { shown: false, setPos: (a, b) => m.setLatLng([a, b]), setColor: c => m.setStyle({ fillColor: c }),
+    show: v => { if (v && !o.shown) { m.addTo(map); o.shown = true; } else if (!v && o.shown) { m.remove(); o.shown = false; } } };
+  return o;
+}
+
+/* Real road route between the job site and the plant or dump site (Routes API), saved so each pair is looked up once.
+   Google's drive times are for cars; a loaded dump truck takes about 20% longer. */
+const ROADS = {}, ROAD_DONE = {};
+const roadKey = j => { const A = siteP(j), B = destP(j); return [A.lat, A.lng, B.lat, B.lng].map(x => (+x).toFixed(4)).join(","); };
+function roadRoute(j) {
+  if (!j || !j.pts) return Promise.resolve(null);
+  const key = roadKey(j);
+  if (key in ROADS) return ROADS[key];
+  if (!G.ok || G.noRoutes || !capOk("routes")) return Promise.resolve(null);
+  const A = siteP(j), B = destP(j);
+  ROADS[key] = google.maps.importLibrary("routes")
+    .then(({ Route }) => Route.computeRoutes({ origin: { lat: A.lat, lng: A.lng }, destination: { lat: B.lat, lng: B.lng }, travelMode: "DRIVING", fields: ["path", "distanceMeters", "durationMillis"] }))
+    .then(({ routes }) => {
+      const r = routes && routes[0]; if (!r) return null;
+      const out = { mi: r.distanceMeters / 1609.34, min: Math.round(r.durationMillis / 60000 * 1.2), path: (r.path || []).map(p => ({ lat: p.lat, lng: p.lng })) };
+      ROAD_DONE[key] = out;
+      document.querySelectorAll(`[data-road="${key}"]`).forEach(el => { el.textContent = `${out.mi.toFixed(1)} mi by road · ~${out.min} min`; });
+      return out;
+    })
+    .catch(e => { if (denied(e)) G.noRoutes = true; delete ROADS[key]; return null; });
+  return ROADS[key];
+}
+// "4.5 mi · ~14 min": the road route once Google has it, a straight-line estimate until then
+function roadText(j) {
+  const key = roadKey(j), r = ROAD_DONE[key];
+  if (r) return `<span data-road="${key}">${r.mi.toFixed(1)} mi by road · ~${r.min} min</span>`;
+  const mi = miles(siteP(j), destP(j)); roadRoute(j);
+  return `<span data-road="${key}">${mi.toFixed(1)} mi · ~${driveMin(mi)} min</span>`;
+}
+
 const LMAPS = [];
 const anyJob = id => job(id) || (S.broker && S.broker.jobs.find(j => j.id === id));
 function initMaps() {
-  LMAPS.splice(0).forEach(m => { try { m.map.remove(); } catch (e) {} });
-  if (!window.L) return;   // map library didn't load: the drawn map stays
+  LMAPS.splice(0).forEach(m => { try { m.kill(); } catch (e) {} });
+  if (!G.settled) { loadGoogle().then(() => initMaps()); return; }   // first time: wait for Google, the drawn map shows meanwhile
+  if (G.ok && window.google && google.maps) initGoogleMaps(); else initLeafletMaps();
+}
+function initGoogleMaps() {
   const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
   document.querySelectorAll("[data-lmap]").forEach(box => {
     const j = anyJob(box.dataset.lmap); if (!j || !j.pts) return;
     const A = siteP(j), Bp = destP(j), truck = box.dataset.truck, all = box.dataset.all === "1";
     const still = !!box.closest("button");   // a map inside a tappable job card stays still, so a tap opens the job
+    const map = new google.maps.Map(box.querySelector(".lm"), { styles: GRAY, disableDefaultUI: true, zoomControl: !still, gestureHandling: still ? "none" : "cooperative", keyboardShortcuts: !still, clickableIcons: false });
+    google.maps.event.addListenerOnce(map, "tilesloaded", () => box.classList.add("live"));
+    const b = new google.maps.LatLngBounds(); b.extend(A); b.extend(Bp); map.fitBounds(b, 46);
+    // Dashed straight line until the road route comes back, then the real route
+    const line = new google.maps.Polyline({ map, path: [A, Bp], strokeOpacity: 0, icons: [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: col("--route"), scale: 3 }, offset: "0", repeat: "12px" }] });
+    const e = { map, j, truck, all, tms: {}, off: col("--muted"), on: col("--route"), kill: () => google.maps.event.clearInstanceListeners(map) };
+    e.dot = (q, c, label, top) => gDot(map, q, c, label, top);
+    e.dot(A, col("--good"), "Job site", true).show(true); e.dot(Bp, col("--route"), short(destText(j)), true).show(true);
+    e.tm = truck ? e.dot(A, col("--route"), truck) : null;
+    LMAPS.push(e);
+    roadRoute(j).then(r => { if (r && r.path.length) line.setOptions({ path: r.path, strokeOpacity: .9, strokeWeight: 5, strokeColor: col("--route"), icons: [] }); });
+  });
+  document.querySelectorAll("[data-omap]").forEach(box => {
+    const h = HEROS[box.dataset.omap]; if (!h) return;
+    const map = new google.maps.Map(box.querySelector(".hm"), { styles: GRAY, disableDefaultUI: true, gestureHandling: "none", keyboardShortcuts: false, clickableIcons: false });
+    const truckPts = nearbyTruckPts(h.center, h.trucks, h.span);
+    truckPts.forEach(p => htmlMarker(p, `<span class="gtk">${TOPTRUCK(p.rot)}</span>`).setMap(map));
+    h.pins.forEach(p => htmlMarker(p, `<span class="jobpin${p.me ? " me" : ""}">${esc(p.label)}</span>`, "pin").setMap(map));
+    const pts = [...h.pins, ...truckPts.slice(0, 6)];
+    if (pts.length > 1) {
+      const b = new google.maps.LatLngBounds(); pts.forEach(p => b.extend(p)); map.fitBounds(b, { top: 70, left: 30, right: 30, bottom: 30 });
+      google.maps.event.addListenerOnce(map, "idle", () => { if (map.getZoom() > 13) map.setZoom(13); });
+    } else { map.setCenter(pts[0] || h.center); map.setZoom(12); }
+    LMAPS.push({ map, hero: true, kill: () => google.maps.event.clearInstanceListeners(map) });
+  });
+}
+// Backup map (free Esri street tiles via Leaflet), used only when Google can't load
+function initLeafletMaps() {
+  if (!window.L) return;   // map library didn't load either: the drawn map stays
+  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
+  document.querySelectorAll("[data-lmap]").forEach(box => {
+    const j = anyJob(box.dataset.lmap); if (!j || !j.pts) return;
+    const A = siteP(j), Bp = destP(j), truck = box.dataset.truck, all = box.dataset.all === "1";
+    const still = !!box.closest("button");
     const map = L.map(box.querySelector(".lm"), { scrollWheelZoom: false, zoomSnap: 0.25, ...(still ? { dragging: false, zoomControl: false, touchZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false } : {}) });
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19,
       attribution: 'Tiles &copy; <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> and contributors' })
       .once("tileload", () => box.classList.add("live")).addTo(map);
     map.fitBounds([[A.lat, A.lng], [Bp.lat, Bp.lng]], { padding: [40, 40] });
     L.polyline([[A.lat, A.lng], [Bp.lat, Bp.lng]], { color: col("--route"), weight: 3, dashArray: "7 6" }).addTo(map);
-    const pin = (q, fill, text) => L.circleMarker([q.lat, q.lng], { radius: 9, color: "#fff", weight: 2, fillColor: fill, fillOpacity: 1 })
-      .bindTooltip(text, { permanent: true, direction: "top", offset: [0, -9] }).addTo(map);
-    pin(A, col("--good"), "Job site"); pin(Bp, col("--route"), short(destText(j)));
-    const tm = truck ? L.circleMarker([A.lat, A.lng], { radius: 7, color: "#fff", weight: 2, fillColor: col("--route"), fillOpacity: 1 }).bindTooltip(truck, { permanent: true, direction: "right", offset: [8, 0] }) : null;
-    LMAPS.push({ map, j, truck, tm, all, tms: {}, off: col("--muted"), on: col("--route") });
+    const e = { map, j, truck, all, tms: {}, off: col("--muted"), on: col("--route"), kill: () => map.remove() };
+    e.dot = (q, c, label, top) => lDot(map, q, c, label, top);
+    e.dot(A, col("--good"), "Job site", true).show(true); e.dot(Bp, col("--route"), short(destText(j)), true).show(true);
+    e.tm = truck ? e.dot(A, col("--route"), truck) : null;
+    LMAPS.push(e);
   });
   initHeroMaps();
 }
@@ -1434,14 +1570,14 @@ function initHeroMaps() {
     const pts = [...h.pins, ...truckPts.slice(0, 6)].map(p => [p.lat, p.lng]);
     if (pts.length > 1) map.fitBounds(pts, { paddingTopLeft: [30, 70], paddingBottomRight: [30, 60], maxZoom: 13 });
     else map.setView(pts[0] || [h.center.lat, h.center.lng], 12);
-    LMAPS.push({ map, hero: true });
+    LMAPS.push({ map, hero: true, kill: () => map.remove() });
   });
 }
 function directions(j) {
   if (!j.pts) return "";
   const A = siteP(j), Bp = destP(j), mi = miles(A, Bp), ll = q => q.lat + "," + q.lng;
   const go = q => `https://www.google.com/maps/dir/?api=1&destination=${ll(q)}&travelmode=driving`;
-  return `<div class="row muted num" style="font-size:13px"><span><span style="color:var(--good)">●</span> Job site ↔ <span style="color:var(--route)">●</span> ${esc(short(destText(j)))}</span><span style="flex:none">${mi.toFixed(1)} mi · ~${driveMin(mi)} min</span></div>
+  return `<div class="row muted num" style="font-size:13px"><span><span style="color:var(--good)">●</span> Job site ↔ <span style="color:var(--route)">●</span> ${esc(short(destText(j)))}</span><span style="flex:none">${roadText(j)}</span></div>
     <div class="row" style="gap:8px"><a class="btn small ghost" href="${go(A)}" target="_blank" rel="noopener" style="flex:1">Directions to job site</a><a class="btn small ghost" href="${go(Bp)}" target="_blank" rel="noopener" style="flex:1">Directions to ${esc(short(destText(j)))}</a></div>
     <a class="back" href="https://www.google.com/maps/dir/?api=1&origin=${ll(A)}&destination=${ll(Bp)}&travelmode=driving" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">See the whole route on Google Maps ›</a>`;
 }
@@ -1618,20 +1754,21 @@ function tickMap() {
     g.style.display = ""; g.firstElementChild.classList.toggle("off", off); g.firstElementChild.classList.toggle("in", !off && (st.stage === 0 || st.stage === 2));
   });
   LMAPS.forEach(m => {
+    if (m.hero) return;
     if (m.all) {   // every truck on the job
       m.j.assignments.forEach(a => {
         const p = truckPos(m.j, a); let mk = m.tms[a.truck];
-        if (!p) { if (mk) { mk.remove(); delete m.tms[a.truck]; } return; }
-        if (!mk) mk = m.tms[a.truck] = L.circleMarker([p.lat, p.lng], { radius: 7, color: "#fff", weight: 2, fillColor: m.on, fillOpacity: 1 }).bindTooltip(a.truck, { permanent: true, direction: "right", offset: [8, 0] }).addTo(m.map);
-        mk.setLatLng([p.lat, p.lng]); mk.setStyle({ fillColor: p.off ? m.off : m.on });
+        if (!p) { if (mk) mk.show(false); return; }
+        if (!mk) mk = m.tms[a.truck] = m.dot(p, m.on, a.truck);
+        mk.setPos(p.lat, p.lng); mk.setColor(p.off ? m.off : m.on); mk.show(true);
       });
       return;
     }
     if (!m.tm) return;
     const lt = liveTrucks().find(x => x.a.truck === m.truck && x.j.id === m.j.id), off = !!S.gpsPaused[m.truck];
-    if (!lt) { if (m.map.hasLayer(m.tm)) m.tm.remove(); return; }
-    if (!off || !m.map.hasLayer(m.tm)) { const p = truckPos(lt.j, lt.a); if (p) m.tm.setLatLng([p.lat, p.lng]); }
-    m.tm.setStyle({ fillColor: off ? m.off : m.on }); if (!m.map.hasLayer(m.tm)) m.tm.addTo(m.map);
+    if (!lt) { m.tm.show(false); return; }
+    if (!off || !m.tm.shown) { const p = truckPos(lt.j, lt.a); if (p) m.tm.setPos(p.lat, p.lng); }
+    m.tm.setColor(off ? m.off : m.on); m.tm.show(true);
   });
   document.querySelectorAll("[data-live]").forEach(el => { const [jid, tk] = el.dataset.live.split("|"), j = job(jid), a = j && j.assignments.find(x => x.truck === tk); if (a) el.textContent = liveText(j, a) || (a.status === "assigned" && j.dayN === 0 ? "Not checked in yet" : ""); });
   document.querySelectorAll("[data-clock]").forEach(el => { const sh = S.shifts[el.dataset.clock]; if (sh) el.textContent = dur(workMs(sh)); });
@@ -1836,8 +1973,38 @@ function newReq() {
 const PIN_IC = '<span class="pin-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 21s-6-5.5-6-11a6 6 0 0112 0c0 5.5-6 11-6 11z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2" fill="currentColor"/></svg></span>';
 function placeList(q) {
   const list = PLACES.filter(p => !q || (p.name + " " + p.sub).toLowerCase().includes(q.toLowerCase()));
-  return (!q ? '<p class="eyebrow">Recent places</p>' : "") + `<div class="list">${list.map(p => `<button class="place" type="button" data-act="rq-pick:${PLACES.indexOf(p)}">${PIN_IC}<span><b>${esc(p.name)}</b><span>${esc(p.sub)}</span></span></button>`).join("")}
-    ${q ? `<button class="place" type="button" data-act="rq-addr">${PIN_IC}<span><b>Use "${esc(q)}"</b><span>Any address works. We put the pin there and you can move it later.</span></span></button>` : ""}</div>`;
+  const gs = (q && ui.req && ui.req.gs) || [];   // Google's suggestions for what's typed
+  return (!q ? '<p class="eyebrow">Recent places</p>' : "") + `<div class="list">${gs.map((p, i) => `<button class="place" type="button" data-act="rq-g:${i}">${PIN_IC}<span><b>${esc(p.mainText ? p.mainText.text : p.text.text)}</b><span>${esc(p.secondaryText ? p.secondaryText.text.replace(/, USA$/, "") : "")}</span></span></button>`).join("")}
+    ${list.map(p => `<button class="place" type="button" data-act="rq-pick:${PLACES.indexOf(p)}">${PIN_IC}<span><b>${esc(p.name)}</b><span>${esc(p.sub)}</span></span></button>`).join("")}
+    ${q ? `<button class="place" type="button" data-act="rq-addr">${PIN_IC}<span><b>Use "${esc(q)}"</b><span>${gs.length ? "Not in the list? We'll find it on the map." : "Any address works. We put the pin there and you can move it later."}</span></span></button>` : ""}</div>
+    ${gs.length ? '<div class="gpowered">Powered by Google</div>' : ""}`;
+}
+// Address suggestions from Google Places as you type (a short pause first, so we don't look up every letter)
+let sugT = 0, sugN = 0;
+function gSuggest(q) {
+  clearTimeout(sugT); const d = ui.req; if (!d) return;
+  if (q.length < 3) { d.gs = null; return; }
+  sugT = setTimeout(async () => {
+    if (!G.ok || G.noPlaces || !capOk("places")) return;
+    const n = ++sugN;
+    try {
+      const { AutocompleteSuggestion, AutocompleteSessionToken } = await google.maps.importLibrary("places");
+      d.tok = d.tok || new AutocompleteSessionToken();   // ties the typing and the pick together, which keeps Google's charge low
+      const { suggestions } = await AutocompleteSuggestion.fetchAutocompleteSuggestions({ input: q, sessionToken: d.tok, includedRegionCodes: ["us"], locationBias: { center: { lat: SITE.lat, lng: SITE.lng }, radius: 50000 } });
+      if (n !== sugN || ui.req !== d) return;   // something newer was typed
+      d.gs = suggestions.map(s => s.placePrediction).filter(Boolean).slice(0, 5);
+      const el = $("#rq-results"); if (el) el.innerHTML = placeList(d.q.trim());
+    } catch (e) { if (denied(e)) G.noPlaces = true; }
+  }, 250);
+}
+// Turn a picked Google place into a job site and go on to step 2
+function useGooglePlace(d, place, fallbackName, fallbackSub) {
+  const comp = t => (place.addressComponents || []).find(c => c.types.includes(t));
+  const street = [comp("street_number") && comp("street_number").longText, comp("route") && comp("route").longText].filter(Boolean).join(" ");
+  const city = (comp("locality") || comp("sublocality") || comp("neighborhood") || {}).longText || "", st = (comp("administrative_area_level_1") || {}).shortText || "";
+  d.place = { name: street || fallbackName, sub: [city, st].filter(Boolean).join(", ") || fallbackSub, lat: place.location.lat(), lng: place.location.lng() };
+  if (!PLACES.some(p => p.name === d.place.name && p.sub === d.place.sub)) PLACES.unshift(d.place);   // shows up in Recent places next time
+  d.tok = null; d.gs = null; d.plant = bestPlant(d.place, d.kind); d.step = "opt"; render(); window.scrollTo(0, 0);
 }
 function reqWhere() {
   const d = ui.req;
@@ -1946,7 +2113,20 @@ Object.assign(ACTS, {
   "rq-new": () => { ui.req = newReq(); ui.view = null; window.scrollTo(0, 0); },
   "rq-cancel": () => { ui.req = null; },
   "rq-pick": i => { const d = ui.req; d.place = PLACES[+i]; d.plant = bestPlant(d.place, d.kind); d.step = "opt"; window.scrollTo(0, 0); },
+  "rq-g": i => { const d = ui.req, p = d.gs && d.gs[+i]; if (!p) return false;
+    const place = p.toPlace();
+    place.fetchFields({ fields: ["location", "addressComponents", "formattedAddress"] })
+      .then(() => useGooglePlace(d, place, p.mainText ? p.mainText.text : p.text.text, p.secondaryText ? p.secondaryText.text.replace(/, USA$/, "") : ""))
+      .catch(() => toast("Couldn't look up that address. Try again."));
+    return false; },
   "rq-addr": () => { const d = ui.req, q = d.q.trim(); if (!q) return false;
+    // Typed address that wasn't in the list: find it with Google's text search, near the yard
+    if (G.ok && !G.noPlaces && capOk("places")) {
+      google.maps.importLibrary("places").then(({ Place }) => Place.searchByText({ textQuery: q, fields: ["location", "addressComponents", "formattedAddress"], locationBias: { lat: SITE.lat, lng: SITE.lng }, maxResultCount: 1 }))
+        .then(({ places }) => { if (places && places[0]) useGooglePlace(d, places[0], q.split(",")[0], ""); else toast("Google couldn't find that address. Check it and try again."); })
+        .catch(e => { if (denied(e)) { G.noPlaces = true; act("rq-addr"); } else toast("Couldn't look up that address. Try again."); });   // Places off: use the typed address as before
+      return false;
+    }
     d.place = { name: q.split(",")[0], sub: q.includes(",") ? q.split(",").slice(1).join(",").trim() : "Near " + (ui.from || "Oakland") + ", CA", lat: SITE.lat + 0.008, lng: SITE.lng + 0.008 };   // until the real app geocodes the address
     d.plant = bestPlant(d.place, d.kind); d.step = "opt"; window.scrollTo(0, 0); },
   "rq-back": () => { ui.req.step = "where"; },
@@ -3273,7 +3453,7 @@ document.addEventListener("input", e => {
   if (newUserField(el)) return;
   if (suField(el)) return;
   if (setDraftFrom(el)) return;
-  if (el.id === "rq-q" && ui.req) { ui.req.q = el.value; $("#rq-results").innerHTML = placeList(el.value.trim()); }
+  if (el.id === "rq-q" && ui.req) { ui.req.q = el.value; $("#rq-results").innerHTML = placeList(el.value.trim()); gSuggest(el.value.trim()); }
   if (el.id === "rq-note" && ui.req) ui.req.note = el.value;
 });
 document.addEventListener("change", e => {
