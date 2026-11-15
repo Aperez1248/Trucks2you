@@ -245,6 +245,61 @@ a.tel { color: var(--accent); font-weight: 600; text-decoration: none; white-spa
   /* Text boxes at 16px or more, so iPhones don't zoom in when you tap them */
   input, select, textarea { font-size: 16px !important; }
 }
+/* ---------- Uber-style polish ----------
+   Gray tiles instead of outlined white boxes, big bold type, white pills with soft shadows,
+   and a compact "Viewing as" menu in the header. */
+:root { --tile: #f3f3f3; --shadow: 0 2px 12px rgb(0 0 0 / .12); }
+/* Cards become solid light-gray tiles with no outline. Inside a tile, the things that were
+   light gray (chips, secondary buttons, icon circles) flip to white so they still stand out. */
+.card, .stat { background: var(--tile); border: 0; border-radius: 16px; padding: 16px; --surface-2: #ffffff; --line: #e2e2e2; }
+.card.tap:hover { border-color: transparent; box-shadow: inset 0 0 0 2px var(--fg); }
+.card.hot { border: 0; box-shadow: inset 0 0 0 2px var(--fg); }
+.card .meter, .stat .meter { background: #e2e2e2; border: 0; }
+.meter { height: 6px; border: 0; background: #e8e8e8; }
+.card .pill.info { background: #ffffff; }
+.place .pin-ic { border: 0; }
+/* Big, bold type: large black headings, small gray details under them */
+h1 { font: 800 32px/1.08 var(--display); letter-spacing: -.9px; }
+h2 { font: 800 20px/1.2 var(--display); letter-spacing: -.4px; }
+.big { font: 800 32px/1 var(--display); letter-spacing: -.8px; }
+.stat .big { font-size: 26px; }
+.eyebrow { margin-top: 8px; }
+/* Buttons: bigger and rounder, like Uber's */
+.btn { min-height: 52px; font-size: 16px; border-radius: 12px; }
+.btn.small { min-height: 40px; font-size: 14px; border-radius: 999px; padding: 9px 14px; }
+.pick { border: 0; }
+.stepper button { border: 0; background: #ffffff; box-shadow: var(--shadow); border-radius: 50%; }
+/* Floating white pills with soft shadows */
+.back { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--fg); padding: 9px 16px 9px 12px; border-radius: 999px; box-shadow: var(--shadow); font-weight: 700; }
+.leaflet-bar { border: 0 !important; box-shadow: var(--shadow) !important; border-radius: 999px !important; overflow: hidden; }
+.leaflet-bar a { border-bottom-color: var(--line) !important; }
+.mapbox, .lm { border-radius: 14px; }
+.toast { border-radius: 999px; padding: 12px 20px; }
+/* Header: logo on the left, the demo menu on the right; soft shadow instead of a hard line */
+.bar { border-bottom: 0; box-shadow: 0 1px 0 var(--line); position: relative; z-index: 7; }
+.tabs { border-top: 0; box-shadow: 0 -1px 0 var(--line), 0 -6px 16px rgb(0 0 0 / .04); }
+.tabs button[aria-current="page"] { font-weight: 800; }
+/* Compact "Viewing as" menu (demo only): one pill in the header that opens a small menu */
+.demo { position: relative; }
+.demo summary { list-style: none; display: inline-flex; align-items: center; gap: 6px; background: var(--tile); color: var(--fg); border-radius: 999px; padding: 8px 12px 8px 14px; min-height: 38px; font: 700 14px/1 var(--body); cursor: pointer; user-select: none; }
+.demo summary::-webkit-details-marker { display: none; }
+.demo summary .vl { color: var(--muted); font-weight: 600; }
+.demo summary svg { width: 14px; height: 14px; transition: transform .15s; }
+.demo[open] summary svg { transform: rotate(180deg); }
+.demo-menu { position: absolute; right: 0; top: calc(100% + 8px); width: 220px; background: var(--surface); border-radius: 16px; box-shadow: 0 10px 34px rgb(0 0 0 / .18); padding: 8px; display: grid; gap: 2px; z-index: 50; }
+.demo-menu .vh { font: 600 11px/1 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); padding: 8px 10px 6px; }
+.demo-menu .roles { display: grid; grid-template-columns: 1fr; gap: 2px; border: 0; padding: 0; background: none; }
+.demo-menu .roles button { text-align: left; font: 600 15px/1.2 var(--body); color: var(--fg); padding: 11px 10px; min-height: 44px; border-radius: 10px; }
+.demo-menu .roles button:hover { background: var(--tile); }
+.demo-menu .roles button[aria-pressed="true"] { background: var(--fg); color: var(--surface); }
+.demo-menu #reset { margin-top: 4px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--muted); font: 600 14px/1 var(--body); text-align: left; padding: 13px 10px 8px; cursor: pointer; }
+@media (max-width: 600px) {
+  .demo { padding: 0; background: none; border: 0; }
+  .demo summary .vl { display: none; }   /* phones: just "Contractor ▾" */
+  .bar { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+  .app { min-height: 100vh; min-height: 100dvh; }
+  h1 { font-size: 30px; }
+}
 /* Leaflet 1.9.4 stylesheet, inlined */
 .leaflet-pane,
 .leaflet-tile,
@@ -840,18 +895,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
     <button type="button" data-lay="phone">Phone</button>
     <button type="button" data-lay="wide">Computer</button>
   </div>
-  <div class="demo">
-    <div class="roles-label"><span>Viewing as</span><button id="reset" type="button">Reset demo</button></div>
-    <div class="roles" role="group" aria-label="Viewing as">
-      <button type="button" data-role="contractor">Contractor</button>
-      <button type="button" data-role="owner">Truck owner</button>
-      <button type="button" data-role="driver">Driver</button>
-      <button type="button" data-role="broker">Broker</button>
-      <button type="button" data-role="admin">Admin</button>
-    </div>
-  </div>
   <div class="app" id="app">
-    <header class="bar"><div class="logo">Trucks2U</div><small>Heavy trucks.<br>On demand.</small></header>
+    <header class="bar"><div class="logo">Trucks2U</div>
+      <!-- Demo only: switch which side of the app you're looking at -->
+      <details class="demo" id="demo">
+        <summary aria-label="Viewing as"><span class="vl">Viewing as</span> <span id="roleName">Contractor</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+        <div class="demo-menu">
+          <div class="vh">Viewing as</div>
+          <div class="roles" role="group" aria-label="Viewing as">
+            <button type="button" data-role="contractor">Contractor</button>
+            <button type="button" data-role="owner">Truck owner</button>
+            <button type="button" data-role="driver">Driver</button>
+            <button type="button" data-role="broker">Broker</button>
+            <button type="button" data-role="admin">Admin</button>
+          </div>
+          <button id="reset" type="button">Reset demo</button>
+        </div>
+      </details>
+    </header>
     <main id="screen"></main>
     <nav class="tabs" id="tabs" aria-label="Sections"></nav>
   </div>
@@ -2695,6 +2756,7 @@ function screen() {
 }
 function render() {
   document.querySelectorAll("[data-role]").forEach(b => b.setAttribute("aria-pressed", b.dataset.role === ui.role));
+  const rb = document.querySelector(`[data-role="${ui.role}"]`); if (rb) $("#roleName").textContent = rb.textContent;
   const flow = !!(ui.signup || ui.req);   // step-by-step flows hide the tabs and have their own back button
   $("#screen").innerHTML = screen();
   $("#screen").classList.toggle("form", flow);   // forms stay one readable column in computer view
@@ -2723,8 +2785,9 @@ Object.assign(ACTS, {
 });
 
 document.addEventListener("click", e => {
+  if (!e.target.closest("#demo")) $("#demo").removeAttribute("open");   // tap outside closes the Viewing-as menu
   const r = e.target.closest("[data-role]");
-  if (r) { ui = freshUi(r.dataset.role); render(); window.scrollTo(0, 0); return; }
+  if (r) { $("#demo").removeAttribute("open"); ui = freshUi(r.dataset.role); render(); window.scrollTo(0, 0); return; }
   const l = e.target.closest("[data-lay]");
   if (l) { setLayout(l.dataset.lay); return; }
   const t = e.target.closest("[data-tab]");
@@ -2784,6 +2847,7 @@ document.addEventListener("change", e => {
   if (el.id === "pl-from") { ui.from = el.value; SITE = FROM[ui.from]; render(); }
 });
 $("#reset").addEventListener("click", () => {
+  $("#demo").removeAttribute("open");
   Object.keys(gpsStage).forEach(k => delete gpsStage[k]);
   S.jobs.forEach(j => j.req && clearTimeout(j.req.timer));
   S = seed(); MY_TRUCKS.forEach((t, i) => t.type = MY_TRUCKS_SEED[i]); SITE = FROM.Oakland;
