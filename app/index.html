@@ -2155,7 +2155,7 @@ addEventListener("appinstalled", () => { installEvt = null; toast("Trucks2U is o
    - with the push server set up (PUSH.url), they arrive even when the app is closed;
    - until then, the demo shows them right here on this phone while the app is open. */
 const PUSH = {
-  url: "",   // the push server's address (a Supabase edge function); empty until it's set up
+  url: "https://dtjwyycplzlbhxqrefru.supabase.co/functions/v1/push",   // the push server (Supabase edge function in the Trucks2U project)
   key: "BPIJVH8yTlTusbHbMghnSaZtGgyg585RQIbU23y4ldLhmZafDif74nCFgx943ckMvfhcqPXZqRlTvF4Qa_SwZIM"   // public key; the private one never goes in the app
 };
 const PUSH_SUB_KEY = "t2u-push-sub";
@@ -2165,6 +2165,16 @@ function pushState() {
   return Notification.permission;   // "default" (not asked yet), "granted" or "denied"
 }
 const b64u = s => { const p = "=".repeat((4 - s.length % 4) % 4), r = atob((s + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(r, c => c.charCodeAt(0)); };
+// Phones that already allowed notifications sign up with the push server on their own (no extra tap)
+async function pushSubscribe() {
+  if (!PUSH.url || !canNotify() || Notification.permission !== "granted") return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(PUSH.key) });
+    localStorage.setItem(PUSH_SUB_KEY, JSON.stringify(sub));
+  } catch (e) { console.warn("push subscribe", e); }
+}
+addEventListener("load", () => setTimeout(pushSubscribe, 1500));
 async function enablePush() {
   const st = pushState();
   if (st === "home") { toast("On iPhone, add Trucks2U to your Home Screen first (Share, then Add to Home Screen). Then turn this on."); return false; }
@@ -2182,12 +2192,12 @@ async function enablePush() {
   render(); return true;
 }
 // Send one alert to this phone. `go` is the screen to open when it's tapped, e.g. "driver/djob:J-1051".
-async function notifyMe(title, body, go = "") {
+async function notifyMe(title, body, go = "", delay = 0) {
   if (!canNotify() || Notification.permission !== "granted") return;
   const data = { url: "./?go=" + encodeURIComponent(go) + (go ? "#" + go.split("/")[0] : ""), tag: go || title };
   let sub = null; try { sub = JSON.parse(localStorage.getItem(PUSH_SUB_KEY) || "null"); } catch (e) {}
   if (PUSH.url && sub) {
-    try { const r = await fetch(PUSH.url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sub, title, body, ...data }) }); if (r.ok) return; } catch (e) {}
+    try { const r = await fetch(PUSH.url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sub, title, body, delay, ...data }) }); if (r.ok) return; } catch (e) {}
   }
   try { const reg = await navigator.serviceWorker.ready; reg.showNotification(title, { body, icon: "icons/icon-192.png", badge: "icons/favicon-32.png", tag: data.tag, data }); } catch (e) {}
 }
@@ -2201,7 +2211,8 @@ function pushCard(role) {
     <p style="font-size:14px">${esc(line)}</p>
     <div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap">
       ${st === "default" || st === "home" ? '<button class="btn small" type="button" data-act="push-on">Turn on notifications</button>' : ""}
-      ${st === "granted" ? `<button class="btn small ghost" type="button" data-act="push-test:${role}">Send a test notification</button>` : ""}</div>
+      ${st === "granted" ? `<button class="btn small ghost" type="button" data-act="push-test:${role}">Send a test notification</button>` : ""}
+      ${st === "granted" && PUSH.url ? `<button class="btn small ghost" type="button" data-act="push-test-later:${role}">Test in 10 seconds (lock your phone)</button>` : ""}</div>
     ${st === "granted" && !PUSH.url ? '<p class="muted" style="font-size:12.5px">Demo: alerts show while Trucks2U is open on this phone. Once the push server is connected, they arrive even when it\'s closed.</p>' : ""}
   </div>`;
 }
@@ -3523,6 +3534,10 @@ Object.assign(ACTS, {
   "push-test": role => { const d = role === "driver";
     notifyMe(d ? "New job near you" : "Still 2 trucks short · Today", d ? "Thu Nov 19 · 7:00 AM · Dublin Blvd overlay · 12 mi away · $150/hr · 1 spot left" : "Main St needs one 10 wheeler and one 12 wheeler. Tap to send it farther out or ask a broker.", d ? "driver/djob:J-1051" : "contractor/job:J-1042");
     toast("Test sent. Look at the top of your screen."); return false; },
+  // With the push server: a test that arrives 10 seconds later, so you can lock your phone and see it on the lock screen
+  "push-test-later": role => { const d = role === "driver";
+    notifyMe(d ? "New job near you" : "Still 2 trucks short · Today", d ? "Thu Nov 19 · 7:00 AM · Dublin Blvd overlay · 12 mi away · $150/hr · 1 spot left" : "Main St needs one 10 wheeler and one 12 wheeler. Tap to send it farther out or ask a broker.", d ? "driver/djob:J-1051" : "contractor/job:J-1042", 10);
+    toast("Coming in 10 seconds. Lock your phone now."); return false; },
   "d-alertpref": k => { const p = alertPrefs(); p[k] = !p[k]; if (k === "push" && p[k] && pushState() !== "granted") enablePush(); toast(p[k] ? `${k === "text" ? "Texts" : "Phone notifications"} on for new jobs.` : `${k === "text" ? "Texts" : "Phone notifications"} off.`); },
   "d-avail": x => { S.avail = S.avail.includes(x) ? S.avail.filter(y => y !== x) : [...S.avail, x]; },
   // Broker

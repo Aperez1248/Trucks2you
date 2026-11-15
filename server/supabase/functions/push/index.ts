@@ -23,6 +23,9 @@ Deno.serve(async req => {
   const sub = d.sub as { endpoint?: string; keys?: { p256dh?: string; auth?: string } } | undefined;
   if (!sub?.endpoint?.startsWith("https://") || !sub.keys?.p256dh || !sub.keys?.auth) return new Response("Missing subscription", { status: 400, headers: h });
   const msg = JSON.stringify({ title: clip(d.title, 80), body: clip(d.body, 240), url: clip(d.url, 200), tag: clip(d.tag, 60) });
+  // Optional short wait (up to 30 seconds) so a test can arrive after you lock your phone
+  const wait = Math.min(30, Math.max(0, Number(d.delay) || 0));
+  if (wait) await new Promise(r => setTimeout(r, wait * 1000));
   try {
     await webpush.sendNotification(sub as webpush.PushSubscription, msg, { TTL: 3600 });
     return new Response("Sent", { status: 200, headers: h });
