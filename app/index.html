@@ -2102,6 +2102,7 @@ function reqCheck(j) {
   if (r.status === "searching" && filled(j) >= needed(j)) {
     r.status = "booked";
     if (ui.role === "contractor") toast(j.dayN === 0 ? "All trucks found. They're on the way." : "All trucks booked. Every driver confirms the night before.");
+    notifyMe("Fully booked · " + j.name, `All ${needed(j)} trucks booked for ${dayName(j.dayN)} ${j.start}.`, "contractor/job:" + j.id);
     if (ui.offer && ui.offer.jid === j.id) { ui.offer = null; renderOverlay(); }
   } else if (r.status === "booked" && filled(j) < needed(j)) { r.status = "searching"; runSearch(j, 4500); }
 }
@@ -2136,6 +2137,61 @@ const standalone = () => matchMedia("(display-mode: standalone)").matches || nav
 const isIOS = () => !/Android/.test(navigator.userAgent) && (/iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));   // iPads report themselves as Macs with touch
 addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; if (ui) softRender(); });
 addEventListener("appinstalled", () => { installEvt = null; toast("Trucks2U is on your home screen."); if (ui) softRender(); });
+/* ---------- Phone notifications (push) ----------
+   This phone asks once for permission. Alerts then come from the service worker (sw.js):
+   - with the push server set up (PUSH.url), they arrive even when the app is closed;
+   - until then, the demo shows them right here on this phone while the app is open. */
+const PUSH = {
+  url: "",   // the push server's address (a Supabase edge function); empty until it's set up
+  key: "BPIJVH8yTlTusbHbMghnSaZtGgyg585RQIbU23y4ldLhmZafDif74nCFgx943ckMvfhcqPXZqRlTvF4Qa_SwZIM"   // public key; the private one never goes in the app
+};
+const PUSH_SUB_KEY = "t2u-push-sub";
+const canNotify = () => "Notification" in window && "serviceWorker" in navigator;
+function pushState() {
+  if (!canNotify()) return isIOS() && !standalone() ? "home" : "none";   // iPhones only allow it once the app is on the Home Screen
+  return Notification.permission;   // "default" (not asked yet), "granted" or "denied"
+}
+const b64u = s => { const p = "=".repeat((4 - s.length % 4) % 4), r = atob((s + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(r, c => c.charCodeAt(0)); };
+async function enablePush() {
+  const st = pushState();
+  if (st === "home") { toast("On iPhone, add Trucks2U to your Home Screen first (Share, then Add to Home Screen). Then turn this on."); return false; }
+  if (st === "none") { toast("This browser can't show notifications."); return false; }
+  if (st === "denied") { toast("Notifications are blocked for Trucks2U. Allow them in your phone or browser settings."); return false; }
+  const ok = (await Notification.requestPermission()) === "granted";
+  if (!ok) { toast("Notifications stay off."); render(); return false; }
+  if (PUSH.url) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(PUSH.key) });
+      localStorage.setItem(PUSH_SUB_KEY, JSON.stringify(sub));
+    } catch (e) { console.warn("push subscribe", e); }
+  }
+  render(); return true;
+}
+// Send one alert to this phone. `go` is the screen to open when it's tapped, e.g. "driver/djob:J-1051".
+async function notifyMe(title, body, go = "") {
+  if (!canNotify() || Notification.permission !== "granted") return;
+  const data = { url: "./?go=" + encodeURIComponent(go) + (go ? "#" + go.split("/")[0] : ""), tag: go || title };
+  let sub = null; try { sub = JSON.parse(localStorage.getItem(PUSH_SUB_KEY) || "null"); } catch (e) {}
+  if (PUSH.url && sub) {
+    try { const r = await fetch(PUSH.url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sub, title, body, ...data }) }); if (r.ok) return; } catch (e) {}
+  }
+  try { const reg = await navigator.serviceWorker.ready; reg.showNotification(title, { body, icon: "icons/icon-192.png", badge: "icons/favicon-32.png", tag: data.tag, data }); } catch (e) {}
+}
+// The card in settings: turn alerts on for this phone, see if they're on, send a test
+function pushCard(role) {
+  const st = pushState();
+  const line = { granted: "On for this phone.", denied: "Blocked. Allow notifications for Trucks2U in your phone or browser settings.", default: "Off for this phone.", home: "On iPhone, add Trucks2U to your Home Screen first, then turn this on.", none: "This browser can't show notifications." }[st];
+  const sample = role === "driver" ? "Thu Nov 19 · 7:00 AM · Dublin Blvd overlay · 12 mi away · $150/hr" : "Main St needs one 10 wheeler and one 12 wheeler.";
+  return `<div class="card"><div class="row"><h2>Phone notifications</h2>${st === "granted" ? '<span class="pill good">On</span>' : ""}</div>
+    <p class="muted" style="font-size:14px">${role === "driver" ? "New jobs near you, tomorrow's confirm, dispatch changes and pay." : "A truck short, a driver cancelling, a request fully booked, and days ready to approve."} Free, and they show up like a text.</p>
+    <p style="font-size:14px">${esc(line)}</p>
+    <div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap">
+      ${st === "default" || st === "home" ? '<button class="btn small" type="button" data-act="push-on">Turn on notifications</button>' : ""}
+      ${st === "granted" ? `<button class="btn small ghost" type="button" data-act="push-test:${role}">Send a test notification</button>` : ""}</div>
+    ${st === "granted" && !PUSH.url ? '<p class="muted" style="font-size:12.5px">Demo: alerts show while Trucks2U is open on this phone. Once the push server is connected, they arrive even when it\'s closed.</p>' : ""}
+  </div>`;
+}
 // Shown on the contractor's and the driver's home screen, only when the app isn't installed yet
 function installCard() {
   if (standalone() || installHidden || (!installEvt && !isIOS())) return "";
@@ -2558,7 +2614,8 @@ function contractorBilling() {
     <div class="card"><span class="eyebrow">Approved this month</span><div class="big">${money(total)}</div>
       <p class="muted" style="font-size:13px">Paid by bank transfer, no card fees. Hourly with a ${MIN_HRS}-hour minimum per truck. Trucks2U's ${pct(FEE)} comes out of the drivers' pay, not your bill. Through a broker at ${pct(BROKER)}, about ${money(total * BROKER)} of this would have gone to the broker.</p></div>
     ${pending.length ? `<p class="eyebrow">Waiting on your approval</p>${pending.map(j => `<button type="button" class="card tap" data-go="job:${j.id}"><div class="row"><strong>${esc(j.name)}</strong><span class="num">${money(jobBill(j))}</span></div><span class="pill info" style="justify-self:start">Review and approve</span></button>`).join("")}` : ""}
-    ${approved.length ? `<p class="eyebrow">Invoices</p>${approved.map(j => `<button type="button" class="card tap" data-go="job:${j.id}"><div class="row"><strong>${esc(j.name)}</strong><span class="num">${money(jobBill(j))}</span></div><span class="muted" style="font-size:13px">${esc(j.id)} · paid by bank transfer</span></button>`).join("")}` : '<div class="note">Approve a finished job and its invoice shows up here.</div>'}`;
+    ${approved.length ? `<p class="eyebrow">Invoices</p>${approved.map(j => `<button type="button" class="card tap" data-go="job:${j.id}"><div class="row"><strong>${esc(j.name)}</strong><span class="num">${money(jobBill(j))}</span></div><span class="muted" style="font-size:13px">${esc(j.id)} · paid by bank transfer</span></button>`).join("")}` : '<div class="note">Approve a finished job and its invoice shows up here.</div>'}
+    ${pushCard("contractor")}`;
 }
 
 /* ---------- Asphalt plant directory ---------- */
@@ -2636,7 +2693,8 @@ Object.assign(ACTS, {
   "rq-cancel-job": id => { const j = job(id); clearTimeout(j.req.timer); S.jobs = S.jobs.filter(x => x !== j); ui.view = null; toast("Request cancelled. Drivers were told."); },
   "rq-drop": id => { const j = job(id), a = j.assignments.find(x => x.sample) || j.assignments.find(x => x.fleet); if (!a) { toast("Every driver on this job is from the demo sides. Cancel from the Driver side."); return false; }
     (j.req.dropped ||= []).push(a.did); removeAssignment(j, a);
-    toast(`${a.driver} cancelled. The spot reopened and went to ${j.req.sentTo} drivers.`); },
+    toast(`${a.driver} cancelled. The spot reopened and went to ${j.req.sentTo} drivers.`);
+    notifyMe("Driver cancelled · " + j.name, `${a.truck} (${tname(a.type)}) can't make it. The spot went back out to ${j.req.sentTo} drivers.`, "contractor/job:" + j.id); },
   "rq-morning": id => { const j = job(id); j.dayN = 0; j.date = "Today"; j.req.live = true; j.req.liveT0 = Date.now();
     j.assignments.forEach(a => { if (a.sample || a.fleet) startDriving(j, a); });
     toast("It's the morning of the job. Your trucks are on the way."); },
@@ -3016,6 +3074,7 @@ function notifyDrivers(j) {
   if (!(p.text || p.push) || openFor(j, t.type) <= 0 || mi > S.radius || !worksDay(j.dayN) || busyDay(j.dayN) || suspended(ME_DRIVER)) return;
   alerts().unshift({ id: "AL" + Date.now().toString(36), jid: j.id, time: nowTime(), read: false,
     text: `${j.dayN === 0 ? "Today, right now" : dayName(j.dayN) + " " + j.start} · ${mi.toFixed(0)} mi away · ${"$" + rateOf(j, t.type)}/hr · ${j.name}` });
+  if (p.push) notifyMe(j.dayN === 0 ? "Truck needed now" : "New job near you", alerts()[0].text, "driver/djob:" + j.id);
 }
 // Banner on the driver's screens for the newest unread alert
 function alertBanner() {
@@ -3217,6 +3276,7 @@ function driverMe() {
   const doc = ([title, sub, st], i) => `<div class="check"><span class="mark ${st}">${st === "good" ? "✓" : "!"}</span><div><strong style="font-size:14px">${title}</strong><div class="${st === "warn" ? "" : "muted"}" style="font-size:13px${st === "warn" ? ";color:var(--warn)" : ""}">${sub}</div>
     ${st === "warn" ? `<label class="btn small ghost" style="margin-top:6px;display:inline-flex;align-items:center">Upload a new one<input type="file" accept="image/*,application/pdf" data-mydoc="${i}" hidden></label>` : ""}</div><span></span></div>`;
   return driverHead("My info") + signupBanner() + `<div class="card"><div class="row" style="justify-content:flex-start;gap:12px"><span class="truck-ic" style="border-radius:50%;width:48px;height:48px">MR</span><div><h2>${ME_DRIVER}</h2><div class="muted" style="font-size:13px">★ 4.9 · 212 jobs · on Trucks2U since 2026 · ${tel(ME_PHONE)}</div></div></div></div>
+    ${pushCard("driver")}
     <div class="card"><h2>Your documents</h2><div class="list">${S.myDocs.map(doc).join("")}</div>
       <p class="muted" style="font-size:12.5px">We text you 30 days before anything expires. New documents are checked by Trucks2U before they go live.</p></div>
     ${t ? `<div class="card"><h2>Your truck</h2><div class="row" style="justify-content:flex-start">${truckPic(t.type, "tpic lg")}<div><strong>${t.id} · ${esc(tname(t.type))}</strong><div class="muted" style="font-size:13px">plate ${t.plate} · owned by ${ME_OWNER} · $${TYPES[t.type] ? TYPES[t.type].rate : ""}/hr, ${MIN_HRS} hr min</div></div></div>
@@ -3446,7 +3506,11 @@ Object.assign(ACTS, {
   "d-findday": n => { ui.tab = "dfind"; ui.view = null; ui.fday = +n; window.scrollTo(0, 0); },
   "al-open": id => { const al = alerts().find(x => x.id === id); if (!al) return false; al.read = true; ui.tab = "dfind"; ui.view = "djob:" + al.jid; window.scrollTo(0, 0); },
   "al-close": id => { const al = alerts().find(x => x.id === id); if (al) al.read = true; },
-  "d-alertpref": k => { const p = alertPrefs(); p[k] = !p[k]; toast(p[k] ? `${k === "text" ? "Texts" : "Phone notifications"} on for new jobs.` : `${k === "text" ? "Texts" : "Phone notifications"} off.`); },
+  "push-on": () => { enablePush(); return false; },
+  "push-test": role => { const d = role === "driver";
+    notifyMe(d ? "New job near you" : "Still 2 trucks short · Today", d ? "Thu Nov 19 · 7:00 AM · Dublin Blvd overlay · 12 mi away · $150/hr · 1 spot left" : "Main St needs one 10 wheeler and one 12 wheeler. Tap to send it farther out or ask a broker.", d ? "driver/djob:J-1051" : "contractor/job:J-1042");
+    toast("Test sent. Look at the top of your screen."); return false; },
+  "d-alertpref": k => { const p = alertPrefs(); p[k] = !p[k]; if (k === "push" && p[k] && pushState() !== "granted") enablePush(); toast(p[k] ? `${k === "text" ? "Texts" : "Phone notifications"} on for new jobs.` : `${k === "text" ? "Texts" : "Phone notifications"} off.`); },
   "d-avail": x => { S.avail = S.avail.includes(x) ? S.avail.filter(y => y !== x) : [...S.avail, x]; },
   // Broker
   "bdis": (id, t, _x, pick) => { const j = B().jobs.find(x => x.id === id); j.assigned[t].push(pick); toast(`${pick} dispatched. ${bTruck(pick).driver} got the job details by text.`); },
@@ -4247,6 +4311,13 @@ function openFromHash() {
   else if (h === "welcome" || (!h && !seenWelcome())) { ui = freshUi("contractor"); ui.welcome = true; }
   else if (h === "invite") { markSeen(); const inv = { id: "I-demo", name: "Sam Ortiz", phone: "(510) 555-0166", owner: ME_OWNER, status: "sent" }; if (!invites().some(x => x.id === inv.id)) invites().unshift(inv); ui = freshUi("driver"); ui.dsu = newDsu(inv); }
   else if (roles[h]) ui = freshUi(roles[h]);
+  // Opened by tapping a notification: ?go=driver/djob:J-1051 opens that screen
+  const go = new URLSearchParams(location.search).get("go");
+  if (go) {
+    const [role, view] = go.split("/");
+    if (TABS[role]) { markSeen(); ui = freshUi(role); if (view) { ui.view = view; if (view.startsWith("djob:")) ui.tab = "dfind"; } }
+    history.replaceState(null, "", location.pathname + location.hash);
+  }
   render();
 }
 addEventListener("hashchange", () => { openFromHash(); window.scrollTo(0, 0); });
