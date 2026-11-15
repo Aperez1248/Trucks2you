@@ -1285,8 +1285,9 @@ const crewOf = (...ix) => ix.map(i => sampleAsg(DRIVERS[i], { confirmed: true })
 /* ================= Demo data ================= */
 function seed() {
   const lucas = { by: ME_CONTRACTOR };
+  const day = n => ({ dayN: n, date: dayName(n) }), RATE = { w10: 115, w12: 130, sd: 150 };
   return {
-    nextId: 1048,
+    nextId: 1053,
     jobs: [
       {
         id: "J-1042", ...lucas, name: "Main St mill and overlay", kindIx: 2, pts: { pickup: { lat: 37.7985, lng: -122.2575 }, dropoff: { lat: 37.763, lng: -122.213 } },
@@ -1341,6 +1342,68 @@ function seed() {
           { truck: "M-2", type: "sd", owner: "Moreno Bros", phone: "(510) 555-0175", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: true },
           { truck: "T-22", type: "sd", owner: ME_OWNER, driver: ME_DRIVER, phone: ME_PHONE, status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: false }
         ]
+      },
+      // More Lucas Paving jobs at real street corners (real places on the map, no customer addresses), from 3 days ago to next week
+      {
+        id: "J-1031", ...lucas, name: "Hesperian Blvd overlay", kindIx: 2, pts: { pickup: { lat: 37.66564, lng: -122.11815 }, dropoff: { lat: 37.763, lng: -122.213 } },
+        pickup: "Job site: Hesperian Blvd & W A St, San Lorenzo", dropoff: "Gallagher & Burk, 344 High St, Oakland",
+        ...day(-3), start: "6:00 AM", hours: 9, needs: { w12: 2, sd: 1 }, rate: RATE, notes: "", approved: true, stars: 5,
+        assignments: [
+          { truck: "T-14", type: "w12", owner: ME_OWNER, driver: "Ray Delgado", status: "done", checkIn: "5:50 AM", hours: 9, tickets: [ { no: "447910", tons: 18.4, time: "7:05 AM", photo: null }, { no: "447981", tons: 18.9, time: "9:40 AM", photo: null }, { no: "448033", tons: 18.6, time: "12:20 PM", photo: null } ] },
+          { truck: "R-3", type: "w12", owner: "R&J Trucking", status: "done", checkIn: "5:55 AM", hours: 9.5, tickets: [ { no: "447915", tons: 18.8, time: "7:18 AM", photo: null }, { no: "447990", tons: 19.0, time: "10:02 AM", photo: null }, { no: "448041", tons: 18.5, time: "12:45 PM", photo: null } ] },
+          { truck: "M-2", type: "sd", owner: "Moreno Bros", status: "done", checkIn: "6:05 AM", hours: 8.5, tickets: [ { no: "447922", tons: 24.6, time: "7:40 AM", photo: null }, { no: "448002", tons: 25.1, time: "11:15 AM", photo: null } ] }
+        ]
+      },
+      {
+        id: "J-1034", ...lucas, name: "150th Ave grind-out", kindIx: 0, pts: { pickup: { lat: 37.70581, lng: -122.12925 }, dropoff: { lat: 37.744, lng: -122.199 } },
+        pickup: "Job site: 150th Ave & E 14th St, San Leandro", dropoff: "Argent Materials, 8300 Baldwin St, Oakland",
+        ...day(-2), start: "7:00 AM", hours: 7, needs: { w10: 2 }, rate: RATE, notes: "", approved: true, stars: 4,
+        assignments: [
+          { truck: "B-7", type: "w10", owner: "Bautista Transport", status: "done", checkIn: "6:50 AM", hours: 7, tickets: [ { no: "90211", tons: 14.2, time: "8:05 AM", photo: null }, { no: "90230", tons: 14.6, time: "9:30 AM", photo: null }, { no: "90251", tons: 14.1, time: "11:05 AM", photo: null }, { no: "90277", tons: 14.4, time: "12:40 PM", photo: null } ] },
+          { truck: "V-4", type: "w10", owner: "Vargas Hauling", status: "done", checkIn: "6:58 AM", hours: 6.5, tickets: [ { no: "90215", tons: 14.0, time: "8:20 AM", photo: null }, { no: "90238", tons: 14.3, time: "10:10 AM", photo: null }, { no: "90262", tons: 13.9, time: "12:00 PM", photo: null } ] }
+        ]
+      },
+      {
+        id: "J-1044", ...lucas, name: "Castro Valley Blvd patch paving", kindIx: 1, pts: { pickup: { lat: 37.763, lng: -122.213 }, dropoff: { lat: 37.69549, lng: -122.07399 } },
+        pickup: "Gallagher & Burk, 344 High St, Oakland", dropoff: "Job site: Castro Valley Blvd & Redwood Rd, Castro Valley",
+        ...day(0), start: "6:30 AM", hours: 8, needs: { w12: 1, sd: 1 }, rate: RATE, notes: "Patch crew works the eastbound lanes first.", approved: false,
+        dsp: { contact: "Al Perez, Lucas Paving", phone: "(510) 555-0100", staging: "Redwood Rd, south of the boulevard", notes: "Patch crew works the eastbound lanes first." },
+        feed: [ { time: "8:50 AM", who: "Silva Trucking (S-9)", text: "Loaded, heading back to the job.", at: 0 } ],
+        assignments: [
+          { truck: "R-5", type: "w12", owner: "R&J Trucking", phone: "(510) 555-0172", status: "onsite", checkIn: "6:15 AM", hours: null, tickets: [ { no: "448750", tons: 18.7, time: "8:05 AM", photo: null } ] },
+          { truck: "S-9", type: "sd", owner: "Silva Trucking", phone: "(510) 555-0177", status: "onsite", checkIn: "6:20 AM", hours: null, tickets: [ { no: "448741", tons: 24.8, time: "7:35 AM", photo: null }, { no: "448801", tons: 25.2, time: "8:45 AM", photo: null } ] }
+        ]
+      },
+      {
+        id: "J-1049", ...lucas, name: "Doolittle Dr overlay", kindIx: 2, pts: { pickup: { lat: 37.71627, lng: -122.1871 }, dropoff: { lat: 37.763, lng: -122.213 } },
+        pickup: "Job site: Doolittle Dr & Davis St, San Leandro", dropoff: "Gallagher & Burk, 344 High St, Oakland",
+        ...day(2), start: "6:00 AM", hours: 10, needs: { w12: 2, sd: 1 }, rate: RATE, notes: "", approved: false,
+        assignments: [
+          { truck: "T-14", type: "w12", owner: ME_OWNER, driver: "Ray Delgado", phone: "(510) 555-0171", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: true },
+          { truck: "R-3", type: "w12", owner: "R&J Trucking", phone: "(510) 555-0172", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: true },
+          { truck: "M-2", type: "sd", owner: "Moreno Bros", phone: "(510) 555-0175", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: true }
+        ]
+      },
+      {
+        id: "J-1050", ...lucas, name: "Mission Blvd mill and fill", kindIx: 2, pts: { pickup: { lat: 37.63639, lng: -122.05457 }, dropoff: { lat: 37.598, lng: -121.886 } },
+        pickup: "Job site: Mission Blvd & Tennyson Rd, Hayward", dropoff: "Martin Marietta, 7999 Athenour Way, Sunol",
+        ...day(3), start: "6:00 AM", hours: 10, needs: { w10: 1, w12: 2, sd: 2 }, rate: RATE, notes: "", approved: false,
+        assignments: [
+          { truck: "B-7", type: "w10", owner: "Bautista Transport", phone: "(510) 555-0173", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: true },
+          { truck: "R-5", type: "w12", owner: "R&J Trucking", phone: "(510) 555-0172", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: false }
+        ]
+      },
+      {
+        id: "J-1051", ...lucas, name: "Dublin Blvd overlay", kindIx: 1, pts: { pickup: { lat: 37.688, lng: -121.836 }, dropoff: { lat: 37.70603, lng: -121.92357 } },
+        pickup: "Vulcan Materials, 52 El Charro Rd, Pleasanton", dropoff: "Job site: Dublin Blvd & Village Pkwy, Dublin",
+        ...day(5), start: "7:00 AM", hours: 8, needs: { w12: 2, sd: 2 }, rate: RATE, notes: "", approved: false,
+        assignments: [ { truck: "S-9", type: "sd", owner: "Silva Trucking", phone: "(510) 555-0177", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: false } ]
+      },
+      {
+        id: "J-1052", ...lucas, name: "Fremont Blvd repave", kindIx: 2, pts: { pickup: { lat: 37.54069, lng: -121.97317 }, dropoff: { lat: 37.556, lng: -121.862 } },
+        pickup: "Job site: Fremont Blvd & Stevenson Blvd, Fremont", dropoff: "DeSilva Gates, 6527 Calaveras Rd, Sunol",
+        ...day(9), start: "6:00 AM", hours: 10, needs: { w10: 2, w12: 2, sd: 2 }, rate: RATE, notes: "", approved: false,
+        assignments: []
       },
       // Other contractors' jobs: drivers, owners and brokers see these; Lucas Paving doesn't
       { id: "J-2101", by: "Bay Cities Grading", crating: "4.8", name: "Harbor Blvd & 2nd St", kindIx: 0, kindText: "Haul off dirt",
