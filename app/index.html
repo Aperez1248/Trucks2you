@@ -19,16 +19,16 @@
 <script>try { var l = localStorage.getItem("t2u-layout"); document.documentElement.dataset.layout = (l === "wide" && innerWidth > 600) ? "wide" : "phone"; } catch (e) { document.documentElement.dataset.layout = "phone"; }</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;1,700;1,800&family=Barlow:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
 <style>
 /* Layout: demo bar on top (Phone/Computer, Viewing as, Reset demo), then the app:
    navy brand bar, the screen, and a bottom tab bar (a left sidebar in Computer layout). */
 :root {
   /* Black and white, like the original app; color only where it means something (status, map) */
-  --bg: #eeeeee;
+  --bg: #f3f3f3;          /* page around the phone frame on computers */
   --surface: #ffffff;
-  --surface-2: #f6f6f6;
-  --line: #e2e2e2;
+  --surface-2: #f3f3f3;   /* light gray fills: secondary buttons, chips, icon circles */
+  --line: #e8e8e8;
   --fg: #000000;
   --muted: #5e5e5e;
   --brand: #000000;
@@ -44,8 +44,8 @@
   --warn-soft: #fdf0dc;
   --bad: #e11900;
   --bad-soft: #fde6e3;
-  --display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
-  --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  --display: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  --body: "Figtree", "Helvetica Neue", Arial, sans-serif;
   --tabh: 62px;   /* bottom tab bar height (phone layout) */
 }
 @media (prefers-color-scheme: dark) {
@@ -70,11 +70,11 @@ body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 var(-
 button, label, a { touch-action: manipulation; }   /* no double-tap zoom delay on buttons */
 .wrap { max-width: 460px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: max(12px, env(safe-area-inset-top, 0px)) 24px; display: grid; gap: 12px; }
 /* overflow: clip (not hidden) rounds the corners without breaking the sticky tab bar and buttons */
-.app { background: var(--surface-2); border: 1px solid var(--line); border-radius: 22px; overflow: clip; display: flex; flex-direction: column; min-height: 640px; }
-.bar { background: var(--brand); color: var(--brand-fg); padding: 14px 16px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.logo { font: italic 800 26px/1 var(--display); letter-spacing: .5px; }
+.app { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; overflow: clip; display: flex; flex-direction: column; min-height: 640px; }
+.bar { background: var(--surface); color: var(--fg); border-bottom: 1px solid var(--line); padding: 14px 16px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.logo { font: 800 24px/1 var(--display); letter-spacing: -.5px; }
 .logo b { color: inherit; }
-.bar small { font: 600 11px/1.2 var(--body); letter-spacing: 1.5px; text-transform: uppercase; opacity: .7; text-align: right; }
+.bar small { font: 600 11px/1.2 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); text-align: right; }
 .demo { display: grid; gap: 6px; }
 .roles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
 .roles button { border: 0; background: transparent; color: var(--muted); font: 600 13px/1.2 var(--body); padding: 9px 2px; min-height: 38px; border-radius: 9px; cursor: pointer; }
@@ -82,8 +82,8 @@ button, label, a { touch-action: manipulation; }   /* no double-tap zoom delay o
 .roles-label { font: 600 11px/1 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
 .roles-label button { background: none; border: 0; color: var(--accent); font: inherit; letter-spacing: inherit; cursor: pointer; padding: 6px 0; }
 main { flex: 1; padding: 16px; display: grid; gap: 14px; align-content: start; min-width: 0; }
-h1 { font: 700 26px/1.1 var(--display); margin: 0; text-wrap: balance; }
-h2 { font: 700 19px/1.15 var(--display); margin: 0; letter-spacing: .2px; }
+h1 { font: 800 26px/1.15 var(--display); margin: 0; letter-spacing: -.4px; text-wrap: balance; }
+h2 { font: 700 19px/1.2 var(--display); margin: 0; letter-spacing: -.2px; }
 .eyebrow { font: 600 11px/1.2 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
 p { margin: 0; }
 .muted { color: var(--muted); }
@@ -95,7 +95,7 @@ p { margin: 0; }
 .row > * { min-width: 0; }
 .stack { display: grid; gap: 10px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { font: 600 12px/1 var(--body); padding: 5px 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.chip { font: 600 12px/1 var(--body); padding: 5px 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid transparent; color: var(--fg); white-space: nowrap; }
 /* Choice chips (job type, distance, day): big enough for a gloved thumb */
 .pick { font: 600 14px/1 var(--body); min-height: 38px; padding: 10px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--fg); cursor: pointer; }
 .pick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
@@ -105,7 +105,7 @@ p { margin: 0; }
 .pill.bad { background: var(--bad-soft); color: var(--bad); }
 .pill.info { background: var(--accent-soft); color: var(--accent); }
 .btn { border: 0; border-radius: 11px; background: var(--accent); color: var(--accent-fg); font: 700 15px/1 var(--body); padding: 13px 16px; min-height: 44px; cursor: pointer; width: 100%; }
-.btn.ghost { background: var(--surface); color: var(--accent); border: 1px solid var(--line); }
+.btn.ghost { background: var(--surface-2); color: var(--fg); border: 1px solid transparent; }
 .btn.small { width: auto; padding: 9px 12px; min-height: 38px; font-size: 13px; border-radius: 9px; }
 .btn.good { background: var(--good); color: #ffffff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.good { color: #000000; } }
@@ -857,7 +857,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     </div>
   </div>
   <div class="app" id="app">
-    <header class="bar"><div class="logo">TRUCKS<b>2U</b></div><small>Heavy trucks.<br>On demand.</small></header>
+    <header class="bar"><div class="logo">Trucks2U</div><small>Heavy trucks.<br>On demand.</small></header>
     <main id="screen"></main>
     <nav class="tabs" id="tabs" aria-label="Sections"></nav>
   </div>
