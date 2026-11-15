@@ -328,6 +328,20 @@ main { --mp: 16px; }
 .navbtn { width: auto; flex: none; background: var(--route) !important; color: #fff !important; padding: 14px 22px; border-radius: 999px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; font-size: 17px; }
 .navpick { display: grid; gap: 8px; background: #1c1c1c; border-radius: 14px; padding: 12px; }
 .navpick .btn.ghost { background: #2c2c2c; color: #fff; text-decoration: none; display: flex; align-items: center; justify-content: center; }
+/* Working now + live clocks */
+.wnrow { align-items: center; }
+.wnrow .wn-stage { display: block; font-size: 12.5px; color: var(--good); }
+.wnclock { font: 800 17px/1 var(--body); letter-spacing: -.2px; flex: none; }
+.wnclock.paused { color: var(--warn); }
+.wn-count { display: inline-flex; align-items: center; gap: 6px; }
+.wn-count .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
+.clockbig .big { font-size: 44px; letter-spacing: -1px; }
+/* Status buttons on the driver's job */
+.stgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stbtn { position: relative; border: 0; border-radius: 12px; background: #fff; color: var(--fg); font: 700 14.5px/1.2 var(--body); min-height: 58px; padding: 18px 10px 10px; cursor: pointer; text-align: center; }
+.stbtn.next { background: var(--fg); color: #fff; }
+.stbtn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--good); }
+.st-now { position: absolute; top: 5px; left: 0; right: 0; font: 700 10.5px/1 var(--body); letter-spacing: .6px; text-transform: uppercase; color: var(--good); }
 .gpowered { font: 600 11px/1 var(--body); color: var(--muted); text-align: right; padding-top: 8px; }
 .hero .hm .leaflet-control-attribution { font-size: 9px; }
 /* Muted, gray street maps (like Uber's) so black pins and the blue route stand out */
@@ -1810,7 +1824,9 @@ function tickMap() {
     m.tm.setColor(off ? m.off : m.on); m.tm.show(true);
   });
   document.querySelectorAll("[data-live]").forEach(el => { const [jid, tk] = el.dataset.live.split("|"), j = job(jid), a = j && j.assignments.find(x => x.truck === tk); if (a) el.textContent = liveText(j, a) || (a.status === "assigned" && j.dayN === 0 ? "Not checked in yet" : ""); });
-  document.querySelectorAll("[data-clock]").forEach(el => { const sh = S.shifts[el.dataset.clock]; if (sh) el.textContent = dur(workMs(sh)); });
+  document.querySelectorAll("[data-clock]").forEach(el => { const sh = S.shifts[el.dataset.clock]; if (sh) el.textContent = hms(workMs(sh)); });
+  // "Working now" timers
+  document.querySelectorAll("[data-onclock]").forEach(el => { const [jid, tk] = el.dataset.onclock.split("|"), j = jid ? job(jid) : null, a = j ? j.assignments.find(x => x.truck === tk) : { truck: tk }; const ms = a ? onClockMs(a, j) : null; if (ms != null) el.textContent = hms(ms); });
   document.querySelectorAll("[data-gps]").forEach(el => { el.textContent = gpsText(el.dataset.gps); });
 }
 function gpsCard(j, a) {
@@ -1916,6 +1932,7 @@ function contractorJobs() {
   return heroMap("c-home", pins, { trucks: 12, top: `<span class="fpill"><span class="live-dot"></span>${nearbyN} trucks nearby</span><button class="fpill" type="button" data-tab="live">Live map ›</button>` })
     + `<div class="sheet">
     <button class="whereto" type="button" data-act="rq-new"><i></i>Where's the job?<span>Tomorrow ▾</span></button>
+    ${contractorWorkingNow()}
     ${installCard()}
     <div class="stack" style="gap:2px"><h1>Your jobs</h1><p class="muted" style="font-size:14px">${active.length ? `${active.length} open${finding ? ` · ${finding} still finding trucks` : " · all booked"}` : "No jobs yet"}</p></div>
     ${active.map(card).join("") || '<div class="note">No upcoming jobs. Tap Where\'s the job? to book trucks.</div>'}
@@ -2235,6 +2252,7 @@ function ownerToday() {
   const mine = myAssignments().filter(x => x.j.dayN >= 0 && !(x.a.status === "done" && x.j.approved));
   const insWarn = !S.insuranceRenewed;
   return `<div class="stack" style="gap:4px"><span class="eyebrow">${ME_OWNER}</span><h1>Your trucks today</h1></div>
+    ${ownerWorkingNow()}
     ${offers.map(offerCard).join("")}
     <div class="row" style="justify-content:flex-start;gap:8px"><span class="pill good">Verified</span>${insWarn ? '<button class="pill warn" style="border:0;cursor:pointer;min-height:30px" type="button" data-tab="docs">Insurance expires in 24 days</button>' : ""}</div>
     ${mine.length ? mine.map(({ j, a }) => `<button type="button" class="card tap" data-go="work:${j.id}:${a.truck}">
@@ -2322,7 +2340,7 @@ function nextStop(j, a) {
   const dest = { name: short(destText(j)), addr: destText(j).split(", ").slice(1).join(", ") || destText(j), pt: destP(j), label: destLabel(j).split(":")[0] };
   if (a.status === "assigned") { const s = startsAt(j, a) === "plant" ? dest : site; return { head: "Start at", stop: s, eta: `Starts ${j.start}` }; }
   const w = a.where || "site";
-  if (w === "site") return { head: "Next stop", stop: dest, eta: roadText(j), then: "You're at the job site. When you leave, tap \"Leaving the job\" below so the contractor knows." };
+  if (w === "site") return { head: "Next stop", stop: dest, eta: roadText(j), then: `You're at the job site. When you leave, tap "Heading to ${dest.name}" below so the contractor knows.` };
   if (w === "toPlant") return { head: "Heading to", stop: dest, eta: roadText(j) };
   if (w === "plant") return { head: "You're at", stop: dest, eta: "", then: "Next: back to the job site" };
   return { head: "Heading back to", stop: site, eta: roadText(j) };
@@ -2351,12 +2369,14 @@ Object.assign(ACTS, {
   "nav-set": app => { try { localStorage.setItem(NAV_KEY, app); } catch (e) {} ui.navPick = false; toast(`Opening ${NAV_APPS[app]}. Come back to Trucks2U to update your status.`); setTimeout(render, 50); return false; }
 });
 function statusCard(j, a) {
+  // Four statuses the driver can tap in any order. The one they're in is ticked; the usual next one is black.
   const d = short(destText(j)), w = a.where || "site";
-  const NEXT = { site: ["toPlant", `Leaving the job, heading to ${d}`], toPlant: ["plant", `Arrived at ${d}`], plant: ["toJob", "Loaded, heading to the job"], toJob: ["site", "Arrived at the job"] };
+  const NEXT = { site: "toPlant", toPlant: "plant", plant: "toJob", toJob: "site" };
+  const OPTS = [["toPlant", `Heading to ${d}`], ["plant", `At ${d}`], ["toJob", "Loaded, heading back"], ["site", "Back at the job"]];
   const last = feedOf(j).find(u => u.who === whoOf(a));
   return `<div class="card"><div class="row"><h2>Update the contractor</h2>${a.loads ? `<span class="muted num" style="font-size:13px">${a.loads} load${a.loads === 1 ? "" : "s"}</span>` : ""}</div>
     ${last ? `<p class="muted" style="font-size:13px">Last update ${esc(last.time)}: ${esc(last.text)}</p>` : ""}
-    <button class="btn" type="button" data-act="d-upd:${j.id}:${a.truck}:${NEXT[w][0]}">${esc(NEXT[w][1])}</button>
+    <div class="stgrid">${OPTS.map(([k, label]) => `<button class="stbtn${k === NEXT[w] ? " next" : ""}" type="button" data-act="d-upd:${j.id}:${a.truck}:${k}" aria-pressed="${k === w}">${k === w ? '<span class="st-now">✓ Now</span>' : ""}${esc(label)}</button>`).join("")}</div>
     <div class="chips">${["Running late", "Waiting at the plant", "On break", "Truck problem"].map((t, i) => `<button class="pick" type="button" data-act="d-upd:${j.id}:${a.truck}:x${i}">${t}</button>`).join("")}</div></div>`;
 }
 function ownerPay() {
@@ -2429,6 +2449,42 @@ const breakMs = (sh, until) => sh.breaks.reduce((s, b) => s + ((b.e || until) - 
 const workMs = sh => { const end = sh.outMs || demoNow(); return Math.max(0, end - sh.inMs - breakMs(sh, end)); };
 const dur = ms => `${Math.floor(ms / 3.6e6)} h ${String(Math.floor(ms / 60000) % 60).padStart(2, "0")} m`;
 const onBreak = sh => sh.breaks.length > 0 && !sh.breaks[sh.breaks.length - 1].e;
+// Live clocks: hours:minutes:seconds, e.g. 3:38:07
+const hms = ms => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 3600)}:${String(Math.floor(s / 60) % 60).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
+// How long a truck has been on the clock today: the driver's own clock if they're using it (breaks don't count),
+// otherwise since the truck checked in at the job. null = not working right now.
+function onClockMs(a, j) {
+  const sh = S.shifts[a.truck];
+  if (sh && !sh.outMs) return workMs(sh);
+  if (!j || j.dayN !== 0 || a.status !== "onsite" || !a.checkIn) return null;
+  const m = toMin(a.checkIn);
+  return Math.max(0, demoNow() - at(Math.floor(m / 60), m % 60));
+}
+// "Working now": every truck on the clock, with a live timer. rows: [{ j, a, who, go }]
+function workingNowCard(rows, sub) {
+  if (!rows.length) return "";
+  return `<div class="card wn"><div class="row"><h2>Working now</h2><span class="pill good wn-count"><span class="live-dot"></span>${rows.length} on the clock</span></div>
+    <span class="muted" style="font-size:13px;margin-top:-6px">${esc(sub)}</span>
+    <div class="list">${rows.map(({ j, a, who, go }) => { const sh = S.shifts[a.truck], brk = sh && !sh.outMs && onBreak(sh), ms = onClockMs(a, j);
+      return `<button type="button" class="place wnrow" data-go="${go}">${truckPic(a.type, "tpic sm")}
+        <span style="flex:1;min-width:0"><b>${esc(who)} · ${esc(a.truck)}</b><span>${j ? esc(j.name) : "Not on a job yet"}${brk ? " · on break" : ""}</span>
+          ${j && j.dayN === 0 ? `<span class="wn-stage" data-live="${esc(j.id + "|" + a.truck)}">${esc(liveText(j, a))}</span>` : ""}</span>
+        <span class="wnclock num${brk ? " paused" : ""}" data-onclock="${esc((j ? j.id : "") + "|" + a.truck)}">${ms == null ? "" : hms(ms)}</span></button>`; }).join("")}</div></div>`;
+}
+// Contractor: trucks on the clock on my jobs today
+function contractorWorkingNow() {
+  const rows = myJobs().filter(j => j.dayN === 0 && !j.approved).flatMap(j => j.assignments.filter(a => onClockMs(a, j) != null)
+    .map(a => ({ j, a, who: a.driver || a.owner || a.truck, go: "job:" + j.id })));
+  return workingNowCard(rows, "Trucks on your jobs today. Tap one to open the job.");
+}
+// Truck owner: my drivers who are clocked in, whether or not they've reached the job yet
+function ownerWorkingNow() {
+  const rows = MY_TRUCKS.filter(t => S.shifts[t.id] && !S.shifts[t.id].outMs).map(t => {
+    const x = S.jobs.flatMap(j => j.dayN === 0 ? j.assignments.filter(a => a.truck === t.id).map(a => ({ j, a })) : [])[0];
+    return { j: x && x.j, a: x ? x.a : { truck: t.id, type: t.type, status: "assigned" }, who: S.driverOf[t.id] || "Driver", go: x ? `work:${x.j.id}:${t.id}` : "back" };
+  });
+  return workingNowCard(rows, "Your drivers on the clock right now.");
+}
 const shiftHours = sh => Math.max(0.25, Math.round(workMs(sh) / 900000) / 4);   // nearest quarter hour
 const todayFor = truck => S.jobs.filter(j => j.dayN === 0).flatMap(j => j.assignments.filter(a => a.truck === truck).map(a => ({ j, a })));
 function shiftSum(sh) {
@@ -2463,7 +2519,7 @@ function clockCard(t) {
   const brk = onBreak(sh);
   return `<div class="card" style="border:2px solid ${brk ? "var(--warn)" : "var(--good)"}">
     <div class="row"><span class="eyebrow">Clocked in ${fmtT(sh.inMs)} · ${esc(sh.where)}</span>${brk ? '<span class="pill warn">On break</span>' : '<span class="pill good">On the clock</span>'}</div>
-    <div class="big" data-clock="${t.id}">${dur(workMs(sh))}</div>
+    <div class="clockbig"><div class="big num" data-clock="${t.id}">${hms(workMs(sh))}</div><span class="muted" style="font-size:12px">hours : minutes : seconds${brk ? " · paused for your break" : ""}</span></div>
     ${sh.far ? `<div class="note" style="color:var(--warn)">You clocked in ${esc(sh.where)}, so your time is flagged for the contractor.</div>` : ""}
     ${brk ? `<p class="muted" style="font-size:13px">Break started at ${fmtT(sh.breaks[sh.breaks.length - 1].s)}. Break time isn't paid.</p>` : ""}
     <div class="grid2"><button class="btn ${brk ? "" : "ghost"}" type="button" data-act="${brk ? "break-end" : "break-start"}:${t.id}">${brk ? "End break" : "Start break"}</button><button class="btn ghost" type="button" data-go="clockout">Clock out</button></div></div>`;
@@ -2791,7 +2847,7 @@ Object.assign(ACTS, {
   "d-confirm": (id, tk) => { job(id).assignments.find(a => a.truck === tk).confirmed = true; toast("Thanks! The contractor can see you're coming."); },
   "d-cant": (id, tk) => { const j = job(id), a = j.assignments.find(x => x.truck === tk); removeAssignment(j, a); ui.view = null;
     toast("Removed. The contractor was told and your spot reopened for other drivers."); },
-  "d-upd": (id, tk, key) => { const j = job(id), a = j.assignments.find(x => x.truck === tk), d = short(destText(j)), m = driveMin(miles(siteP(j), destP(j)));
+  "d-upd": (id, tk, key) => { const j = job(id), a = j.assignments.find(x => x.truck === tk), d = short(destText(j)), m = (ROAD_DONE[roadKey(j)] || {}).min || driveMin(miles(siteP(j), destP(j)));
     const say = { toPlant: `Left the job. Heading to ${d}, about ${m} min.`, plant: `At ${d}, waiting to load.`, toJob: `Loaded at ${d}. On the way to the job, about ${m} min.`, site: "Back at the job with a load." };
     if (say[key]) { a.where = key; if (key === "toJob") a.loads = (a.loads || 0) + 1; postFeed(j, whoOf(a), say[key]); }
     else postFeed(j, whoOf(a), ["Running late", "Waiting at the plant", "On break", "Truck problem"][+key.slice(1)] + ".");
