@@ -356,6 +356,23 @@ main { --mp: 16px; }
 .pill.live i { width: 7px; height: 7px; border-radius: 50%; background: #fff; flex: none; }
 @media (prefers-reduced-motion: no-preference) { .pill.live i { animation: livepulse 1.6s ease-in-out infinite; } }
 @keyframes livepulse { 50% { opacity: .35; } }
+/* Find jobs + job alerts */
+.fj-head { display: grid; gap: 3px; margin-top: -4px; }
+.fj-head strong { font-size: 16px; }
+.fj-mi { font: 700 13px/1.2 var(--body); color: var(--fg); margin-top: -4px; }
+.seg2 { display: inline-flex; background: var(--tile); border-radius: 999px; padding: 3px; gap: 3px; flex: none; margin-left: auto; }
+.seg2 button { border: 0; background: none; font: 700 13px/1 var(--body); color: var(--muted); padding: 9px 14px; border-radius: 999px; cursor: pointer; min-height: 36px; }
+.seg2 button[aria-pressed="true"] { background: var(--fg); color: #fff; }
+.findmap .hero { margin: 0; height: 300px; border-radius: 16px; }
+.findmap .hero .hm { inset: 0; }
+.alertbar { display: flex; gap: 12px; align-items: flex-start; background: #000; color: #fff; border-radius: 16px; padding: 14px; box-shadow: 0 8px 24px rgb(0 0 0 / .2); }
+.alertbar .ab-ic { font-size: 22px; line-height: 1; }
+.alertbar strong { display: block; font-size: 16px; }
+.alertbar span { display: block; font-size: 14px; color: #e6e6e6; }
+.alertbar .ab-how { font-size: 12px; color: #9e9e9e; margin-top: 4px; }
+.alertbar .ab-btns { display: grid; gap: 4px; justify-items: center; flex: none; }
+.alertbar .btn.small { background: var(--route); color: #fff; }
+.alertbar .linkbtn { color: #cfcfcf; font-size: 12.5px; }
 .gpowered { font: 600 11px/1 var(--body); color: var(--muted); text-align: right; padding-top: 8px; }
 .hero .hm .leaflet-control-attribution { font-size: 9px; }
 /* Muted, gray street maps (like Uber's) so black pins and the blue route stand out */
@@ -2131,6 +2148,7 @@ function sendRequest() {
     req: { status: "searching", radius: d.radius, sentTo, plantN: asphaltJob(d.kind) ? Math.min(d.plantN, n) : 0, t0: Date.now(), live: d.day === 0, now: d.day === 0 } };
   S.jobs.unshift(j); ui.req = null; ui.tab = "jobs"; ui.view = "job:" + id;
   toast(`Sent to ${sentTo} vetted drivers within ${d.radius} miles.`);
+  notifyDrivers(j);   // drivers nearby with the right truck hear about it right away
   runSearch(j);
 }
 
@@ -2555,7 +2573,35 @@ function driverClockOut() {
 function boardJobs() {
   const t = myDriverTruck(); if (!t) return [];
   const mine = new Set(driverAssignments().map(x => x.j.id));
-  return S.jobs.filter(j => !j.approved && j.dayN >= 0 && !mine.has(j.id) && openFor(j, t.type) > 0 && !(j.dayN === 0 && j.req && !j.req.live)).sort((a, b) => a.dayN - b.dayN);
+  return S.jobs.filter(j => !j.approved && j.dayN >= 0 && !mine.has(j.id) && openFor(j, t.type) > 0 && !(j.dayN === 0 && j.req && !j.req.live) && milesFromHome(j) <= S.radius)
+    .sort((a, b) => a.dayN - b.dayN || milesFromHome(a) - milesFromHome(b));   // soonest first, then closest
+}
+/* ---------- Jobs near the driver, "new" jobs, and job alerts ---------- */
+// Distances are measured from the driver's home base (the real app can also use where the phone is right now)
+const DHOME = { name: "Hayward, CA", ...FROM.Hayward };
+const milesFromHome = j => j.pts ? miles(DHOME, siteP(j)) : 0;
+const seenJobs = () => (S.seenJobs ||= []);
+const newBoardJobs = () => boardJobs().filter(j => !seenJobs().includes(j.id));   // nearby jobs the driver hasn't looked at yet
+const alerts = () => (S.alerts ||= []);
+const alertPrefs = () => (S.alertPrefs ||= { text: true, push: true });
+// Does this driver work that day? (Weekdays / Saturdays / Sundays in My info)
+const worksDay = n => { const d = dateOf(n).getDay(); return d === 0 ? S.avail.includes("Sundays") : d === 6 ? S.avail.includes("Saturdays") : S.avail.includes("Weekdays"); };
+// A contractor just posted j: alert the driver if it fits them. The real app sends a text and a phone notification;
+// the demo shows a banner in the driver's app.
+function notifyDrivers(j) {
+  const t = myDriverTruck(); if (!t || !j.pts) return;
+  const p = alertPrefs(), mi = milesFromHome(j);
+  if (!(p.text || p.push) || openFor(j, t.type) <= 0 || mi > S.radius || !worksDay(j.dayN) || busyDay(j.dayN) || suspended(ME_DRIVER)) return;
+  alerts().unshift({ id: "AL" + Date.now().toString(36), jid: j.id, time: nowTime(), read: false,
+    text: `${j.dayN === 0 ? "Today, right now" : dayName(j.dayN) + " " + j.start} · ${mi.toFixed(0)} mi away · ${"$" + rateOf(j, t.type)}/hr · ${j.name}` });
+}
+// Banner on the driver's screens for the newest unread alert
+function alertBanner() {
+  const al = alerts().find(x => !x.read && job(x.jid) && boardJobs().includes(job(x.jid))); if (!al) return "";
+  const p = alertPrefs(), how = [p.text && "a text", p.push && "a phone notification"].filter(Boolean).join(" and ");
+  return `<div class="alertbar"><span class="ab-ic" aria-hidden="true">🔔</span><div style="flex:1;min-width:0"><strong>New job near you</strong><span>${esc(al.text)}</span>
+      <span class="ab-how">The real app sends ${how}.</span></div>
+    <div class="ab-btns"><button class="btn small" type="button" data-act="al-open:${al.id}">See job</button><button class="linkbtn" type="button" data-act="al-close:${al.id}" aria-label="Dismiss">Not now</button></div></div>`;
 }
 const busyDay = n => driverAssignments().some(x => x.j.dayN === n && x.a.status !== "done");
 function signupBanner() {
@@ -2577,7 +2623,7 @@ function driverToday() {
   const me = live ? { lat: live.lat, lng: live.lng } : { lat: SITE.lat - 0.035, lng: SITE.lng + 0.03 };
   const pins = [{ ...me, label: `You · ${t.id}`, me: true }, ...(today.length ? today : next ? [next] : []).filter(x => x.j.pts).map(({ j }) => ({ ...siteP(j), label: pinName(j.name) }))];
   return heroMap("d-home", pins, { trucks: 8, center: me, top: `<span class="fpill"><span class="live-dot" style="${S.online ? "" : "background:var(--muted);box-shadow:none"}"></span>${S.online ? "Taking same-day jobs" : "Same-day jobs off"}</span><button class="fpill" type="button" data-tab="dfind">Find jobs ›</button>` })
-    + `<div class="sheet">` + driverHead("Today") + installCard() + signupBanner()
+    + `<div class="sheet">` + driverHead("Today") + alertBanner() + installCard() + signupBanner()
     + ask.map(({ j, a }) => `<div class="card" style="border:2px solid var(--warn)"><strong>Tomorrow ${esc(j.start)}: are you still coming?</strong>
       <span class="muted" style="font-size:13px">${esc(j.name)} · ${esc(siteText(j))}. Please confirm by 8 PM tonight, or your spot goes to another driver.</span>
       <div class="grid2"><button class="btn" type="button" data-act="d-confirm:${j.id}:${a.truck}">Yes, I'm coming</button><button class="btn ghost danger" type="button" data-act="d-cant:${j.id}:${a.truck}">I can't make it</button></div></div>`).join("")
@@ -2616,7 +2662,7 @@ function driverDay(t, { j, a }, ask, next) {
   const tix = a.tickets.length ? `<div class="card"><div class="row"><h2>Today's tickets</h2><span class="muted num">${a.tickets.length} · ${tons(a).toFixed(1)} t</span></div>
       <div class="list">${a.tickets.map(k => `<div class="row"><div class="row" style="justify-content:flex-start">${k.photo ? `<img class="thumb" src="${k.photo}" alt="Ticket ${esc(k.no)}">` : '<span class="thumb">photo</span>'}<div><strong class="num">#${esc(k.no)}</strong><div class="muted" style="font-size:13px">${esc(k.time)}</div></div></div><span class="num">${k.tons.toFixed(1)} t</span></div>`).join("")}</div></div>` : "";
   // The clock goes right under the map: "Clock in" is the first thing to do, and the running clock stays in view
-  return tripTop(j, a, false, on ? clockBar(t) : clockCard(t))
+  return tripTop(j, a, false, alertBanner() + (on ? clockBar(t) : clockCard(t)))
     + work + askCards   // the day's buttons first; tomorrow's question after
     + dspDriverCard(j, a.truck) + tix + (on ? gpsCard(j, a) : "")
     + (next ? `<button type="button" class="card tap" data-go="work:${next.j.id}:${next.a.truck}"><span class="eyebrow">Next job</span><strong>${esc(next.j.date)}, ${esc(next.j.start)} · ${esc(next.j.name)}</strong><span class="muted" style="font-size:13px">${esc(siteText(next.j))}</span></button>` : "")
@@ -2628,11 +2674,23 @@ function driverFind() {
   const t = myDriverTruck();
   if (!t) return driverHead("Find jobs") + `<div class="note">You need a truck to take jobs. Ask ${ME_OWNER} to put you on one.</div>`;
   const b = boardJobs();
-  return driverHead("Find jobs") + `<p class="muted" style="font-size:14px;margin-top:-6px">Jobs that need a ${esc(tname(t.type).toLowerCase())} within ${S.radius} miles. Pay is by the hour, ${MIN_HRS}-hour minimum; you keep ${pct(1 - FEE)}.</p>
-    ${b.map(j => { const left = openFor(j, t.type); return `<button type="button" class="card tap${j.req ? " hot" : ""}" data-go="djob:${j.id}">
-      <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span>${j.req ? '<span class="pill info">New request</span>' : `<span class="pill warn">${left} spot${left === 1 ? "" : "s"} left</span>`}</div>
-      <h2>${esc(j.name)}</h2>${route(j)}
-      <div class="row" style="font-size:13px"><span class="muted">${esc(j.by)}${j.crating ? " ★ " + j.crating : ""} · about ${j.hours || 10} hrs</span><strong class="num" style="flex:none">$${rateOf(j, t.type)}/hr</strong></div></button>`; }).join("") || '<div class="note">No open jobs for your truck right now. We\'ll text you when one comes in.</div>'}`;
+  // "New" = not seen before this visit to Find jobs. Opening the tab marks them seen, which clears the tab's number.
+  ui.findNew = ui.findNew || new Set();
+  newBoardJobs().forEach(j => ui.findNew.add(j.id));   // includes jobs that just came into range after a bigger distance
+  b.forEach(j => { if (!seenJobs().includes(j.id)) seenJobs().push(j.id); });
+  const nNew = b.filter(j => ui.findNew.has(j.id)).length, mapView = ui.fview === "map";
+  const pins = b.map(j => ({ ...siteP(j), label: `${"$" + rateOf(j, t.type)} · ${j.dayN === 0 ? "Today" : j.dayN === 1 ? "Tmrw" : dayName(j.dayN).split(",")[0]}` }));
+  const card = j => { const left = openFor(j, t.type), isNew = ui.findNew.has(j.id); return `<button type="button" class="card tap${isNew ? " hot" : ""}" data-go="djob:${j.id}">
+      <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span>${isNew ? '<span class="pill live"><i></i>New</span>' : `<span class="pill warn">${left} spot${left === 1 ? "" : "s"} left</span>`}</div>
+      <h2>${esc(j.name)}</h2><span class="fj-mi">${milesFromHome(j).toFixed(0)} mi from you · ${left} spot${left === 1 ? "" : "s"} left</span>${route(j)}
+      <div class="row" style="font-size:13px"><span class="muted">${esc(j.by)}${j.crating ? " ★ " + j.crating : ""} · about ${j.hours || 10} hrs</span><strong class="num" style="flex:none">${"$" + rateOf(j, t.type)}/hr</strong></div></button>`; };
+  return driverHead("Find jobs") + alertBanner()
+    + `<div class="fj-head"><strong>${b.length} job${b.length === 1 ? "" : "s"} near you${nNew ? ` · <span style="color:var(--good)">${nNew} new</span>` : ""}</strong>
+      <span class="muted" style="font-size:13px">For your ${esc(tname(t.type).toLowerCase())}, from ${esc(DHOME.name)}. Pay is by the hour, ${MIN_HRS}-hour minimum; you keep ${pct(1 - FEE)}.</span></div>
+    <div class="row" style="flex-wrap:wrap;gap:8px"><div class="chips">${[10, 25, 50, 100].map(r => `<button class="pick" type="button" data-act="d-radius:${r}" aria-pressed="${S.radius === r}">${r} mi</button>`).join("")}</div>
+      <div class="seg2"><button type="button" data-act="d-fview:list" aria-pressed="${!mapView}">List</button><button type="button" data-act="d-fview:map" aria-pressed="${mapView}">Map</button></div></div>
+    ${mapView ? `<div class="findmap">${heroMap("d-find", [{ ...DHOME, label: "You · home base", me: true }, ...pins], { trucks: 0, center: DHOME })}</div>` : ""}
+    ${b.map(card).join("") || `<div class="note">No open jobs for your truck within ${S.radius} miles right now. Try a bigger distance, or we'll alert you when one comes in.</div>`}`;
 }
 function driverJobOffer(j) {
   const t = myDriverTruck();
@@ -2699,10 +2757,17 @@ function driverMe() {
       <strong style="font-size:14px">Insurance card</strong>
       ${c ? (c.url ? `<img src="${c.url}" alt="Insurance card for ${t.id}" style="max-width:100%;border-radius:10px;border:1px solid var(--line)">` : `<div class="note">${esc(c.name)} · added ${esc(c.date)}. This sample card has no picture; upload one on the truck owner's Docs tab and it shows here.</div>`) : `<div class="note">No insurance card on file for ${t.id}. Ask ${ME_OWNER} to upload it.</div>`}
       <p class="muted" style="font-size:12.5px">Show this at a scale house or a traffic stop.</p></div>` : ""}
-    <div class="card"><h2>Where you'll take jobs</h2><p class="muted" style="font-size:13px">From Hayward, CA. You only get requests inside this distance.</p>
+    <div class="card"><h2>Job alerts</h2><p class="muted" style="font-size:13px">When a contractor posts a job for your truck, inside your distance, on a day you work, and you're not already booked, we tell you right away.</p>
+      <strong style="font-size:14px">How far you'll drive</strong><span class="muted" style="font-size:13px;margin-top:-6px">From ${esc(DHOME.name)}, your home base. Also sets what Find jobs shows.</span>
       <div class="chips">${RADII.map(r => `<button class="pick" type="button" data-act="d-radius:${r}" aria-pressed="${S.radius === r}">${r} mi</button>`).join("")}</div>
-      <strong style="font-size:14px">When you're available</strong>
-      <div class="chips">${["Weekdays", "Saturdays", "Sundays", "Night work"].map(x => `<button class="pick" type="button" data-act="d-avail:${x}" aria-pressed="${S.avail.includes(x)}">${x}</button>`).join("")}</div></div>
+      <strong style="font-size:14px">Days you work</strong>
+      <div class="chips">${["Weekdays", "Saturdays", "Sundays", "Night work"].map(x => `<button class="pick" type="button" data-act="d-avail:${x}" aria-pressed="${S.avail.includes(x)}">${x}</button>`).join("")}</div>
+      <strong style="font-size:14px">Tell me by</strong>
+      <div class="list">${[["text", "Text message", "To " + ME_PHONE], ["push", "Phone notification", "From the Trucks2U app"]].map(([k, l, sub]) => `<div class="row"><div><strong style="font-size:14px">${l}</strong><div class="muted" style="font-size:12.5px">${esc(sub)}</div></div>
+        <button class="pick" type="button" data-act="d-alertpref:${k}" aria-pressed="${!!alertPrefs()[k]}" style="flex:none">${alertPrefs()[k] ? "On" : "Off"}</button></div>`).join("")}
+        <div class="row"><div><strong style="font-size:14px">Same-day requests</strong><div class="muted" style="font-size:12.5px">Jobs that need a truck right now. 20 seconds to accept.</div></div>
+        <button class="pick" type="button" data-act="d-online" aria-pressed="${S.online}" style="flex:none">${S.online ? "On" : "Off"}</button></div></div>
+      ${alerts().length ? `<strong style="font-size:14px">Recent alerts</strong><div class="list">${alerts().slice(0, 5).map(x => `<div class="row" style="align-items:flex-start"><span style="font-size:13.5px">${esc(x.text)}</span><span class="muted num" style="font-size:12px;flex:none">${esc(x.time)}</span></div>`).join("")}</div>` : ""}</div>
     <button class="card tap" type="button" data-act="su-start" style="border-style:dashed"><span class="eyebrow">Demo</span><strong>Sign up as a new driver</strong><span class="muted" style="font-size:13px">See what new drivers fill in: details, truck, documents and terms.</span></button>`;
 }
 // Same-day request: pops up over the driver's screen with a 20-second countdown
@@ -2907,7 +2972,11 @@ Object.assign(ACTS, {
     addAssignment(j, ownerAsg(t)); ui.tab = "dtoday"; ui.view = `work:${j.id}:${t.id}`; window.scrollTo(0, 0); toast("Job accepted. The contractor can see you. Clock in when you get there."); },
   "d-offer-no": () => { S.declined.push(ui.offer.jid); ui.offer = null; renderOverlay(); toast("Declined."); },
   "d-jtab": k => { ui.jtab = k; },
-  "d-radius": r => { S.radius = +r; toast(`You'll get requests up to ${r} miles away.`); },
+  "d-radius": r => { S.radius = +r; toast(`Jobs and alerts up to ${r} miles from ${DHOME.name}.`); },
+  "d-fview": v => { ui.fview = v; },
+  "al-open": id => { const al = alerts().find(x => x.id === id); if (!al) return false; al.read = true; ui.tab = "dfind"; ui.view = "djob:" + al.jid; window.scrollTo(0, 0); },
+  "al-close": id => { const al = alerts().find(x => x.id === id); if (al) al.read = true; },
+  "d-alertpref": k => { const p = alertPrefs(); p[k] = !p[k]; toast(p[k] ? `${k === "text" ? "Texts" : "Phone notifications"} on for new jobs.` : `${k === "text" ? "Texts" : "Phone notifications"} off.`); },
   "d-avail": x => { S.avail = S.avail.includes(x) ? S.avail.filter(y => y !== x) : [...S.avail, x]; },
   // Broker
   "bdis": (id, t, _x, pick) => { const j = B().jobs.find(x => x.id === id); j.assigned[t].push(pick); toast(`${pick} dispatched. ${bTruck(pick).driver} got the job details by text.`); },
@@ -3502,7 +3571,7 @@ function badge(role, tab) {
   if (role === "contractor" && tab === "jobs") return myJobs().filter(j => !j.approved && j.dayN >= 0 && filled(j) < needed(j)).length;
   if (role === "owner" && tab === "today") return ownerOffers().length;
   if (role === "driver" && tab === "dtoday") return driverAssignments().filter(x => x.j.dayN === 1 && !x.a.confirmed).length;
-  if (role === "driver" && tab === "dfind") return boardJobs().filter(j => j.req).length;
+  if (role === "driver" && tab === "dfind") return ui.tab === "dfind" ? 0 : newBoardJobs().length;   // nearby jobs not looked at yet
   if (role === "broker" && tab === "board") return brokerOpen().filter(j => j.req && j.req.status === "searching").length;
   if (role === "admin" && tab === "vet") return S.applicants.filter(a => !S.approvedApplicants.includes(a.id)).length;
   return 0;
@@ -3549,6 +3618,7 @@ function render() {
   const rb = document.querySelector(`[data-role="${ui.role}"]`); if (rb) $("#roleName").textContent = ui.welcome || ui.login || (ui.csu && !ui.csu.done) || (ui.bsu && !ui.bsu.done) ? "New user" : rb.textContent;
   const flow = !!(ui.signup || ui.req || ui.welcome || ui.login || ui.csu || ui.bsu || ui.dsu);
   if (!ui.welcome && !ui.login) { try { localStorage.setItem("t2u-role", ui.role); } catch (e) {} }   // remember the side for next time   // step-by-step flows hide the tabs and have their own back button
+  if (ui.role !== "driver" || ui.tab !== "dfind") ui.findNew = null;   // "New" marks are for one visit to Find jobs
   parkMaps();   // keep Google maps on the page while the screen is redrawn (see parkMaps)
   $("#screen").innerHTML = screen();
   $("#screen").classList.toggle("form", flow);   // forms stay one readable column in computer view
