@@ -314,6 +314,20 @@ main { --mp: 16px; }
 .gtk { position: absolute; left: -13px; top: -13px; width: 26px; height: 26px; }
 .gtk svg { width: 26px; height: 26px; filter: drop-shadow(0 1px 2px rgb(0 0 0 / .35)); }
 .gmk.pin .jobpin { position: absolute; left: 0; top: 0; }
+/* Driver trip screen */
+.tripmap { position: relative; margin: calc(-1 * var(--mp)) calc(-1 * var(--mp)) 0; }
+.tripmap .mapbox, .tripmap .mapbox .lm, .tripmap .map { border-radius: 0; border: 0; }
+.tripmap .back { position: absolute; top: 12px; left: 12px; z-index: 600; }
+.tripcard { background: #000; color: #fff; border-radius: 18px; padding: 16px; display: grid; gap: 8px; box-shadow: 0 10px 30px rgb(0 0 0 / .25); position: relative; z-index: 2; }   /* sits below the map so Google's logo stays visible */
+.tripcard .eyebrow { color: #b3b3b3; margin: 0; }
+.tripcard h2 { font-size: 24px; color: #fff; }
+.tripcard .tc-addr { color: #cfcfcf; font-size: 14px; margin-top: -4px; }
+.tripcard .tc-eta { font: 700 16px/1.2 var(--body); color: #fff; }
+.tripcard .tc-note { color: #b3b3b3; font-size: 13px; }
+.tripcard .linkbtn { color: #fff; font-size: 13px; padding: 2px 0; }
+.navbtn { width: auto; flex: none; background: var(--route) !important; color: #fff !important; padding: 14px 22px; border-radius: 999px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; font-size: 17px; }
+.navpick { display: grid; gap: 8px; background: #1c1c1c; border-radius: 14px; padding: 12px; }
+.navpick .btn.ghost { background: #2c2c2c; color: #fff; text-decoration: none; display: flex; align-items: center; justify-content: center; }
 .gpowered { font: 600 11px/1 var(--body); color: var(--muted); text-align: right; padding-top: 8px; }
 .hero .hm .leaflet-control-attribution { font-size: 9px; }
 /* Muted, gray street maps (like Uber's) so black pins and the blue route stand out */
@@ -2258,7 +2272,7 @@ function ownerWork(j, a, driver = false) {
   } else if (a.status === "assigned") action = `<button class="btn ghost" type="button" data-act="checkin:${j.id}:${truck}">Check in by hand</button><p class="muted" style="font-size:12.5px">Only needed if the phone has no GPS signal at the site.</p>
     ${driver ? `<button class="btn ghost danger" type="button" data-act="d-cant:${j.id}:${truck}">I can't make it</button>` : ""}`;
   else if (a.status === "onsite") action = `
-    ${statusCard(j, a)}
+    ${driver ? "" : statusCard(j, a)}
     <div class="card"><h2>Add a load ticket</h2>
       <div class="grid2"><label class="field">Ticket #<input id="t-no" inputmode="numeric" placeholder="448801"></label><label class="field">Tons<input id="t-tons" type="number" step="0.1" inputmode="decimal" placeholder="18.5"></label></div>
       <label class="field">Photo of ticket<input id="t-photo" type="file" accept="image/*" capture="environment"></label>
@@ -2278,9 +2292,11 @@ function ownerWork(j, a, driver = false) {
       <div class="row"><span>Trucks2U fee (${pct(FEE)})</span><span class="num">−${money(billOf(j, a) * FEE)}</span></div>
       <div class="row total"><span>Your payout</span><span class="num">${money(billOf(j, a) * (1 - FEE))}</span></div></div>
       ${j.approved ? '<span class="pill good" style="justify-self:start">Approved · paying out</span>' : '<span class="pill warn" style="justify-self:start">Waiting on contractor approval</span>'}</div>`;
-  return `<button class="back" type="button" data-go="back">‹ ${driver ? "Back" : "Today"}</button>
+  // Drivers on today's job get the Uber-style trip screen; owners and future jobs keep the regular page
+  const trip = driver && !later && (a.status === "assigned" || a.status === "onsite") && j.pts;
+  return (trip ? tripTop(j, a) + (a.status === "onsite" ? statusCard(j, a) : "") + `<div class="card">${route(j)}</div>` : `<button class="back" type="button" data-go="back">‹ ${driver ? "Back" : "Today"}</button>
     <div class="stack" style="gap:4px"><span class="eyebrow">${esc(truck)} · ${esc(j.date)} · start ${esc(j.start)}</span><h1>${esc(j.name)}</h1><p class="muted">${esc(kindOf(j))} · ${esc(j.by)}</p><div>${later ? asgPill(j, a) : statusPill(a)}</div></div>
-    <div class="card">${jobMap(j, { truck })}${route(j)}${directions(j)}</div>
+    <div class="card">${jobMap(j, { truck })}${route(j)}${directions(j)}</div>`) + `
     ${!driver && j.dayN === 0 && S.shifts[truck] ? `<div class="card"><h2>Driver's time</h2><span class="muted" style="font-size:13px">${esc(S.driverOf[truck] || "Driver")}</span>${shiftLine(truck)}</div>` : ""}
     ${dspDriverCard(j, truck)}
     ${later ? "" : gpsCard(j, a)}
@@ -2289,6 +2305,51 @@ function ownerWork(j, a, driver = false) {
       <div class="list">${a.tickets.length ? a.tickets.map(t => `<div class="row"><div class="row" style="justify-content:flex-start">${t.photo ? `<img class="thumb" src="${t.photo}" alt="Ticket ${esc(t.no)}">` : '<span class="thumb">photo</span>'}<div><strong class="num">#${esc(t.no)}</strong><div class="muted" style="font-size:13px">${esc(t.time)}</div></div></div><span class="num">${t.tons.toFixed(1)} t</span></div>`).join("") : '<div class="muted">No tickets yet.</div>'}</div></div>`}`;
 }
 // "Update the contractor": one tap for where the truck is in its loop, plus common problems
+/* ---------- Driver trip screen (like Uber's): big map, the next stop, and a Navigate button ----------
+   Turn-by-turn voice directions happen in Google Maps, Waze or Apple Maps (Google doesn't allow building that into a
+   website, and those apps have live traffic). The driver picks an app once; we remember it. */
+const NAV_KEY = "t2u-nav";
+const navApp = () => { try { return localStorage.getItem(NAV_KEY) || ""; } catch (e) { return ""; } };
+const NAV_APPS = { google: "Google Maps", waze: "Waze", apple: "Apple Maps" };
+const navUrl = (app, p) => ({
+  google: `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=driving&dir_action=navigate`,
+  waze: `https://waze.com/ul?ll=${p.lat},${p.lng}&navigate=yes`,
+  apple: `https://maps.apple.com/?daddr=${p.lat},${p.lng}&dirflg=d`
+}[app]);
+// Where the driver is going next, from their status: before arriving, then job site → plant/dump → back, and so on
+function nextStop(j, a) {
+  const site = { name: j.name, addr: siteText(j), pt: siteP(j), label: "Job site" };
+  const dest = { name: short(destText(j)), addr: destText(j).split(", ").slice(1).join(", ") || destText(j), pt: destP(j), label: destLabel(j).split(":")[0] };
+  if (a.status === "assigned") { const s = startsAt(j, a) === "plant" ? dest : site; return { head: "Start at", stop: s, eta: `Starts ${j.start}` }; }
+  const w = a.where || "site";
+  if (w === "site") return { head: "Next stop", stop: dest, eta: roadText(j), then: "You're at the job site. When you leave, tap \"Leaving the job\" below so the contractor knows." };
+  if (w === "toPlant") return { head: "Heading to", stop: dest, eta: roadText(j) };
+  if (w === "plant") return { head: "You're at", stop: dest, eta: "", then: "Next: back to the job site" };
+  return { head: "Heading back to", stop: site, eta: roadText(j) };
+}
+function tripTop(j, a) {
+  const n = nextStop(j, a), app = navApp(), apps = Object.keys(NAV_APPS).filter(k => k !== "apple" || isIOS());
+  const go = n.head === "You're at" ? siteP(j) : n.stop.pt;   // at the plant, Navigate takes you back to the job
+  const navBtn = app ? `<a class="btn navbtn" href="${navUrl(app, go)}" target="_blank" rel="noopener">Navigate ›</a>`
+    : `<button class="btn navbtn" type="button" data-act="nav-choose">Navigate ›</button>`;
+  return `<div class="tripmap">${jobMap(j, { truck: a.truck, h: 250 })}<button class="back" type="button" data-go="back">‹ Back</button></div>
+    <div class="tripcard">
+      <span class="eyebrow">${esc(n.head)} · ${esc(n.stop.label)}</span>
+      <h2>${esc(n.stop.name)}</h2><span class="tc-addr">${esc(n.stop.addr)}</span>
+      <div class="row" style="align-items:center"><span class="tc-eta num">${n.eta}</span>${navBtn}</div>
+      ${ui.navPick ? `<div class="navpick"><strong>Navigate with</strong>
+        ${apps.map(k => `<a class="btn ghost" href="${navUrl(k, go)}" target="_blank" rel="noopener" data-act="nav-set:${k}">${NAV_APPS[k]}</a>`).join("")}
+        <span class="tc-note">We'll remember your choice. Car routes: watch for truck restrictions and low clearances.</span></div>`
+        : app ? `<span class="tc-note">Navigating with ${NAV_APPS[app]} · <button class="linkbtn" type="button" data-act="nav-choose">Change</button></span>` : ""}
+      ${n.then ? `<span class="tc-note">${esc(n.then)}</span>` : ""}
+    </div>
+    <div class="row" style="flex-wrap:wrap;gap:6px 10px"><span class="muted" style="font-size:13.5px">${esc(a.truck)} · ${esc(j.date)} · start ${esc(j.start)} · ${esc(kindOf(j))} · ${esc(j.by)}</span>${statusPill(a)}</div>`;
+}
+Object.assign(ACTS, {
+  "nav-choose": () => { ui.navPick = !ui.navPick; },
+  // Redraw a moment later, so the tapped link still opens the navigation app
+  "nav-set": app => { try { localStorage.setItem(NAV_KEY, app); } catch (e) {} ui.navPick = false; toast(`Opening ${NAV_APPS[app]}. Come back to Trucks2U to update your status.`); setTimeout(render, 50); return false; }
+});
 function statusCard(j, a) {
   const d = short(destText(j)), w = a.where || "site";
   const NEXT = { site: ["toPlant", `Leaving the job, heading to ${d}`], toPlant: ["plant", `Arrived at ${d}`], plant: ["toJob", "Loaded, heading to the job"], toJob: ["site", "Arrived at the job"] };
