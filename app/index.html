@@ -415,6 +415,22 @@ main { --mp: 16px; }
 .cm-ev { border: 0; border-radius: 6px; padding: 3px 5px; font: 600 11px/1.2 var(--body); text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cm-ev.g { background: #e3f4e7; color: #16692c; }
 .cm-ev.o { background: #fff4e5; color: #8a4b00; }
+.rep-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rep-stats .big { font-size: 22px; }
+.rep-warn { color: #b35f00; }
+.rep-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; border: 0; background: none; padding: 10px 0; text-align: left; font: inherit; color: inherit; cursor: pointer; border-top: 1px solid var(--line); }
+.rep-row:first-child { border-top: 0; }
+.rep-tl { position: relative; margin-left: 6px; border-left: 2px solid #d4d4d4; padding-left: 16px; display: grid; }
+.rep-ev { position: relative; display: grid; grid-template-columns: 64px 1fr auto; gap: 8px; align-items: center; padding: 6px 0; font-size: 14px; }
+.rep-ev::before { content: ""; position: absolute; left: -23px; top: 50%; margin-top: -6px; width: 8px; height: 8px; border-radius: 50%; background: #fff; border: 2px solid #000; }
+.rep-ev.ld::before { background: #000; }
+.rep-ev .num { font-weight: 700; font-size: 13px; }
+.rep-src { font-size: 10.5px; font-weight: 700; border-radius: 99px; padding: 2px 7px; }
+.rep-src.gps { background: #e3f4e7; color: #16692c; }
+.rep-src.tap { background: var(--tile); color: var(--muted); }
+.rep-load { font-size: 12px; font-weight: 700; color: var(--muted); margin: 10px 0 0 -16px; padding-left: 16px; }
+.rep-more { border: 0; background: var(--tile); border-radius: 10px; padding: 9px 12px; font: 700 13px var(--body); text-align: left; cursor: pointer; margin: 8px 0; }
+@media print { #tabs, header.bar, .noprint, .toast { display: none !important; } body { background: #fff; } }
 .seg2 { display: inline-flex; background: var(--tile); border-radius: 999px; padding: 3px; gap: 3px; flex: none; margin-left: auto; }
 .seg2 button { border: 0; background: none; font: 700 13px/1 var(--body); color: var(--muted); padding: 9px 14px; border-radius: 999px; cursor: pointer; min-height: 36px; }
 .seg2 button[aria-pressed="true"] { background: var(--fg); color: #fff; }
@@ -2096,6 +2112,93 @@ function jobsCalendar(active, card) {
   }
   return strip + month + list;
 }
+/* ================= Reports: one report per job per day, and each driver's full day ================= */
+// The real app records these times from GPS when a truck enters or leaves the job site or the plant; the driver's taps fill in the rest.
+// The demo rebuilds each day from the clock-in time, the load tickets and the driver's status taps.
+const repWho = a => a.driver || a.owner;
+const repWorked = j => j.assignments.filter(a => a.checkIn);
+const reportJobs = () => myJobs().filter(j => j.dayN <= 0 && repWorked(j).length).sort((a, b) => b.dayN - a.dayN);
+const repDrive = j => j.pts ? Math.max(12, (ROAD_DONE[roadKey(j)] || {}).min || driveMin(miles(siteP(j), destP(j)))) : 25;   // the same drive time the trip screen uses
+const plantWait = t => 6 + (+String(t.no).replace(/\D/g, "").slice(-3) % 17);   // demo: how long the truck sat at the plant
+const minsTxt = m => { m = Math.round(m); return m >= 60 ? `${Math.floor(m / 60)} hr${m % 60 ? " " + (m % 60) : ""}` : `${m} min`; };
+function dayTimeline(j, a) {
+  const k = j.kindIx, pl = short(destText(j)), drive = repDrive(j), ev = [], loads = [];
+  const add = (m, text, src = "gps", load = false) => ev.push({ m, text, src, load });
+  const inAt = toMin(a.checkIn);
+  add(inAt, "Clocked in");
+  let prev = inAt + 10;
+  add(prev, "Arrived at the job");
+  a.tickets.forEach((t, i) => {
+    const left = toMin(t.time), wait = plantWait(t);
+    const atPlant = Math.max(prev + 5, left - wait), leftJob = Math.max(prev + 3, atPlant - drive), back = left + drive;
+    loads.push({ n: i + 1, start: ev.length, leftJob, back, wait: left - atPlant });
+    add(leftJob, k === 1 ? "Left the job, empty, for the plant" : "Left the job with grindings", "gps", true);
+    add(atPlant, `Arrived at ${pl}`);
+    add(left, `Left ${pl}${k === 0 ? ", empty" : " with asphalt"} · ticket #${t.no}`, "gps");
+    if (a.status === "done" || i < a.tickets.length - 1 || demoMin() > back) add(back, "Back at the job");
+    prev = back;
+  });
+  feedOf(j).filter(u => u.who === whoOf(a) && u.time).forEach(u => add(toMin(u.time), u.text, "tap"));
+  const outMin = a.status === "done" ? (a.out ? toMin(a.out) : inAt + Math.round((a.hours || 0) * 60)) : null;
+  if (outMin != null) add(outMin, "Clocked out");
+  ev.sort((x, y) => x.m - y.m);
+  const trips = loads.map(l => l.back - l.leftJob), waitAll = loads.reduce((s, l) => s + l.wait, 0);
+  const onMin = outMin != null ? outMin - inAt : Math.max(0, demoMin() - inAt);
+  return { ev, loads, avgTrip: trips.length ? trips.reduce((x, y) => x + y, 0) / trips.length : 0, waitAll, onMin, live: outMin == null };
+}
+const demoMin = () => { const d = new Date(demoNow()); return d.getHours() * 60 + d.getMinutes(); };
+function repStats(cells) {
+  return `<div class="stats rep-stats">${cells.map(([l, v, warn]) => `<div class="stat"><span>${l}</span><div class="big${warn ? " rep-warn" : ""}">${v}</div></div>`).join("")}</div>`;
+}
+function reportsTab() {
+  const js = reportJobs();
+  return `<h1>Reports</h1><p class="muted">One report for each job, each day: every truck's loads, hours and round trips, with the times the trucks came and went.</p>
+    ${js.map(j => { const w = repWorked(j), loads = w.reduce((s, a) => s + a.tickets.length, 0);
+      return `<button type="button" class="card tap" data-go="rep:${j.id}"><div class="row"><span class="eyebrow">${esc(dayName(j.dayN))}</span>${j.approved ? '<span class="pill good">Approved</span>' : j.dayN === 0 && w.some(a => a.status !== "done") ? '<span class="pill live"><i></i>Live</span>' : '<span class="pill info">Ready to approve</span>'}</div>
+        <h2>${esc(j.name)}</h2><span class="muted" style="font-size:14px">${w.length} truck${w.length === 1 ? "" : "s"} · ${loads} load${loads === 1 ? "" : "s"}</span></button>`; }).join("")
+      || '<div class="note">Reports show up here once trucks clock in on your jobs.</div>'}`;
+}
+function jobReport(j) {
+  if (!j) { ui.view = null; return reportsTab(); }
+  const w = repWorked(j), tl = w.map(a => ({ a, d: dayTimeline(j, a) }));
+  const loads = w.reduce((s, a) => s + a.tickets.length, 0), hrs = tl.reduce((s, x) => s + x.d.onMin, 0) / 60;
+  const trips = tl.filter(x => x.d.avgTrip), avg = trips.length ? trips.reduce((s, x) => s + x.d.avgTrip, 0) / trips.length : 0, wait = tl.reduce((s, x) => s + x.d.waitAll, 0);
+  return `<button class="back noprint" type="button" data-go="back">‹ Reports</button>
+    <div class="stack" style="gap:4px"><span class="eyebrow">Day report · ${esc(dayName(j.dayN))}${j.dayN === 0 ? " · updates live" : ""}</span><h1>${esc(j.name)}</h1><p class="muted">${esc(kindOf(j))} · ${w.length} truck${w.length === 1 ? "" : "s"}</p></div>
+    ${repStats([["Loads", loads], ["Truck hours", hrs.toFixed(1)], ["Avg round trip", avg ? minsTxt(avg) : "—"], ["Waiting at the plant", minsTxt(wait), wait >= 60]])}
+    <div class="card"><h2>Trucks</h2><div class="list">${tl.map(({ a, d }) => { const slow = avg && d.avgTrip > avg * 1.15;
+      return `<button type="button" class="rep-row" data-go="rep:${j.id}:${a.truck}"><div><strong>${esc(repWho(a))} · ${esc(a.truck)}</strong>
+        <div class="muted" style="font-size:13px">${esc(tname(a.type))} · ${a.tickets.length} load${a.tickets.length === 1 ? "" : "s"} · ${(d.onMin / 60).toFixed(1)} hrs${d.avgTrip ? ` · <span class="${slow ? "rep-warn" : ""}">round trip ${minsTxt(d.avgTrip)}</span>` : ""}${d.live ? " · on the clock" : ""}</div></div><span aria-hidden="true">›</span></button>`; }).join("")}</div></div>
+    <button class="btn ghost noprint" type="button" data-act="rep-print">Download the day (PDF)</button>`;
+}
+function driverReport(j, truck) {
+  const a = j && j.assignments.find(x => x.truck === truck);
+  if (!a || !a.checkIn) { ui.view = j ? "rep:" + j.id : null; return j ? jobReport(j) : reportsTab(); }
+  const d = dayTimeline(j, a), open = ui.repAll || d.loads.length <= 3;
+  const rows = d.ev.map(e => {
+    const L = d.loads.find(l => l.leftJob === e.m && e.load);
+    let head = "";
+    if (L) head = `<div class="rep-load">Load ${L.n} · ${minsTxt(L.back - L.leftJob)}${L.wait >= 12 ? ` · <span class="rep-warn">waited ${minsTxt(L.wait)} at the plant</span>` : ""}</div>`;
+    return `${head}<div class="rep-ev${e.load ? " ld" : ""}"><span class="num">${fmtMin(e.m)}</span><span>${esc(e.text)}</span><span class="rep-src ${e.src}">${e.src === "gps" ? "GPS" : "Tapped"}</span></div>`;
+  });
+  // Fold the middle loads away when there are more than 3
+  let body = rows.join("");
+  if (!open) {
+    const first = d.loads[1], last = d.loads[d.loads.length - 1];
+    const iA = d.ev.findIndex(e => e.load && e.m === first.leftJob), iB = d.ev.findIndex(e => e.load && e.m === last.leftJob);
+    body = rows.slice(0, iA).join("") + `<button type="button" class="rep-more" data-act="rep-all">Loads 2 to ${last.n - 1} ▾</button>` + rows.slice(iB).join("");
+  }
+  const tix = a.tickets.length ? `<div class="card"><div class="row"><h2>Load tickets</h2><span class="muted num">${a.tickets.length} · ${tons(a).toFixed(1)} t</span></div>
+      <div class="list">${a.tickets.map(k => `<div class="row"><div class="row" style="justify-content:flex-start">${k.photo ? `<img class="thumb" src="${k.photo}" alt="Ticket ${esc(k.no)}">` : '<span class="thumb">photo</span>'}<div><strong class="num">#${esc(k.no)}</strong><div class="muted" style="font-size:13px">${esc(k.time)}</div></div></div><span class="num">${k.tons.toFixed(1)} t</span></div>`).join("")}</div></div>` : "";
+  return `<button class="back noprint" type="button" data-go="rep:${j.id}">‹ ${esc(j.name)}</button>
+    <div class="stack" style="gap:4px"><span class="eyebrow">Driver day report · ${esc(dayName(j.dayN))}</span><h1>${esc(repWho(a))} · ${esc(a.truck)}</h1><p class="muted">${esc(tname(a.type))} · ${esc(a.owner)} · ${esc(j.name)}</p></div>
+    ${repStats([[d.live ? "On the clock so far" : "On the clock", minsTxt(d.onMin)], ["Loads", a.tickets.length], ["Avg round trip", d.avgTrip ? minsTxt(d.avgTrip) : "—"], ["Waiting at the plant", minsTxt(d.waitAll), d.waitAll >= 45]])}
+    <div class="card"><h2>${d.live ? "The day so far" : "The whole day"}</h2><div class="rep-tl">${body}</div>
+      ${d.live ? `<p class="muted" style="font-size:13px">Now: ${esc(liveText(j, a))}</p>` : ""}
+      <p class="muted" style="font-size:12.5px">GPS times are recorded when the truck enters or leaves the job site or the plant. Tapped times are updates the driver sent.</p></div>
+    ${tix}
+    <button class="btn ghost noprint" type="button" data-act="rep-print">Download report (PDF)</button>`;
+}
 const pinName = n => n.length > 18 ? n.slice(0, 17).trim() + "…" : n;
 
 // The request's status at the top of its job page: finding trucks, booked, or live on the morning of the job
@@ -2154,6 +2257,7 @@ function contractorJob(j) {
     ${j.assignments.length ? (() => { const loads = j.assignments.reduce((s, a) => s + a.tickets.length, 0), tn = j.assignments.reduce((s, a) => s + tons(a), 0), on = j.assignments.filter(a => a.status === "onsite").length;
       return `<div class="stats"><div class="stat"><span>Loads</span><div class="big">${loads}</div></div><div class="stat"><span>Tons hauled</span><div class="big">${tn.toFixed(0)}</div></div><div class="stat"><span>On the clock</span><div class="big">${on}</div></div></div>`; })() : ""}
     ${j.dayN === 0 && !ready ? `<div class="row" style="gap:8px"><button class="btn small" type="button" data-act="live-open:${j.id}" style="flex:1">See trucks on the map</button><button class="btn small ghost" type="button" data-act="share:${j.id}" style="flex:1">Share tracking link</button></div>` : ""}
+    ${repWorked(j).length ? `<button class="btn ghost" type="button" data-act="rep-open:${j.id}">${j.dayN === 0 && !ready ? "Day report so far" : "Day report"} ›</button>` : ""}
     <div class="card"><div class="row"><h2>Trucks</h2><span class="muted num">${filled(j)} of ${needed(j)} booked</span></div>
       ${open.length ? `<p class="muted" style="font-size:13px">Still looking for ${open.join(", ")}. Sent to ${j.req ? j.req.sentTo : 46} vetted drivers with the right trucks. The first ones to accept get the spots.</p>
         <button class="btn small ghost" type="button" data-act="as-driver" style="justify-self:start">See what drivers see</button>` : ""}
@@ -2163,6 +2267,7 @@ function contractorJob(j) {
     ${ready || j.approved ? `<div class="card"><h2>${j.approved ? "Invoice" : j.req ? "Job complete: check hours and pay" : "Approve the day"}</h2>
       <div class="sum">${j.assignments.map(a => `<div class="row"><span>${esc(a.truck)} · ${a.hours} hrs${a.hours < MIN_HRS ? ` (paid ${MIN_HRS}, the minimum)` : ""} × $${rateOf(j, a.type)}</span><span class="num">${money(billOf(j, a))}</span></div>`).join("")}
       <div class="row total"><span>Total, paid by bank transfer</span><span class="num">${money(bill)}</span></div></div>
+      ${j.approved ? "" : `<button class="linkbtn" type="button" data-act="rep-open:${j.id}" style="justify-self:start">Check each truck's day before you approve ›</button>`}
       <p class="muted" style="font-size:13px">Paid by the hour, ${MIN_HRS}-hour minimum per truck. Trucks2U's ${pct(FEE)} fee comes out of the drivers' pay, not your bill. A broker at ${pct(BROKER)} would usually keep about ${money(bill * BROKER)}.</p>
       <div class="stack" style="gap:2px"><strong style="font-size:14px">Rate your drivers</strong><div class="stars" role="group" aria-label="Rating">${[1, 2, 3, 4, 5].map(i => `<button type="button" data-act="rq-star:${j.id}:${i}" class="${i <= (j.stars || 0) ? "on" : ""}" aria-label="${i} star${i > 1 ? "s" : ""}">★</button>`).join("")}</div></div>
       ${j.approved ? '<span class="pill good" style="justify-self:start">Approved · drivers paid within 2 business days</span>' : `<button class="btn good pin" type="button" data-act="approve:${j.id}">Approve hours and tickets</button>`}</div>`
@@ -2373,6 +2478,9 @@ Object.assign(ACTS, {
       a.otw = null; a.status = "done"; a.checkIn ||= j.start; a.hours = Math.max(1, j.hours + ((hash(a.truck) % 5) - 2) * 0.5); a.out = addMin(a.checkIn, a.hours * 60); delete S.gpsPaused[a.truck]; });
     j.req.ended = true; logGps(`${j.name}: job ended. Every truck clocked out, GPS off.`); toast("Job ended. Check the hours, rate your drivers and approve."); },
   "rq-star": (id, n) => { job(id).stars = +n; },
+  "rep-open": id => { ui.tab = "reps"; ui.view = "rep:" + id; ui.repAll = false; window.scrollTo(0, 0); },
+  "rep-all": () => { ui.repAll = true; },
+  "rep-print": () => { setTimeout(() => window.print(), 50); return false; },
   "approve": id => { job(id).approved = true; toast("Approved. Invoice sent and drivers paid out."); },
   "live-open": id => { ui.tab = "live"; ui.view = null; ui.liveJob = id; window.scrollTo(0, 0); },
   "live-job": id => { ui.liveJob = id; },
@@ -3692,6 +3800,7 @@ Object.assign(ACTS, {
 /* ================= Shell: tabs, screens, events ================= */
 const ICONS = {
   jobs: '<path d="M3 7h18v12H3zM8 7V5h8v2" fill="none" stroke="currentColor" stroke-width="2"/>',
+  reps: '<path d="M5 3h10l4 4v14H5zM9 17v-3M12 17v-6M15 17v-4" fill="none" stroke="currentColor" stroke-width="2"/>',
   bill: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6" fill="none" stroke="currentColor" stroke-width="2"/>',
   today: '<path d="M2 15V8h11v7M13 11h5l3 3v1H13" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="6" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17" cy="17" r="2" fill="none" stroke="currentColor" stroke-width="2"/>',
   find: '<circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 16l5 5" stroke="currentColor" stroke-width="2"/>',
@@ -3709,7 +3818,7 @@ const ICONS = {
 };
 // [tab key, label, icon]
 const TABS = {
-  contractor: [["jobs", "Jobs", "jobs"], ["live", "Live map", "live"], ["plants", "Plants", "plants"], ["bill", "Billing", "bill"]],
+  contractor: [["jobs", "Jobs", "jobs"], ["live", "Live map", "live"], ["plants", "Plants", "plants"], ["reps", "Reports", "reps"], ["bill", "Billing", "bill"]],
   owner: [["today", "Today", "today"], ["find", "Find work", "find"], ["fleet", "Fleet", "fleet"], ["pay", "Pay", "pay"], ["docs", "Docs", "docs"]],
   driver: [["dtoday", "Today", "today"], ["dfind", "Find jobs", "find"], ["djobs", "My jobs", "cal"], ["dpay", "Pay", "clock"], ["dme", "My info", "me"]],
   broker: [["board", "Dispatch", "board"], ["trucks", "Trucks", "today"], ["bfee", "Billing", "bill"]],
@@ -3742,7 +3851,8 @@ function screen() {
     if (ui.req) return ui.req.step === "where" ? reqWhere() : reqOptions();
     if (v && v.startsWith("job:")) return contractorJob(job(v.slice(4)));
     if (v && v.startsWith("plant:")) return plantDetail(plant(v.slice(6)));
-    return ({ bill: contractorBilling, live: contractorLive, plants: plantsScreen }[ui.tab] || contractorJobs)();
+    if (v && v.startsWith("rep:")) { const [, id, tr] = v.split(":"); return tr ? driverReport(job(id), tr) : jobReport(job(id)); }
+    return ({ bill: contractorBilling, live: contractorLive, plants: plantsScreen, reps: reportsTab }[ui.tab] || contractorJobs)();
   }
   if (ui.role === "owner") {
     if (v && v.startsWith("work:")) return workView(v, false);
