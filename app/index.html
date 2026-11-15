@@ -1480,64 +1480,89 @@ function roadText(j) {
 
 const LMAPS = [];
 const anyJob = id => job(id) || (S.broker && S.broker.jobs.find(j => j.id === id));
+/* Which map where (to keep Google's bill low):
+   - Home screens and small maps inside job cards show only sample trucks and pins, no Google data,
+     so they use the free map (Esri street tiles via Leaflet, turned gray).
+   - Full job pages show Google's road route, so they use a Google map. Each one is created once when the page
+     opens and then reused while the screen updates (every new Google map counts as a paid "map load"). */
+const GCACHE = new Map();   // key → { div, entry } for the Google maps that are on screen
+let gWaiting = false;
+// Google clears a map's street tiles if its box is ever taken off the page. So just before the screen is redrawn,
+// the Google maps are parked in a hidden spot that stays on the page, then moved into the new screen.
+function parkMaps() {
+  if (!GCACHE.size) return;
+  let lot = document.getElementById("maplot");
+  if (!lot) { lot = document.createElement("div"); lot.id = "maplot"; lot.setAttribute("aria-hidden", "true"); lot.style.cssText = "position:fixed;left:-10000px;top:0;width:340px;height:200px;overflow:hidden;visibility:hidden"; document.body.appendChild(lot); }
+  for (const c of GCACHE.values()) if (c.div.parentNode !== lot) lot.appendChild(c.div);
+}
 function initMaps() {
-  LMAPS.splice(0).forEach(m => { try { m.kill(); } catch (e) {} });
-  if (!G.settled) { loadGoogle().then(() => initMaps()); return; }   // first time: wait for Google, the drawn map shows meanwhile
-  if (G.ok && window.google && google.maps) initGoogleMaps(); else initLeafletMaps();
-}
-function initGoogleMaps() {
-  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
-  document.querySelectorAll("[data-lmap]").forEach(box => {
-    const j = anyJob(box.dataset.lmap); if (!j || !j.pts) return;
-    const A = siteP(j), Bp = destP(j), truck = box.dataset.truck, all = box.dataset.all === "1";
-    const still = !!box.closest("button");   // a map inside a tappable job card stays still, so a tap opens the job
-    const map = new google.maps.Map(box.querySelector(".lm"), { styles: GRAY, disableDefaultUI: true, zoomControl: !still, gestureHandling: still ? "none" : "cooperative", keyboardShortcuts: !still, clickableIcons: false });
-    google.maps.event.addListenerOnce(map, "tilesloaded", () => box.classList.add("live"));
-    const b = new google.maps.LatLngBounds(); b.extend(A); b.extend(Bp); map.fitBounds(b, 46);
-    // Dashed straight line until the road route comes back, then the real route
-    const line = new google.maps.Polyline({ map, path: [A, Bp], strokeOpacity: 0, icons: [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: col("--route"), scale: 3 }, offset: "0", repeat: "12px" }] });
-    const e = { map, j, truck, all, tms: {}, off: col("--muted"), on: col("--route"), kill: () => google.maps.event.clearInstanceListeners(map) };
-    e.dot = (q, c, label, top) => gDot(map, q, c, label, top);
-    e.dot(A, col("--good"), "Job site", true).show(true); e.dot(Bp, col("--route"), short(destText(j)), true).show(true);
-    e.tm = truck ? e.dot(A, col("--route"), truck) : null;
-    LMAPS.push(e);
-    roadRoute(j).then(r => { if (r && r.path.length) line.setOptions({ path: r.path, strokeOpacity: .9, strokeWeight: 5, strokeColor: col("--route"), icons: [] }); });
-  });
-  document.querySelectorAll("[data-omap]").forEach(box => {
-    const h = HEROS[box.dataset.omap]; if (!h) return;
-    const map = new google.maps.Map(box.querySelector(".hm"), { styles: GRAY, disableDefaultUI: true, gestureHandling: "none", keyboardShortcuts: false, clickableIcons: false });
-    const truckPts = nearbyTruckPts(h.center, h.trucks, h.span);
-    truckPts.forEach(p => htmlMarker(p, `<span class="gtk">${TOPTRUCK(p.rot)}</span>`).setMap(map));
-    h.pins.forEach(p => htmlMarker(p, `<span class="jobpin${p.me ? " me" : ""}">${esc(p.label)}</span>`, "pin").setMap(map));
-    const pts = [...h.pins, ...truckPts.slice(0, 6)];
-    if (pts.length > 1) {
-      const b = new google.maps.LatLngBounds(); pts.forEach(p => b.extend(p)); map.fitBounds(b, { top: 70, left: 30, right: 30, bottom: 30 });
-      google.maps.event.addListenerOnce(map, "idle", () => { if (map.getZoom() > 13) map.setZoom(13); });
-    } else { map.setCenter(pts[0] || h.center); map.setZoom(12); }
-    LMAPS.push({ map, hero: true, kill: () => google.maps.event.clearInstanceListeners(map) });
-  });
-}
-// Backup map (free Esri street tiles via Leaflet), used only when Google can't load
-function initLeafletMaps() {
-  if (!window.L) return;   // map library didn't load either: the drawn map stays
-  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
-  document.querySelectorAll("[data-lmap]").forEach(box => {
-    const j = anyJob(box.dataset.lmap); if (!j || !j.pts) return;
-    const A = siteP(j), Bp = destP(j), truck = box.dataset.truck, all = box.dataset.all === "1";
-    const still = !!box.closest("button");
-    const map = L.map(box.querySelector(".lm"), { scrollWheelZoom: false, zoomSnap: 0.25, ...(still ? { dragging: false, zoomControl: false, touchZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false } : {}) });
-    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19,
-      attribution: 'Tiles &copy; <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> and contributors' })
-      .once("tileload", () => box.classList.add("live")).addTo(map);
-    map.fitBounds([[A.lat, A.lng], [Bp.lat, Bp.lng]], { padding: [40, 40] });
-    L.polyline([[A.lat, A.lng], [Bp.lat, Bp.lng]], { color: col("--route"), weight: 3, dashArray: "7 6" }).addTo(map);
-    const e = { map, j, truck, all, tms: {}, off: col("--muted"), on: col("--route"), kill: () => map.remove() };
-    e.dot = (q, c, label, top) => lDot(map, q, c, label, top);
-    e.dot(A, col("--good"), "Job site", true).show(true); e.dot(Bp, col("--route"), short(destText(j)), true).show(true);
-    e.tm = truck ? e.dot(A, col("--route"), truck) : null;
-    LMAPS.push(e);
-  });
+  LMAPS.splice(0).forEach(m => { if (!m.google) { try { m.kill(); } catch (e) {} } });   // Google maps are reused, not thrown away
   initHeroMaps();
+  if (!G.settled) {   // first time only: wait for Google before drawing job-page maps (the drawn map shows meanwhile)
+    if (!gWaiting) { gWaiting = true; loadGoogle().then(() => {
+      gWaiting = false;
+      const heroes = LMAPS.filter(m => m.hero);   // the home map stays as it is
+      LMAPS.splice(0).forEach(m => { if (!m.hero && !m.google) { try { m.kill(); } catch (e) {} } });
+      LMAPS.push(...heroes); initJobMaps();
+    }); }
+    initJobMaps(true);   // still maps in cards don't need Google: draw them now
+    return;
+  }
+  initJobMaps();
+}
+function initJobMaps(stillOnly = false) {
+  const css = getComputedStyle(document.documentElement), col = n => css.getPropertyValue(n).trim();
+  const useGoogle = G.ok && window.google && google.maps, used = new Set();
+  document.querySelectorAll("[data-lmap]").forEach(box => {
+    const j = anyJob(box.dataset.lmap); if (!j || !j.pts) return;
+    const still = !!box.closest("button");   // a map inside a tappable job card stays still, so a tap opens the job
+    if (stillOnly && !still) return;
+    if (useGoogle && !still) googleJobMap(box, j, col, used); else leafletJobMap(box, j, col, still);
+  });
+  if (stillOnly) return;
+  // Google maps no longer on screen are let go; opening that page again creates a new one
+  for (const [k, c] of GCACHE) if (!used.has(k)) { try { c.entry.kill(); } catch (e) {} c.div.remove(); GCACHE.delete(k); }
+}
+function googleJobMap(box, j, col, used) {
+  const A = siteP(j), Bp = destP(j), truck = box.dataset.truck, all = box.dataset.all === "1";
+  let key = [j.id, truck || "", all ? 1 : 0].join("|"), n = 1;
+  while (used.has(key)) key += "#" + n++;
+  used.add(key);
+  const cached = GCACHE.get(key);
+  if (cached) {   // same map as before the screen updated: move it into the new page instead of loading a new one
+    box.replaceChild(cached.div, box.querySelector(".lm")); box.classList.add("live");
+    if (!LMAPS.includes(cached.entry)) LMAPS.push(cached.entry);
+    return;
+  }
+  const div = box.querySelector(".lm");
+  const map = new google.maps.Map(div, { styles: GRAY, disableDefaultUI: true, zoomControl: true, gestureHandling: "cooperative", clickableIcons: false });
+  google.maps.event.addListenerOnce(map, "tilesloaded", () => { const b = div.closest(".mapbox"); if (b) b.classList.add("live"); });
+  const b = new google.maps.LatLngBounds(); b.extend(A); b.extend(Bp); map.fitBounds(b, 46);
+  // Dashed straight line until the road route comes back, then the real route
+  const line = new google.maps.Polyline({ map, path: [A, Bp], strokeOpacity: 0, icons: [{ icon: { path: "M 0,-1 0,1", strokeOpacity: 1, strokeColor: col("--route"), scale: 3 }, offset: "0", repeat: "12px" }] });
+  const e = { google: true, map, j, truck, all, tms: {}, off: col("--muted"), on: col("--route"), kill: () => google.maps.event.clearInstanceListeners(map) };
+  e.dot = (q, c, label, top) => gDot(map, q, c, label, top);
+  e.dot(A, col("--good"), "Job site", true).show(true); e.dot(Bp, col("--route"), short(destText(j)), true).show(true);
+  e.tm = truck ? e.dot(A, col("--route"), truck) : null;
+  LMAPS.push(e); GCACHE.set(key, { div, entry: e });
+  G.loads = (G.loads || 0) + 1;   // Google map loads this visit (to check the savings)
+  roadRoute(j).then(r => { if (r && r.path.length) line.setOptions({ path: r.path, strokeOpacity: .9, strokeWeight: 5, strokeColor: col("--route"), icons: [] }); });
+}
+// Free map (Esri street tiles via Leaflet): home screens, card previews, and the backup if Google can't load
+function leafletJobMap(box, j, col, still) {
+  if (!window.L) return;   // map library didn't load either: the drawn map stays
+  const A = siteP(j), Bp = destP(j), truck = box.dataset.truck, all = box.dataset.all === "1";
+  const map = L.map(box.querySelector(".lm"), { scrollWheelZoom: false, zoomSnap: 0.25, ...(still ? { dragging: false, zoomControl: false, touchZoom: false, doubleClickZoom: false, boxZoom: false, keyboard: false } : {}) });
+  L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19,
+    attribution: 'Tiles &copy; <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> and contributors' })
+    .once("tileload", () => box.classList.add("live")).addTo(map);
+  map.fitBounds([[A.lat, A.lng], [Bp.lat, Bp.lng]], { padding: [40, 40] });
+  L.polyline([[A.lat, A.lng], [Bp.lat, Bp.lng]], { color: col("--route"), weight: 3, dashArray: "7 6" }).addTo(map);
+  const e = { map, j, truck, all, tms: {}, off: col("--muted"), on: col("--route"), kill: () => map.remove() };
+  e.dot = (q, c, label, top) => lDot(map, q, c, label, top);
+  e.dot(A, col("--good"), "Job site", true).show(true); e.dot(Bp, col("--route"), short(destText(j)), true).show(true);
+  e.tm = truck ? e.dot(A, col("--route"), truck) : null;
+  LMAPS.push(e);
 }
 /* Map-first home screens: a still map across the top with job pins and nearby trucks.
    pins: [{ lat, lng, label, me }]; trucks: how many sample trucks to sprinkle around. */
@@ -3358,6 +3383,7 @@ function render() {
   const rb = document.querySelector(`[data-role="${ui.role}"]`); if (rb) $("#roleName").textContent = ui.welcome || ui.login || (ui.csu && !ui.csu.done) || (ui.bsu && !ui.bsu.done) ? "New user" : rb.textContent;
   const flow = !!(ui.signup || ui.req || ui.welcome || ui.login || ui.csu || ui.bsu || ui.dsu);
   if (!ui.welcome && !ui.login) { try { localStorage.setItem("t2u-role", ui.role); } catch (e) {} }   // remember the side for next time   // step-by-step flows hide the tabs and have their own back button
+  parkMaps();   // keep Google maps on the page while the screen is redrawn (see parkMaps)
   $("#screen").innerHTML = screen();
   $("#screen").classList.toggle("form", flow);   // forms stay one readable column in computer view
   $("#app").classList.toggle("notabs", flow);

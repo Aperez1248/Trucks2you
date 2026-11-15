@@ -1,7 +1,7 @@
 /* Trucks2U offline support.
    Network first: with signal you always get the newest version (so a push to GitHub shows up right away);
    with no signal (job sites!) the app opens from the last copy saved on the phone. */
-const CACHE = "trucks2u-v1";
+const CACHE = "trucks2u-v2";
 const SHELL = ["./", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png", "./icons/favicon-32.png"];
 
 self.addEventListener("install", e => {
@@ -25,8 +25,10 @@ self.addEventListener("fetch", e => {
   // The app page itself: ignore the ?v=... cache-buster so one saved copy serves every visit
   const key = req.mode === "navigate" ? new Request(new URL("./", self.registration.scope)) : req;
 
+  // "no-cache" = always check with the server (a quick "has it changed?"), so a refresh never shows an old version.
+  // Without it the browser can reuse its own copy for up to 10 minutes after a push.
   e.respondWith(
-    fetch(req)
+    (sameOrigin ? fetch(req.mode === "navigate" ? req.url : req, { cache: "no-cache" }) : fetch(req))
       .then(res => {
         if (res && (res.ok || res.type === "opaque")) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(key, copy)); }
         return res;
