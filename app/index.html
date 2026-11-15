@@ -342,6 +342,15 @@ main { --mp: 16px; }
 .stbtn.next { background: var(--fg); color: #fff; }
 .stbtn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--good); }
 .st-now { position: absolute; top: 5px; left: 0; right: 0; font: 700 10.5px/1 var(--body); letter-spacing: .6px; text-transform: uppercase; color: var(--good); }
+/* Driver day: compact clock bar */
+.clockbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--good-soft); border-radius: 16px; padding: 12px 14px; box-shadow: inset 0 0 0 2px var(--good); }
+.clockbar.brk { background: var(--warn-soft); box-shadow: inset 0 0 0 2px var(--warn); }
+.clockbar .cb-label { font: 700 12px/1.2 var(--body); color: var(--good); text-transform: uppercase; letter-spacing: .6px; }
+.clockbar.brk .cb-label { color: var(--warn); }
+.clockbar .cb-time { font: 800 30px/1.05 var(--display); letter-spacing: -.8px; }
+.clockbar .cb-btns { display: grid; gap: 6px; flex: none; }
+.clockbar .btn.small { min-width: 96px; background: #fff; }
+.clockbar .btn.small:not(.ghost) { background: var(--fg); color: #fff; }
 .gpowered { font: 600 11px/1 var(--body); color: var(--muted); text-align: right; padding-top: 8px; }
 .hero .hm .leaflet-control-attribution { font-size: 9px; }
 /* Muted, gray street maps (like Uber's) so black pins and the blue route stand out */
@@ -2345,12 +2354,12 @@ function nextStop(j, a) {
   if (w === "plant") return { head: "You're at", stop: dest, eta: "", then: "Next: back to the job site" };
   return { head: "Heading back to", stop: site, eta: roadText(j) };
 }
-function tripTop(j, a) {
+function tripTop(j, a, back = true, mid = "") {   // mid: shown between the map and the next-stop card
   const n = nextStop(j, a), app = navApp(), apps = Object.keys(NAV_APPS).filter(k => k !== "apple" || isIOS());
   const go = n.head === "You're at" ? siteP(j) : n.stop.pt;   // at the plant, Navigate takes you back to the job
   const navBtn = app ? `<a class="btn navbtn" href="${navUrl(app, go)}" target="_blank" rel="noopener">Navigate ›</a>`
     : `<button class="btn navbtn" type="button" data-act="nav-choose">Navigate ›</button>`;
-  return `<div class="tripmap">${jobMap(j, { truck: a.truck, h: 250 })}<button class="back" type="button" data-go="back">‹ Back</button></div>
+  return `<div class="tripmap">${jobMap(j, { truck: a.truck, h: 250 })}${back ? '<button class="back" type="button" data-go="back">‹ Back</button>' : ""}</div>${mid}
     <div class="tripcard">
       <span class="eyebrow">${esc(n.head)} · ${esc(n.stop.label)}</span>
       <h2>${esc(n.stop.name)}</h2><span class="tc-addr">${esc(n.stop.addr)}</span>
@@ -2556,7 +2565,9 @@ function driverToday() {
   const all = driverAssignments(), today = all.filter(x => x.j.dayN === 0);
   const ask = all.filter(x => x.j.dayN === 1 && !x.a.confirmed);
   const next = all.filter(x => x.j.dayN > 0).sort((a, b) => a.j.dayN - b.j.dayN)[0];
-  // Map first: your truck and where you're working today (or next)
+  const cur = today.find(x => x.j.pts && x.a.status !== "done");
+  if (cur) return driverDay(t, cur, ask, next);
+  // No job today: map first with your truck and your next job
   const live = today.filter(x => x.j.pts).map(({ j, a }) => truckPos(j, a)).find(Boolean);
   const me = live ? { lat: live.lat, lng: live.lng } : { lat: SITE.lat - 0.035, lng: SITE.lng + 0.03 };
   const pins = [{ ...me, label: `You · ${t.id}`, me: true }, ...(today.length ? today : next ? [next] : []).filter(x => x.j.pts).map(({ j }) => ({ ...siteP(j), label: pinName(j.name) }))];
@@ -2574,6 +2585,39 @@ function driverToday() {
     + `<div class="card"><div class="row"><div><strong>Same-day requests</strong><div class="muted" style="font-size:13px">Jobs that need a truck right now. You get 20 seconds to accept.</div></div>
         <button class="pick" type="button" data-act="d-online" aria-pressed="${S.online}" style="flex:none">${S.online ? "On" : "Off"}</button></div></div>
     <div class="note">Pick up jobs in Find jobs, or ${ME_OWNER} books them for you. Dispatch updates show up here and by text.</div></div>`;
+}
+/* The driver's whole day on one screen (like Uber's driver app): map and next stop, the clock, status buttons,
+   load tickets, then dispatch notes. One tap for each thing they do in the truck. */
+function clockBar(t) {
+  const sh = S.shifts[t.id], brk = onBreak(sh);
+  return `<div class="clockbar${brk ? " brk" : ""}"><div><span class="cb-label">${brk ? "On break · clock paused" : `On the clock since ${fmtT(sh.inMs)}`}</span>
+      <div class="cb-time num" data-clock="${t.id}">${hms(workMs(sh))}</div></div>
+    <div class="cb-btns"><button class="btn small ${brk ? "" : "ghost"}" type="button" data-act="${brk ? "break-end" : "break-start"}:${t.id}">${brk ? "End break" : "Break"}</button>
+      <button class="btn small ghost" type="button" data-go="clockout">Clock out</button></div></div>
+    ${sh.far ? `<div class="note" style="color:var(--warn)">You clocked in ${esc(sh.where)}, so your time is flagged for the contractor.</div>` : ""}`;
+}
+function driverDay(t, { j, a }, ask, next) {
+  const sh = S.shifts[t.id], on = sh && !sh.outMs;
+  const askCards = ask.map(({ j: k, a: b }) => `<div class="card" style="border:2px solid var(--warn)"><strong>Tomorrow ${esc(k.start)}: are you still coming?</strong>
+      <span class="muted" style="font-size:13px">${esc(k.name)} · ${esc(siteText(k))}. Please confirm by 8 PM tonight, or your spot goes to another driver.</span>
+      <div class="grid2"><button class="btn" type="button" data-act="d-confirm:${k.id}:${b.truck}">Yes, I'm coming</button><button class="btn ghost danger" type="button" data-act="d-cant:${k.id}:${b.truck}">I can't make it</button></div></div>`).join("");
+  let work = "";
+  if (on && a.status === "onsite") work = statusCard(j, a) + `<div class="card"><h2>Add a load ticket</h2>
+      <div class="grid2"><label class="field">Ticket #<input id="t-no" inputmode="numeric" placeholder="448801"></label><label class="field">Tons<input id="t-tons" type="number" step="0.1" inputmode="decimal" placeholder="18.5"></label></div>
+      <label class="field">Photo of ticket<input id="t-photo" type="file" accept="image/*" capture="environment"></label>
+      <button class="btn" type="button" data-act="ticket:${j.id}:${a.truck}">Save ticket</button></div>`;
+  else if (on) work = `<div class="card"><strong>Not at the job yet</strong><span class="muted" style="font-size:13px">GPS marks you arrived when you get to the job site. No signal there? Tap below.</span>
+      <button class="btn" type="button" data-act="checkin:${j.id}:${a.truck}">I'm at the job site</button></div>`;
+  const tix = a.tickets.length ? `<div class="card"><div class="row"><h2>Today's tickets</h2><span class="muted num">${a.tickets.length} · ${tons(a).toFixed(1)} t</span></div>
+      <div class="list">${a.tickets.map(k => `<div class="row"><div class="row" style="justify-content:flex-start">${k.photo ? `<img class="thumb" src="${k.photo}" alt="Ticket ${esc(k.no)}">` : '<span class="thumb">photo</span>'}<div><strong class="num">#${esc(k.no)}</strong><div class="muted" style="font-size:13px">${esc(k.time)}</div></div></div><span class="num">${k.tons.toFixed(1)} t</span></div>`).join("")}</div></div>` : "";
+  // The clock goes right under the map: "Clock in" is the first thing to do, and the running clock stays in view
+  return tripTop(j, a, false, on ? clockBar(t) : clockCard(t))
+    + work + askCards   // the day's buttons first; tomorrow's question after
+    + dspDriverCard(j, a.truck) + tix + (on ? gpsCard(j, a) : "")
+    + (next ? `<button type="button" class="card tap" data-go="work:${next.j.id}:${next.a.truck}"><span class="eyebrow">Next job</span><strong>${esc(next.j.date)}, ${esc(next.j.start)} · ${esc(next.j.name)}</strong><span class="muted" style="font-size:13px">${esc(siteText(next.j))}</span></button>` : "")
+    + `<div class="card"><div class="row"><div><strong>Same-day requests</strong><div class="muted" style="font-size:13px">Jobs that need a truck right now. You get 20 seconds to accept.</div></div>
+        <button class="pick" type="button" data-act="d-online" aria-pressed="${S.online}" style="flex:none">${S.online ? "On" : "Off"}</button></div></div>`
+    + installCard() + signupBanner();
 }
 function driverFind() {
   const t = myDriverTruck();
