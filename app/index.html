@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <!-- Phones: use the real screen width (no zoomed-out desktop page) and draw under the notch / home bar -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b1730">
+<meta name="theme-color" content="#000000">
 <!-- Saved to the home screen, it opens full screen like an app -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -24,43 +24,45 @@
 /* Layout: demo bar on top (Phone/Computer, Viewing as, Reset demo), then the app:
    navy brand bar, the screen, and a bottom tab bar (a left sidebar in Computer layout). */
 :root {
-  --bg: #eef2f7;
+  /* Black and white, like the original app; color only where it means something (status, map) */
+  --bg: #eeeeee;
   --surface: #ffffff;
-  --surface-2: #f5f7fb;
-  --line: #d9e0ea;
-  --fg: #101a2b;
-  --muted: #5b6880;
-  --brand: #0b1730;
-  --brand-2: #16233f;
+  --surface-2: #f6f6f6;
+  --line: #e2e2e2;
+  --fg: #000000;
+  --muted: #5e5e5e;
+  --brand: #000000;
+  --brand-2: #1c1c1c;
   --brand-fg: #ffffff;
-  --accent: #1667e8;
+  --accent: #000000;
   --accent-fg: #ffffff;
-  --accent-soft: #e3edfd;
-  --good: #1a8a4a;
-  --good-soft: #e1f4e8;
-  --warn: #a86400;
-  --warn-soft: #fdf0d9;
-  --bad: #c0352b;
-  --bad-soft: #fbe5e3;
+  --accent-soft: #eeeeee;
+  --route: #276ef1;   /* map routes and truck dots */
+  --good: #06a35a;
+  --good-soft: #e3f6ec;
+  --warn: #c76a00;
+  --warn-soft: #fdf0dc;
+  --bad: #e11900;
+  --bad-soft: #fde6e3;
   --display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
   --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
   --tabh: 62px;   /* bottom tab bar height (phone layout) */
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #070e1c; --surface: #101b31; --surface-2: #0c1527; --line: #22314f;
-    --fg: #e8eef8; --muted: #93a2bd; --brand: #050b17; --brand-2: #121e37; --brand-fg: #ffffff;
-    --accent: #3d86ff; --accent-fg: #ffffff; --accent-soft: #15284d;
-    --good: #4cc47e; --good-soft: #10301f; --warn: #f0a73a; --warn-soft: #34260c;
-    --bad: #f0726a; --bad-soft: #3a1513; color-scheme: dark;
+    --bg: #0b0b0b; --surface: #161616; --surface-2: #111111; --line: #2c2c2c;
+    --fg: #ffffff; --muted: #a6a6a6; --brand: #000000; --brand-2: #1c1c1c; --brand-fg: #ffffff;
+    --accent: #ffffff; --accent-fg: #000000; --accent-soft: #262626; --route: #5b93ff;
+    --good: #1fd47f; --good-soft: #0f2a1c; --warn: #f0a640; --warn-soft: #33240c;
+    --bad: #ff6b5b; --bad-soft: #3a1512; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #070e1c; --surface: #101b31; --surface-2: #0c1527; --line: #22314f;
-  --fg: #e8eef8; --muted: #93a2bd; --brand: #050b17; --brand-2: #121e37; --brand-fg: #ffffff;
-  --accent: #3d86ff; --accent-fg: #ffffff; --accent-soft: #15284d;
-  --good: #4cc47e; --good-soft: #10301f; --warn: #f0a73a; --warn-soft: #34260c;
-  --bad: #f0726a; --bad-soft: #3a1513; color-scheme: dark;
+  --bg: #0b0b0b; --surface: #161616; --surface-2: #111111; --line: #2c2c2c;
+  --fg: #ffffff; --muted: #a6a6a6; --brand: #000000; --brand-2: #1c1c1c; --brand-fg: #ffffff;
+  --accent: #ffffff; --accent-fg: #000000; --accent-soft: #262626; --route: #5b93ff;
+  --good: #1fd47f; --good-soft: #0f2a1c; --warn: #f0a640; --warn-soft: #33240c;
+  --bad: #ff6b5b; --bad-soft: #3a1512; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
@@ -71,7 +73,7 @@ button, label, a { touch-action: manipulation; }   /* no double-tap zoom delay o
 .app { background: var(--surface-2); border: 1px solid var(--line); border-radius: 22px; overflow: clip; display: flex; flex-direction: column; min-height: 640px; }
 .bar { background: var(--brand); color: var(--brand-fg); padding: 14px 16px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .logo { font: italic 800 26px/1 var(--display); letter-spacing: .5px; }
-.logo b { color: #4d94ff; }
+.logo b { color: inherit; }
 .bar small { font: 600 11px/1.2 var(--body); letter-spacing: 1.5px; text-transform: uppercase; opacity: .7; text-align: right; }
 .demo { display: grid; gap: 6px; }
 .roles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
@@ -105,7 +107,9 @@ p { margin: 0; }
 .btn { border: 0; border-radius: 11px; background: var(--accent); color: var(--accent-fg); font: 700 15px/1 var(--body); padding: 13px 16px; min-height: 44px; cursor: pointer; width: 100%; }
 .btn.ghost { background: var(--surface); color: var(--accent); border: 1px solid var(--line); }
 .btn.small { width: auto; padding: 9px 12px; min-height: 38px; font-size: 13px; border-radius: 9px; }
-.btn.good { background: var(--good); }
+.btn.good { background: var(--good); color: #ffffff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.good { color: #000000; } }
+:root[data-theme="dark"] .btn.good { color: #000000; }
 .btn.danger { color: var(--bad); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 a.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
@@ -123,8 +127,8 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .meter { height: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
 .meter i { display: block; height: 100%; background: var(--accent); transition: width .4s; }
 .route { display: grid; grid-template-columns: 14px 1fr; gap: 2px 10px; font-size: 14px; }
-.route .dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--accent); margin-top: 5px; }
-.route .dot.end { background: var(--accent); }
+.route .dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--route); margin-top: 5px; }
+.route .dot.end { background: var(--route); }
 .route .line { width: 2px; background: var(--line); margin-left: 4px; height: 14px; }
 .list { display: grid; gap: 0; }
 .list > div, .list > button.place { padding: 10px 0; border-top: 1px solid var(--line); }
@@ -176,15 +180,15 @@ a.tel { color: var(--accent); font-weight: 600; text-decoration: none; white-spa
 .toast { position: fixed; left: 50%; bottom: calc(var(--tabh) + 16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--brand); color: var(--brand-fg); padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; width: max-content; max-width: calc(100% - 32px); z-index: 40; text-align: center; box-shadow: 0 6px 24px rgb(0 0 0 / .25); }
 /* Same-day request: a dark card over the screen with a 20-second countdown */
 .offer { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabh) + 12px + env(safe-area-inset-bottom, 0px)); width: min(440px, calc(100% - 20px)); max-height: calc(100% - 100px); overflow-y: auto; z-index: 30; background: var(--brand); color: #fff; border-radius: 18px; padding: 18px; display: grid; gap: 12px; box-shadow: 0 10px 40px rgb(0 0 0 / .45); }
-.offer .muted { color: #b3bfd4; }
-.offer .btn.ghost { background: var(--brand-2); color: #fff; border-color: #22314f; }
+.offer .muted { color: #b3b3b3; }
+.offer .btn.ghost { background: var(--brand-2); color: #fff; border-color: #333333; }
 .ring { width: 56px; height: 56px; flex: none; }
 .map { width: 100%; height: auto; display: block; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--line); }
 .map .road { fill: none; stroke: var(--line); stroke-width: 9; stroke-linecap: round; }
 .map .road2 { fill: none; stroke: var(--surface); stroke-width: 2; stroke-dasharray: 6 6; }
 .map .fence { fill: var(--good-soft); stroke: var(--good); stroke-width: 1.5; stroke-dasharray: 4 3; }
 .map .place { fill: var(--fg); font: 700 11px var(--body); }
-.map .tk { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+.map .tk { fill: var(--route); stroke: var(--surface); stroke-width: 2; }
 .map .tk.in { fill: var(--good); }
 .map .tk.off { fill: var(--muted); }
 .gmap .land { fill: var(--surface-2); }
@@ -192,9 +196,9 @@ a.tel { color: var(--accent); font-weight: 600; text-decoration: none; white-spa
 .gmap .city { fill: var(--muted); }
 .gmap .cityl { fill: var(--muted); font: 600 9.5px var(--body); }
 .gmap .plantdot { fill: var(--muted); opacity: .55; }
-.gmap .leg { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 7 5; stroke-linecap: round; }
+.gmap .leg { fill: none; stroke: var(--route); stroke-width: 3; stroke-dasharray: 7 5; stroke-linecap: round; }
 .gmap .pinA { fill: var(--good); stroke: var(--surface); stroke-width: 1.5; }
-.gmap .pinB { fill: var(--accent); stroke: var(--surface); stroke-width: 1.5; }
+.gmap .pinB { fill: var(--route); stroke: var(--surface); stroke-width: 1.5; }
 .gmap .pinl { fill: var(--fg); font: 700 10.5px var(--body); paint-order: stroke; stroke: var(--surface-2); stroke-width: 3px; }
 .gmap .scale { stroke: var(--fg); stroke-width: 1.5; }
 .gmap .scalel { fill: var(--fg); font: 600 9px var(--body); }
@@ -1255,19 +1259,19 @@ function initMaps() {
       attribution: 'Tiles &copy; <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a> and contributors' })
       .once("tileload", () => box.classList.add("live")).addTo(map);
     map.fitBounds([[A.lat, A.lng], [Bp.lat, Bp.lng]], { padding: [40, 40] });
-    L.polyline([[A.lat, A.lng], [Bp.lat, Bp.lng]], { color: col("--accent"), weight: 3, dashArray: "7 6" }).addTo(map);
+    L.polyline([[A.lat, A.lng], [Bp.lat, Bp.lng]], { color: col("--route"), weight: 3, dashArray: "7 6" }).addTo(map);
     const pin = (q, fill, text) => L.circleMarker([q.lat, q.lng], { radius: 9, color: "#fff", weight: 2, fillColor: fill, fillOpacity: 1 })
       .bindTooltip(text, { permanent: true, direction: "top", offset: [0, -9] }).addTo(map);
-    pin(A, col("--good"), "Job site"); pin(Bp, col("--accent"), short(destText(j)));
-    const tm = truck ? L.circleMarker([A.lat, A.lng], { radius: 7, color: "#fff", weight: 2, fillColor: col("--accent"), fillOpacity: 1 }).bindTooltip(truck, { permanent: true, direction: "right", offset: [8, 0] }) : null;
-    LMAPS.push({ map, j, truck, tm, all, tms: {}, off: col("--muted"), on: col("--accent") });
+    pin(A, col("--good"), "Job site"); pin(Bp, col("--route"), short(destText(j)));
+    const tm = truck ? L.circleMarker([A.lat, A.lng], { radius: 7, color: "#fff", weight: 2, fillColor: col("--route"), fillOpacity: 1 }).bindTooltip(truck, { permanent: true, direction: "right", offset: [8, 0] }) : null;
+    LMAPS.push({ map, j, truck, tm, all, tms: {}, off: col("--muted"), on: col("--route") });
   });
 }
 function directions(j) {
   if (!j.pts) return "";
   const A = siteP(j), Bp = destP(j), mi = miles(A, Bp), ll = q => q.lat + "," + q.lng;
   const go = q => `https://www.google.com/maps/dir/?api=1&destination=${ll(q)}&travelmode=driving`;
-  return `<div class="row muted num" style="font-size:13px"><span><span style="color:var(--good)">●</span> Job site ↔ <span style="color:var(--accent)">●</span> ${esc(short(destText(j)))}</span><span style="flex:none">${mi.toFixed(1)} mi · ~${driveMin(mi)} min</span></div>
+  return `<div class="row muted num" style="font-size:13px"><span><span style="color:var(--good)">●</span> Job site ↔ <span style="color:var(--route)">●</span> ${esc(short(destText(j)))}</span><span style="flex:none">${mi.toFixed(1)} mi · ~${driveMin(mi)} min</span></div>
     <div class="row" style="gap:8px"><a class="btn small ghost" href="${go(A)}" target="_blank" rel="noopener" style="flex:1">Directions to job site</a><a class="btn small ghost" href="${go(Bp)}" target="_blank" rel="noopener" style="flex:1">Directions to ${esc(short(destText(j)))}</a></div>
     <a class="back" href="https://www.google.com/maps/dir/?api=1&origin=${ll(A)}&destination=${ll(Bp)}&travelmode=driving" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">See the whole route on Google Maps ›</a>`;
 }
