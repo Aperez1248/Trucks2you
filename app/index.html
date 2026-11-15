@@ -351,6 +351,11 @@ main { --mp: 16px; }
 .clockbar .cb-btns { display: grid; gap: 6px; flex: none; }
 .clockbar .btn.small { min-width: 96px; background: #fff; }
 .clockbar .btn.small:not(.ghost) { background: var(--fg); color: #fff; }
+/* "On the clock": solid green with a pulsing dot, so working trucks stand out */
+.pill.live { background: var(--good); color: #fff; display: inline-flex; align-items: center; gap: 6px; }
+.pill.live i { width: 7px; height: 7px; border-radius: 50%; background: #fff; flex: none; }
+@media (prefers-reduced-motion: no-preference) { .pill.live i { animation: livepulse 1.6s ease-in-out infinite; } }
+@keyframes livepulse { 50% { opacity: .35; } }
 .gpowered { font: 600 11px/1 var(--body); color: var(--muted); text-align: right; padding-top: 8px; }
 .hero .hm .leaflet-control-attribution { font-size: 9px; }
 /* Muted, gray street maps (like Uber's) so black pins and the blue route stand out */
@@ -1377,7 +1382,7 @@ function toast(msg) {
 }
 function statusPill(a) {
   if (a.status === "done") return '<span class="pill good">Checked out</span>';
-  if (a.status === "onsite") return '<span class="pill info">On the clock</span>';
+  if (a.status === "onsite") return '<span class="pill live"><i></i>On the clock</span>';
   if (a.otw) return '<span class="pill info">On the way</span>';
   return '<span class="pill warn">Assigned</span>';
 }
@@ -2527,7 +2532,7 @@ function clockCard(t) {
   }
   const brk = onBreak(sh);
   return `<div class="card" style="border:2px solid ${brk ? "var(--warn)" : "var(--good)"}">
-    <div class="row"><span class="eyebrow">Clocked in ${fmtT(sh.inMs)} · ${esc(sh.where)}</span>${brk ? '<span class="pill warn">On break</span>' : '<span class="pill good">On the clock</span>'}</div>
+    <div class="row"><span class="eyebrow">Clocked in ${fmtT(sh.inMs)} · ${esc(sh.where)}</span>${brk ? '<span class="pill warn">On break</span>' : '<span class="pill live"><i></i>On the clock</span>'}</div>
     <div class="clockbig"><div class="big num" data-clock="${t.id}">${hms(workMs(sh))}</div><span class="muted" style="font-size:12px">hours : minutes : seconds${brk ? " · paused for your break" : ""}</span></div>
     ${sh.far ? `<div class="note" style="color:var(--warn)">You clocked in ${esc(sh.where)}, so your time is flagged for the contractor.</div>` : ""}
     ${brk ? `<p class="muted" style="font-size:13px">Break started at ${fmtT(sh.breaks[sh.breaks.length - 1].s)}. Break time isn't paid.</p>` : ""}
