@@ -346,6 +346,9 @@ main { --mp: 16px; }
 .rt-txt strong { font: 800 18px/1.15 var(--display); letter-spacing: -.3px; }
 .rt-txt span { font-size: 14px; color: var(--muted); }
 .rt-go { margin-left: auto; font: 700 24px/1 var(--body); color: var(--muted); }
+.demo-row { display: grid; gap: 8px; justify-items: center; text-align: center; background: var(--tile); border-radius: 16px; padding: 14px 12px; }
+.demo-row .chips { justify-content: center; }
+.demo-row .pick { background: #fff; }
 .linkbtn { background: none; border: 0; padding: 6px 2px; font: 700 15px/1 var(--body); color: var(--fg); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .truckpick { display: flex; align-items: center; gap: 12px; text-align: left; width: 100%; border-radius: 12px; padding: 8px 14px 8px 10px; }
 .truckpick[aria-pressed="true"] .tpic * { filter: invert(1); }
@@ -2666,7 +2669,8 @@ const HEADSET = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 26v-4a
 const CONE = '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M20 6h8l9 32H11z" fill="#000"/><path d="M17 17h14l2 7H15zM14 29h20l2 6H12z" fill="#fff"/><rect x="6" y="38" width="36" height="5" rx="2" fill="#000"/></svg>';
 function welcomeScreen() {
   const tile = (act, pic, title, sub) => `<button type="button" class="role-tile" data-act="${act}"><span class="rt-pic">${pic}</span><span class="rt-txt"><strong>${title}</strong><span>${sub}</span></span><span class="rt-go" aria-hidden="true">›</span></button>`;
-  return heroMap("welcome", [], { trucks: 14, center: FROM.Oakland })
+  // Demo: "Skip" and "Explore the demo" go straight into the working app with the sample data (hide these once the app is real)
+  return heroMap("welcome", [], { trucks: 14, center: FROM.Oakland, top: '<span></span><button class="fpill" type="button" data-act="w-demo:contractor">Skip ›</button>' })
     + `<div class="sheet">
     <div class="stack" style="gap:6px"><h1 style="font-size:38px;line-height:1.02">Dump trucks on demand.</h1>
       <p class="muted">Vetted 10 wheelers, 12 wheelers and super dumpers, booked in minutes. No broker in the middle.</p></div>
@@ -2678,6 +2682,9 @@ function welcomeScreen() {
     </div>
     <p class="muted" style="text-align:center;font-size:13.5px">Driving for a trucking company? Use the invite link they texted you. <button type="button" class="linkbtn" style="font-size:13.5px" data-act="w-invite">See how it works</button></p>
     <p style="text-align:center;font-size:15px">Already have an account? <button type="button" class="linkbtn" data-act="w-login">Log in</button></p>
+    <div class="demo-row"><div class="eyebrow">Explore the demo · no sign-up</div>
+      <div class="chips">${[["contractor", "Contractor"], ["owner", "Truck owner"], ["driver", "Driver"], ["broker", "Broker"], ["admin", "Admin"]].map(([r, l]) => `<button class="pick" type="button" data-act="w-demo:${r}">${l}</button>`).join("")}</div>
+      <span class="muted" style="font-size:12.5px">Opens the working app with sample jobs, trucks and drivers.</span></div>
     ${installCard()}
     <p class="muted" style="text-align:center;font-size:12.5px">Every driver and truck is checked before they can take jobs.</p></div>`;
 }
@@ -2765,6 +2772,7 @@ Object.assign(ACTS, {
   "w-contractor": () => { markSeen(); ui = freshUi("contractor"); ui.csu = newCsu(); window.scrollTo(0, 0); },
   "w-driver": () => { markSeen(); ui = freshUi("driver"); ui.signup = { ...newSignup(), fromWelcome: true }; window.scrollTo(0, 0); },
   "w-fleet": () => { markSeen(); ui = freshUi("owner"); ui.signup = { ...newSignup(), kind: "fleet", fromWelcome: true }; window.scrollTo(0, 0); },
+  "w-demo": role => { markSeen(); ME_CONTRACTOR = DEFAULT_CONTRACTOR; ME_CONTACT = { ...DEFAULT_CONTACT }; ui = freshUi(TABS[role] ? role : "contractor"); window.scrollTo(0, 0); },
   "w-login": () => { ui.welcome = false; ui.login = { step: 1 }; window.scrollTo(0, 0); },
   "lg-send": () => { if ((ui.login.phone || "").replace(/\D/g, "").length !== 10) return false; ui.login.step = 2; toast("Code sent (demo: type any 6 digits)."); },
   "lg-back": () => { ui.login.step = 1; ui.login.code = ""; },
@@ -3128,7 +3136,9 @@ function badge(role, tab) {
   if (role === "admin" && tab === "vet") return S.applicants.filter(a => !S.approvedApplicants.includes(a.id)).length;
   return 0;
 }
-ui = freshUi("driver");   // opens on the driver's time clock, like the prototype
+// Opens on the side you used last (Contractor the first time)
+const lastRole = () => { try { const r = localStorage.getItem("t2u-role"); return TABS[r] ? r : "contractor"; } catch (e) { return "contractor"; } };
+ui = freshUi(lastRole());
 
 function workView(v, driver) { const [, jid, t] = v.split(":"), j = job(jid); return ownerWork(j, j && j.assignments.find(a => a.truck === t), driver); }
 function screen() {
@@ -3166,7 +3176,8 @@ function screen() {
 function render() {
   document.querySelectorAll("[data-role]").forEach(b => b.setAttribute("aria-pressed", b.dataset.role === ui.role));
   const rb = document.querySelector(`[data-role="${ui.role}"]`); if (rb) $("#roleName").textContent = ui.welcome || ui.login || (ui.csu && !ui.csu.done) || (ui.bsu && !ui.bsu.done) ? "New user" : rb.textContent;
-  const flow = !!(ui.signup || ui.req || ui.welcome || ui.login || ui.csu || ui.bsu || ui.dsu);   // step-by-step flows hide the tabs and have their own back button
+  const flow = !!(ui.signup || ui.req || ui.welcome || ui.login || ui.csu || ui.bsu || ui.dsu);
+  if (!ui.welcome && !ui.login) { try { localStorage.setItem("t2u-role", ui.role); } catch (e) {} }   // remember the side for next time   // step-by-step flows hide the tabs and have their own back button
   $("#screen").innerHTML = screen();
   $("#screen").classList.toggle("form", flow);   // forms stay one readable column in computer view
   $("#app").classList.toggle("notabs", flow);
