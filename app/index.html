@@ -360,6 +360,20 @@ main { --mp: 16px; }
 .fj-head { display: grid; gap: 3px; margin-top: -4px; }
 .fj-head strong { font-size: 16px; }
 .fj-mi { font: 700 13px/1.2 var(--body); color: var(--fg); margin-top: -4px; }
+.dstrip { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -2px; padding: 2px; }
+.dstrip::-webkit-scrollbar { display: none; }
+.dday { flex: 0 0 52px; display: grid; justify-items: center; gap: 1px; border: 0; border-radius: 14px; background: var(--tile); padding: 8px 0 6px; cursor: pointer; font-family: var(--body); color: var(--ink); }
+.dday .dw { font-size: 11px; color: var(--muted); font-weight: 600; }
+.dday .dn { font-size: 19px; font-weight: 700; line-height: 1.1; }
+.dday .dc { font-size: 11px; font-weight: 700; min-height: 14px; }
+.dday.on { background: #000; color: #fff; }
+.dday.on .dw, .dday.on .dc { color: #fff; }
+.dday.bk .dc { color: var(--good); }
+.dday.on.bk .dc { color: #7be495; }
+.dday.off .dn, .dday.off .dc { color: #b5b5b5; }
+.fj-day { margin-top: 2px; }
+.fj-day .muted { font-size: 13px; }
+.fj-booked { border: 2px solid var(--good); }
 .seg2 { display: inline-flex; background: var(--tile); border-radius: 999px; padding: 3px; gap: 3px; flex: none; margin-left: auto; }
 .seg2 button { border: 0; background: none; font: 700 13px/1 var(--body); color: var(--muted); padding: 9px 14px; border-radius: 999px; cursor: pointer; min-height: 36px; }
 .seg2 button[aria-pressed="true"] { background: var(--fg); color: #fff; }
@@ -2573,7 +2587,7 @@ function driverClockOut() {
 function boardJobs() {
   const t = myDriverTruck(); if (!t) return [];
   const mine = new Set(driverAssignments().map(x => x.j.id));
-  return S.jobs.filter(j => !j.approved && j.dayN >= 0 && !mine.has(j.id) && openFor(j, t.type) > 0 && !(j.dayN === 0 && j.req && !j.req.live) && milesFromHome(j) <= S.radius)
+  return S.jobs.filter(j => !j.approved && j.dayN >= 0 && !mine.has(j.id) && openFor(j, t.type) > 0 && !(j.dayN === 0 && j.req && !j.req.live) && milesFromHome(j) <= S.radius && !busyDay(j.dayN))
     .sort((a, b) => a.dayN - b.dayN || milesFromHome(a) - milesFromHome(b));   // soonest first, then closest
 }
 /* ---------- Jobs near the driver, "new" jobs, and job alerts ---------- */
@@ -2679,18 +2693,35 @@ function driverFind() {
   newBoardJobs().forEach(j => ui.findNew.add(j.id));   // includes jobs that just came into range after a bigger distance
   b.forEach(j => { if (!seenJobs().includes(j.id)) seenJobs().push(j.id); });
   const nNew = b.filter(j => ui.findNew.has(j.id)).length, mapView = ui.fview === "map";
+  // Day strip: the next two weeks. Opens on the next day that has jobs; booked days show the driver's job instead.
+  const DAYS = 14, onDay = n => b.filter(j => j.dayN === n);
+  if (ui.fday == null || ui.fday >= DAYS) ui.fday = b.length ? Math.min(b[0].dayN, DAYS - 1) : 0;
+  const sel = ui.fday, bookedOn = n => driverAssignments().find(x => x.j.dayN === n && x.a.status !== "done");
+  const strip = `<div class="dstrip" role="tablist" aria-label="Pick a day">${Array.from({ length: DAYS }, (_, n) => {
+      const d = dateOf(n), bk = bookedOn(n), off = !worksDay(n), c = onDay(n).length;
+      return `<button type="button" class="dday${n === sel ? " on" : ""}${bk ? " bk" : ""}${off && !bk ? " off" : ""}" data-act="d-fday:${n}" aria-pressed="${n === sel}"
+        aria-label="${esc(dayName(n))}: ${bk ? "you're booked" : c ? c + " job" + (c === 1 ? "" : "s") : off ? "day off" : "no jobs"}">
+        <span class="dw">${n === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday: "short" })}</span><span class="dn">${d.getDate()}</span>
+        <span class="dc">${bk ? "✓" : c ? c : off ? "—" : ""}</span></button>`; }).join("")}</div>`;
+  const bk = bookedOn(sel), list = onDay(sel), selName = sel === 0 ? "Today" : sel === 1 ? "Tomorrow" : dateOf(sel).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
+  const dayBody = bk ? `<button type="button" class="card tap fj-booked" data-go="work:${bk.j.id}:${bk.a.truck}"><span class="pill good" style="justify-self:start">You're booked</span>
+        <h2>${esc(bk.j.name)} · ${esc(bk.j.start)}</h2><span class="muted" style="font-size:13px">${esc(bk.j.by)}</span></button>
+      <p class="muted" style="font-size:13px">Other jobs this day are hidden so you don't double-book.</p>`
+    : list.length ? list.map(card).join("")
+    : `<div class="note">${!worksDay(sel) ? "You don't work this day. Change your days in My info." : "No jobs this day yet. We'll alert you if one comes in near you."}${b.length ? ` <button class="linkbtn" type="button" data-act="d-fday:${b[0].dayN}">See ${esc(dayName(b[0].dayN))}</button>` : ""}</div>`;
   const pins = b.map(j => ({ ...siteP(j), label: `${"$" + rateOf(j, t.type)} · ${j.dayN === 0 ? "Today" : j.dayN === 1 ? "Tmrw" : dayName(j.dayN).split(",")[0]}` }));
-  const card = j => { const left = openFor(j, t.type), isNew = ui.findNew.has(j.id); return `<button type="button" class="card tap${isNew ? " hot" : ""}" data-go="djob:${j.id}">
+  function card(j) { const left = openFor(j, t.type), isNew = ui.findNew.has(j.id); return `<button type="button" class="card tap${isNew ? " hot" : ""}" data-go="djob:${j.id}">
       <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span>${isNew ? '<span class="pill live"><i></i>New</span>' : `<span class="pill warn">${left} spot${left === 1 ? "" : "s"} left</span>`}</div>
       <h2>${esc(j.name)}</h2><span class="fj-mi">${milesFromHome(j).toFixed(0)} mi from you · ${left} spot${left === 1 ? "" : "s"} left</span>${route(j)}
-      <div class="row" style="font-size:13px"><span class="muted">${esc(j.by)}${j.crating ? " ★ " + j.crating : ""} · about ${j.hours || 10} hrs</span><strong class="num" style="flex:none">${"$" + rateOf(j, t.type)}/hr</strong></div></button>`; };
+      <div class="row" style="font-size:13px"><span class="muted">${esc(j.by)}${j.crating ? " ★ " + j.crating : ""} · about ${j.hours || 10} hrs</span><strong class="num" style="flex:none">${"$" + rateOf(j, t.type)}/hr</strong></div></button>`; }
   return driverHead("Find jobs") + alertBanner()
     + `<div class="fj-head"><strong>${b.length} job${b.length === 1 ? "" : "s"} near you${nNew ? ` · <span style="color:var(--good)">${nNew} new</span>` : ""}</strong>
       <span class="muted" style="font-size:13px">For your ${esc(tname(t.type).toLowerCase())}, from ${esc(DHOME.name)}. Pay is by the hour, ${MIN_HRS}-hour minimum; you keep ${pct(1 - FEE)}.</span></div>
     <div class="row" style="flex-wrap:wrap;gap:8px"><div class="chips">${[10, 25, 50, 100].map(r => `<button class="pick" type="button" data-act="d-radius:${r}" aria-pressed="${S.radius === r}">${r} mi</button>`).join("")}</div>
       <div class="seg2"><button type="button" data-act="d-fview:list" aria-pressed="${!mapView}">List</button><button type="button" data-act="d-fview:map" aria-pressed="${mapView}">Map</button></div></div>
     ${mapView ? `<div class="findmap">${heroMap("d-find", [{ ...DHOME, label: "You · home base", me: true }, ...pins], { trucks: 0, center: DHOME })}</div>` : ""}
-    ${b.map(card).join("") || `<div class="note">No open jobs for your truck within ${S.radius} miles right now. Try a bigger distance, or we'll alert you when one comes in.</div>`}`;
+    ${mapView ? (b.length ? "" : `<div class="note">No open jobs for your truck within ${S.radius} miles right now. Try a bigger distance, or we'll alert you when one comes in.</div>`)
+      : strip + `<div class="row fj-day"><strong>${esc(selName)}</strong><span class="muted">${bk ? "You're booked" : list.length ? list.length + " job" + (list.length === 1 ? "" : "s") : ""}</span></div>` + dayBody}`;
 }
 function driverJobOffer(j) {
   const t = myDriverTruck();
@@ -2974,6 +3005,7 @@ Object.assign(ACTS, {
   "d-jtab": k => { ui.jtab = k; },
   "d-radius": r => { S.radius = +r; toast(`Jobs and alerts up to ${r} miles from ${DHOME.name}.`); },
   "d-fview": v => { ui.fview = v; },
+  "d-fday": n => { ui.fday = +n; },
   "al-open": id => { const al = alerts().find(x => x.id === id); if (!al) return false; al.read = true; ui.tab = "dfind"; ui.view = "djob:" + al.jid; window.scrollTo(0, 0); },
   "al-close": id => { const al = alerts().find(x => x.id === id); if (al) al.read = true; },
   "d-alertpref": k => { const p = alertPrefs(); p[k] = !p[k]; toast(p[k] ? `${k === "text" ? "Texts" : "Phone notifications"} on for new jobs.` : `${k === "text" ? "Texts" : "Phone notifications"} off.`); },
@@ -3618,7 +3650,7 @@ function render() {
   const rb = document.querySelector(`[data-role="${ui.role}"]`); if (rb) $("#roleName").textContent = ui.welcome || ui.login || (ui.csu && !ui.csu.done) || (ui.bsu && !ui.bsu.done) ? "New user" : rb.textContent;
   const flow = !!(ui.signup || ui.req || ui.welcome || ui.login || ui.csu || ui.bsu || ui.dsu);
   if (!ui.welcome && !ui.login) { try { localStorage.setItem("t2u-role", ui.role); } catch (e) {} }   // remember the side for next time   // step-by-step flows hide the tabs and have their own back button
-  if (ui.role !== "driver" || ui.tab !== "dfind") ui.findNew = null;   // "New" marks are for one visit to Find jobs
+  if (ui.role !== "driver" || ui.tab !== "dfind") ui.findNew = ui.fday = null;   // "New" marks and the picked day last one visit to Find jobs
   parkMaps();   // keep Google maps on the page while the screen is redrawn (see parkMaps)
   $("#screen").innerHTML = screen();
   $("#screen").classList.toggle("form", flow);   // forms stay one readable column in computer view
