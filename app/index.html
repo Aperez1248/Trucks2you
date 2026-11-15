@@ -403,7 +403,7 @@ main { --mp: 16px; }
 .cday-h { margin-top: 6px; }
 .cday-h .muted { font-size: 13px; }
 .cmonth { display: none; }
-:root[data-layout="wide"] .cstrip, :root[data-layout="wide"] .clegend { display: none; }
+:root[data-layout="wide"] .cstrip, :root[data-layout="wide"] .cstrip + .clegend { display: none; }
 :root[data-layout="wide"] .cmonth { display: block; border: 1px solid var(--line); border-radius: 16px; padding: 10px; }
 .cm-head, .cm-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .cm-head span { font-size: 11px; font-weight: 600; color: var(--muted); text-align: center; padding-bottom: 4px; }
@@ -431,11 +431,35 @@ main { --mp: 16px; }
 .rep-load { font-size: 12px; font-weight: 700; color: var(--muted); margin: 10px 0 0 -16px; padding-left: 16px; }
 .rep-more { border: 0; background: var(--tile); border-radius: 10px; padding: 9px 12px; font: 700 13px var(--body); text-align: left; cursor: pointer; margin: 8px 0; }
 @media print { #tabs, header.bar, .noprint, .toast { display: none !important; } body { background: #fff; } }
+.dday.unconf .dc { color: #b35f00; }
+.fs-wrap { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }
+.fs { border-collapse: separate; border-spacing: 4px; font-size: 12px; }
+.fs thead th { font-weight: 700; text-align: center; min-width: 58px; font-size: 13px; }
+.fs thead th span { display: block; font-size: 10.5px; font-weight: 600; color: var(--muted); }
+.fs thead th.today { color: #000; }
+.fs tbody th { position: sticky; left: 0; background: var(--surface); text-align: left; padding-right: 6px; z-index: 1; min-width: 56px; }
+.fs tbody th strong { display: block; font-size: 13px; }
+.fs tbody th span { color: var(--muted); font-weight: 500; font-size: 11px; }
+.fs td { padding: 0; }
+.fs-job, .fs-free { width: 100%; min-height: 44px; border: 0; border-radius: 10px; font: 700 11px/1.15 var(--body); padding: 4px; cursor: pointer; }
+.fs-job { background: #000; color: #fff; }
+.fs-job.live { background: var(--good); }
+.fs-job.unconf { background: #e8890c; }
+.fs-free { background: #fff; color: #b35f00; border: 1.5px dashed #e8890c; }
+.fs-off { text-align: center; color: #b5b5b5; }
 .seg2 { display: inline-flex; background: var(--tile); border-radius: 999px; padding: 3px; gap: 3px; flex: none; margin-left: auto; }
 .seg2 button { border: 0; background: none; font: 700 13px/1 var(--body); color: var(--muted); padding: 9px 14px; border-radius: 999px; cursor: pointer; min-height: 36px; }
 .seg2 button[aria-pressed="true"] { background: var(--fg); color: #fff; }
 .findmap .hero { margin: 0; height: 300px; border-radius: 16px; }
 .findmap .hero .hm { inset: 0; }
+.jobpin.tappable { cursor: pointer; transition: transform .12s; }
+.jobpin.tappable:hover, .jobpin.on { transform: translate(-50%, -130%) scale(1.08); background: var(--route); }
+.hcard { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 600; background: #fff; border-radius: 16px; box-shadow: 0 8px 28px rgba(0,0,0,.25); padding: 12px 14px; max-height: 70%; overflow: auto; display: grid; gap: 10px; }
+.hcard[hidden] { display: none; }
+.hc-job { display: grid; gap: 3px; font-size: 13px; }
+.hc-job + .hc-job { border-top: 1px solid var(--line); padding-top: 10px; }
+.hc-name { font-size: 16px; }
+.hc-job .row { align-items: center; }
 .alertbar { display: flex; gap: 12px; align-items: flex-start; background: #000; color: #fff; border-radius: 16px; padding: 14px; box-shadow: 0 8px 24px rgb(0 0 0 / .2); }
 .alertbar .ab-ic { font-size: 22px; line-height: 1; }
 .alertbar strong { display: block; font-size: 16px; }
@@ -1766,12 +1790,12 @@ function heroMap(key, pins, opts = {}) {
   const lats = pins.map(p => p.lat), lngs = pins.map(p => p.lng);
   const extent = pins.length > 1 ? Math.max(Math.max(...lats) - Math.min(...lats), Math.max(...lngs) - Math.min(...lngs)) : 0;
   const near = Math.max(0.006, extent * 0.3), groups = [];
-  pins.forEach(p => { const g = groups.find(x => !x.me && !p.me && Math.hypot(x.lat - p.lat, x.lng - p.lng) < near); if (g) { g.n++; g.label = `${g.n} jobs`; } else groups.push({ ...p, n: 1 }); });
+  pins.forEach(p => { const g = groups.find(x => !x.me && !p.me && Math.hypot(x.lat - p.lat, x.lng - p.lng) < near); if (g) { g.n++; g.label = `${g.n} jobs`; if (p.info) g.infos.push(p.info); } else groups.push({ ...p, n: 1, infos: p.info ? [p.info] : [] }); });
   // Sample trucks spread around the middle of the pins, scaled to how far apart the pins are
   const c = opts.center || (groups.length ? { lat: groups.reduce((s, p) => s + p.lat, 0) / groups.length, lng: groups.reduce((s, p) => s + p.lng, 0) / groups.length } : SITE);
   const span = Math.max(0.03, ...groups.map(p => Math.hypot(p.lat - c.lat, p.lng - c.lng)));
   HEROS[key] = { pins: groups, trucks: opts.trucks || 0, center: c, span };
-  return `<div class="hero" data-omap="${esc(key)}"><div class="hm"></div>${opts.top ? `<div class="hero-top">${opts.top}</div>` : ""}</div>`;
+  return `<div class="hero" data-omap="${esc(key)}"><div class="hm"></div>${opts.top ? `<div class="hero-top">${opts.top}</div>` : ""}${opts.cards ? '<div class="hcard" hidden></div>' : ""}</div>`;
 }
 // Sample trucks around a point, in the same spots every time (no random jumping between screens)
 const nearbyTruckPts = (c, n, span = 0.05) => DRIVERS.slice(0, n).map((d, i) => { const r = span * (0.35 + 0.65 * ((i * 37) % 10) / 9); return { lat: c.lat + Math.sin(i * 2.4) * r * 0.8, lng: c.lng + Math.cos(i * 2.4) * r * 1.25, rot: (i * 47) % 360 }; });
@@ -1784,7 +1808,25 @@ function initHeroMaps() {
     L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Esri" }).addTo(map);
     const truckPts = nearbyTruckPts(h.center, h.trucks, h.span);
     truckPts.forEach(p => L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "tkicon", html: TOPTRUCK(p.rot), iconSize: [26, 26], iconAnchor: [13, 13] }), interactive: false }).addTo(map));
-    h.pins.forEach(p => L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html: `<span class="jobpin${p.me ? " me" : ""}">${esc(p.label)}</span>`, iconSize: [0, 0] }), interactive: false }).addTo(map));
+    // Pins with job info show a card: hover on a computer, tap on a phone. Tap the map to close it.
+    const card = box.querySelector(".hcard"); let hideT = 0, pinned = null;
+    const show = (p, el) => { clearTimeout(hideT); if (!card) return; card.innerHTML = p.infos.join(""); card.hidden = false;
+      box.querySelectorAll(".jobpin.on").forEach(x => x.classList.remove("on")); el && el.classList.add("on"); };
+    const hide = () => { if (!card || pinned) return; hideT = setTimeout(() => { card.hidden = true; box.querySelectorAll(".jobpin.on").forEach(x => x.classList.remove("on")); }, 250); };
+    h.pins.forEach(p => {
+      const live = !!(card && p.infos && p.infos.length);
+      const m = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html: `<span class="jobpin${p.me ? " me" : ""}${live ? " tappable" : ""}">${esc(p.label)}</span>`, iconSize: [0, 0] }), interactive: live, keyboard: false }).addTo(map);
+      if (!live) return;
+      const el = () => m.getElement() && m.getElement().querySelector(".jobpin");
+      m.on("mouseover", () => { if (!pinned) show(p, el()); });
+      m.on("mouseout", hide);
+      m.on("click", e => { L.DomEvent.stopPropagation(e); pinned = p; show(p, el()); });
+    });
+    if (card) {
+      card.addEventListener("mouseenter", () => clearTimeout(hideT));
+      card.addEventListener("mouseleave", hide);
+      map.on("click", () => { pinned = null; card.hidden = true; box.querySelectorAll(".jobpin.on").forEach(x => x.classList.remove("on")); });
+    }
     const pts = [...h.pins, ...truckPts.slice(0, 6)].map(p => [p.lat, p.lng]);
     if (pts.length > 1) map.fitBounds(pts, { paddingTopLeft: [30, 70], paddingBottomRight: [30, 60], maxZoom: 13 });
     else map.setView(pts[0] || [h.center.lat, h.center.lng], 12);
@@ -2728,8 +2770,23 @@ function ownerPay() {
       <div class="row"><div><strong>Week of Oct 5</strong><div class="muted" style="font-size:13px">T-14: 5 days, 58 loads · T-22: 5 days, 44 loads</div></div><span class="num">$8,539.50</span></div></div></div>
     <div class="note">Paid every ${PAYDAY}, after the contractor approves the day. The ${pct(FEE)} Trucks2U fee comes out of each payout. Broker loads often pay in 30 days or more.</div>`;
 }
+// Fleet schedule: one row per truck, one column per day for two weeks. Empty workdays are trucks earning nothing, so they stand out.
+function fleetSchedule() {
+  const jobOn = (t, n) => S.jobs.map(j => ({ j, a: j.assignments.find(a => a.truck === t.id && a.status !== "done") })).find(x => x.a && x.j.dayN === n);
+  const work = n => dateOf(n).getDay() !== 0;   // Sundays off
+  const freeN = MY_TRUCKS.reduce((s, t) => s + Array.from({ length: CAL_DAYS }, (_, n) => n).filter(n => work(n) && !jobOn(t, n)).length, 0);
+  const days = Array.from({ length: CAL_DAYS }, (_, n) => n);
+  return `<div class="card"><div class="row"><h2>Schedule</h2><span class="muted" style="font-size:13px">Next 2 weeks</span></div>
+    <p style="font-size:14px">${freeN ? `<span class="bk-warn"><strong>${freeN} open truck-day${freeN === 1 ? "" : "s"}</strong></span> to fill. Tap one to find work for that truck.` : "Every truck is booked every workday. Nice."}</p>
+    <div class="fs-wrap"><table class="fs"><thead><tr><th></th>${days.map(n => `<th class="${n === 0 ? "today" : ""}"><span>${n === 0 ? "Today" : dateOf(n).toLocaleDateString("en-US", { weekday: "short" })}</span>${dateOf(n).getDate()}</th>`).join("")}</tr></thead>
+    <tbody>${MY_TRUCKS.map(t => `<tr><th><strong>${t.id}</strong><span>${esc((S.driverOf[t.id] || "").replace(" (you)", "").split(" ")[0])}</span></th>${days.map(n => { const x = jobOn(t, n);
+      if (x) return `<td><button type="button" class="fs-job${x.a.status === "onsite" ? " live" : ""}${n >= 1 && !x.a.confirmed ? " unconf" : ""}" data-go="work:${x.j.id}:${t.id}" title="${esc(x.j.name)}">${esc(pinName(x.j.name.split(" ").slice(0, 2).join(" ")))}</button></td>`;
+      return work(n) ? `<td><button type="button" class="fs-free" data-act="o-findday" aria-label="${t.id} is free ${esc(calLabel(n))}. Find work.">Free</button></td>` : `<td class="fs-off">—</td>`; }).join("")}</tr>`).join("")}</tbody></table></div>
+    <div class="clegend muted"><span><span class="cdot g"></span> on the clock</span><span><span class="cdot o"></span> not confirmed yet</span><span>— Sunday</span></div></div>`;
+}
 function ownerFleet() {
   return `<h1>Fleet</h1><p class="muted">Set each truck's type and pick who drives it. The driver gets job texts and checks in from their own phone; you see every load and get paid for the truck.</p>
+    ${fleetSchedule()}
     ${MY_TRUCKS.map(t => `<div class="card"><div class="row"><div class="row" style="justify-content:flex-start">${truckPic(t.type, "tpic sm")}<div><strong>${t.id} · ${esc(tname(t.type))}</strong><div class="muted" style="font-size:13px">plate ${t.plate}</div></div></div><span class="pill good">Active</span></div>
       <div class="grid2"><label class="field">Truck type<select id="typ-${t.id}">${[...new Set([...ON(), t.type])].map(k => `<option value="${k}" ${t.type === k ? "selected" : ""}>${esc(tname(k))}</option>`).join("")}</select></label>
         <label class="field">Driver<select id="drv-${t.id}">${MY_DRIVERS.map(d => `<option ${S.driverOf[t.id] === d.name ? "selected" : ""}>${esc(d.name)}</option>`).join("")}</select></label></div>
@@ -2997,7 +3054,13 @@ function driverFind() {
       <p class="muted" style="font-size:13px">Other jobs this day are hidden so you don't double-book.</p>`
     : list.length ? list.map(card).join("")
     : `<div class="note">${!worksDay(sel) ? "You don't work this day. Change your days in My info." : "No jobs this day yet. We'll alert you if one comes in near you."}${b.length ? ` <button class="linkbtn" type="button" data-act="d-fday:${b[0].dayN}">See ${esc(dayName(b[0].dayN))}</button>` : ""}</div>`;
-  const pins = b.map(j => ({ ...siteP(j), label: `${"$" + rateOf(j, t.type)} · ${j.dayN === 0 ? "Today" : j.dayN === 1 ? "Tmrw" : dayName(j.dayN).split(",")[0]}` }));
+  const pins = b.map(j => { const left = openFor(j, t.type);
+    return { ...siteP(j), label: `${"$" + rateOf(j, t.type)} · ${j.dayN === 0 ? "Today" : j.dayN === 1 ? "Tmrw" : dayName(j.dayN).split(",")[0]}`,
+      info: `<div class="hc-job"><div class="row"><span class="eyebrow">${esc(dayName(j.dayN))} · ${esc(j.start)}</span>${ui.findNew.has(j.id) ? '<span class="pill live"><i></i>New</span>' : ""}</div>
+        <strong class="hc-name">${esc(j.name)}</strong>
+        <span class="muted">${esc(short(siteText(j)))} · ${milesFromHome(j).toFixed(0)} mi from you</span>
+        <span class="muted">${esc(kindOf(j))} · about ${j.hours || 10} hrs · ${left} spot${left === 1 ? "" : "s"} left</span>
+        <div class="row"><strong class="num">${"$" + rateOf(j, t.type)}/hr</strong><button class="btn small" type="button" data-go="djob:${j.id}">See job ›</button></div></div>` }; });
   function card(j) { const left = openFor(j, t.type), isNew = ui.findNew.has(j.id); return `<button type="button" class="card tap${isNew ? " hot" : ""}" data-go="djob:${j.id}">
       <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span>${isNew ? '<span class="pill live"><i></i>New</span>' : `<span class="pill warn">${left} spot${left === 1 ? "" : "s"} left</span>`}</div>
       <h2>${esc(j.name)}</h2><span class="fj-mi">${milesFromHome(j).toFixed(0)} mi from you · ${left} spot${left === 1 ? "" : "s"} left</span>${route(j)}
@@ -3007,7 +3070,7 @@ function driverFind() {
       <span class="muted" style="font-size:13px">For your ${esc(tname(t.type).toLowerCase())}, from ${esc(DHOME.name)}. Pay is by the hour, ${MIN_HRS}-hour minimum; you keep ${pct(1 - FEE)}.</span></div>
     <div class="row" style="flex-wrap:wrap;gap:8px"><div class="chips">${[10, 25, 50, 100].map(r => `<button class="pick" type="button" data-act="d-radius:${r}" aria-pressed="${S.radius === r}">${r} mi</button>`).join("")}</div>
       <div class="seg2"><button type="button" data-act="d-fview:list" aria-pressed="${!mapView}">List</button><button type="button" data-act="d-fview:map" aria-pressed="${mapView}">Map</button></div></div>
-    ${mapView ? `<div class="findmap">${heroMap("d-find", [{ ...DHOME, label: "You · home base", me: true }, ...pins], { trucks: 0, center: DHOME })}</div>` : ""}
+    ${mapView ? `<div class="findmap">${heroMap("d-find", [{ ...DHOME, label: "You · home base", me: true }, ...pins], { trucks: 0, center: DHOME, cards: true })}</div>` : ""}
     ${mapView ? (b.length ? "" : `<div class="note">No open jobs for your truck within ${S.radius} miles right now. Try a bigger distance, or we'll alert you when one comes in.</div>`)
       : strip + `<div class="row fj-day"><strong>${esc(selName)}</strong><span class="muted">${bk ? "You're booked" : list.length ? list.length + " job" + (list.length === 1 ? "" : "s") : ""}</span></div>` + dayBody}`;
 }
@@ -3049,7 +3112,28 @@ function driverMyJobs() {
   const pastHtml = `<div class="card"><div class="list">${done.map(({ j, a }) => `<div class="row"><div><strong>${esc(j.name)}</strong><div class="muted" style="font-size:13px">${esc(j.date)} · ${a.hours} hrs worked${a.hours < MIN_HRS ? `, paid ${MIN_HRS} (minimum)` : ""} · ${a.tickets.length} tickets</div></div><span class="num" style="flex:none">${money0(billOf(j, a) * (1 - FEE))}</span></div>`).join("")}
     ${PAST.map(p => `<div class="row"><div><strong>${esc(p.place)}</strong><div class="muted" style="font-size:13px">${pastDate(p.n)} · ${esc(p.by)} · ${p.worked} hrs worked${p.worked < MIN_HRS ? `, paid ${MIN_HRS} (minimum)` : ""} · ${p.tickets} tickets</div></div><span class="num" style="flex:none">${money0(paidHrs(p.worked) * rate * (1 - FEE))}</span></div>`).join("")}</div></div>`;
   return driverHead("My jobs") + `<div class="chips">${[["up", `Upcoming · ${up.length}`], ["past", "Past"]].map(([k, l]) => `<button class="pick" type="button" data-act="d-jtab:${k}" aria-pressed="${tab === k}">${l}</button>`).join("")}</div>
-    ${tab === "up" ? upHtml : pastHtml}`;
+    ${tab === "up" ? myJobsCal(up, upHtml) : pastHtml}`;
+}
+// My jobs calendar: two weeks of the driver's own work. ✓ booked, ! booked but not confirmed yet, — day off.
+// A free workday links to Find jobs on that day, so a gap in the schedule turns into a booked day.
+function myJobsCal(up, upHtml) {
+  const sel = ui.mjday == null ? "all" : ui.mjday, on = n => up.filter(x => x.j.dayN === n), board = boardJobs();
+  const strip = `<div class="dstrip" aria-label="Pick a day"><button type="button" class="dday call${sel === "all" ? " on" : ""}" data-act="d-mjday:all" aria-pressed="${sel === "all"}"><span class="dw">${dateOf(0).toLocaleDateString("en-US", { month: "short" })}</span><span class="dn">All</span><span class="dc">${up.length}</span></button>
+    ${Array.from({ length: CAL_DAYS }, (_, n) => { const d = dateOf(n), js = on(n), off = !worksDay(n), unconf = js.some(x => n >= 1 && !x.a.confirmed);
+      return `<button type="button" class="dday${sel === n ? " on" : ""}${js.length ? " bk" : ""}${unconf ? " unconf" : ""}${off && !js.length ? " off" : ""}" data-act="d-mjday:${n}" aria-pressed="${sel === n}"
+        aria-label="${esc(calLabel(n))}: ${js.length ? (unconf ? "booked, not confirmed yet" : "booked") : off ? "day off" : "free"}"><span class="dw">${n === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday: "short" })}</span><span class="dn">${d.getDate()}</span>
+        <span class="dc">${js.length ? (unconf ? "!" : "✓") : off ? "—" : ""}</span></button>`; }).join("")}</div>
+    <div class="clegend muted"><span><b class="bk-ok">✓</b> booked</span><span><b class="bk-warn">!</b> confirm</span><span>— day off</span><span>blank = free</span></div>`;
+  if (sel === "all") return strip + upHtml;
+  const js = on(sel), cards = upHtml && js.length ? js.map(({ j, a }) => `<button type="button" class="card tap" data-go="work:${j.id}:${a.truck}">
+      <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span>${j.dayN === 1 ? (a.confirmed ? '<span class="pill good">Confirmed ✓</span>' : '<span class="pill warn">Please confirm</span>') : statusPill(a)}</div>
+      <h2>${esc(j.name)}</h2><span class="muted" style="font-size:13px">${esc(siteText(j))} · ${esc(j.by)}</span></button>`).join("") : "";
+  const open = board.filter(j => j.dayN === sel).length;
+  const free = !js.length ? (!worksDay(sel) ? `<div class="note">You don't work this day. Change your days in My info.</div>`
+    : `<div class="card"><strong>You're free ${esc(sel === 0 ? "today" : sel === 1 ? "tomorrow" : chipDay(sel))}</strong>
+        <span class="muted" style="font-size:14px">${open ? `${open} job${open === 1 ? "" : "s"} near you that day.` : "No jobs near you that day yet. We'll alert you when one comes in."}</span>
+        ${open ? `<button class="btn" type="button" data-act="d-findday:${sel}">See jobs for ${esc(chipDay(sel))}</button>` : ""}</div>`) : "";
+  return strip + `<div class="row cday-h"><strong>${esc(calLabel(sel))}</strong></div>` + cards + free;
 }
 function driverPay() {
   const t = myDriverTruck(), all = driverAssignments(), today = all.filter(x => x.j.dayN === 0), done = all.filter(x => x.a.status === "done");
@@ -3294,6 +3378,9 @@ Object.assign(ACTS, {
   "d-radius": r => { S.radius = +r; toast(`Jobs and alerts up to ${r} miles from ${DHOME.name}.`); },
   "d-fview": v => { ui.fview = v; },
   "d-fday": n => { ui.fday = +n; },
+  "o-findday": () => { ui.tab = "find"; ui.view = null; window.scrollTo(0, 0); },
+  "d-mjday": n => { ui.mjday = n === "all" ? null : +n; },
+  "d-findday": n => { ui.tab = "dfind"; ui.view = null; ui.fday = +n; window.scrollTo(0, 0); },
   "al-open": id => { const al = alerts().find(x => x.id === id); if (!al) return false; al.read = true; ui.tab = "dfind"; ui.view = "djob:" + al.jid; window.scrollTo(0, 0); },
   "al-close": id => { const al = alerts().find(x => x.id === id); if (al) al.read = true; },
   "d-alertpref": k => { const p = alertPrefs(); p[k] = !p[k]; toast(p[k] ? `${k === "text" ? "Texts" : "Phone notifications"} on for new jobs.` : `${k === "text" ? "Texts" : "Phone notifications"} off.`); },
