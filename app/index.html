@@ -1971,12 +1971,12 @@ function contractorJobs() {
       <div class="row"><div class="chips">${jobFillChips(j)}</div><span class="muted num" style="font-size:13px;flex:none">${filled(j)} of ${needed(j)} trucks</span></div>
     </button>`;
   };
-  // Map first: your job sites and the trucks around them, then the sheet with "Where's the job?" and your jobs
+  // Map first: your job sites and the trucks around them, then the sheet with "Request trucks" and your jobs
   const pins = active.filter(j => j.pts).map(j => ({ ...siteP(j), label: pinName(j.name) }));
   const nearbyN = DRIVERS.length * 6 + 12;
   return heroMap("c-home", pins, { trucks: 12, top: `<span class="fpill"><span class="live-dot"></span>${nearbyN} trucks nearby</span><button class="fpill" type="button" data-tab="live">Live map ›</button>` })
     + `<div class="sheet">
-    <button class="whereto" type="button" data-act="rq-new"><i></i>Where's the job?<span>Tomorrow ▾</span></button>
+    <button class="whereto" type="button" data-act="rq-new"><i></i>Request trucks<span>Tomorrow ▾</span></button>
     ${contractorWorkingNow()}
     ${installCard()}
     <div class="stack" style="gap:2px"><h1>Your jobs</h1><p class="muted" style="font-size:14px">${active.length ? `${active.length} open${finding ? ` · ${finding} still finding trucks` : " · all booked"}` : "No jobs yet"}</p></div>
