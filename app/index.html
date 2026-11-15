@@ -1,3 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- Phones: use the real screen width (no zoomed-out desktop page) and draw under the notch / home bar -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<!-- Saved to the home screen, it opens full screen like an app -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trucks2U">
 <title>Trucks2U</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -127,10 +139,45 @@ input:focus, select:focus { border-color: var(--fg); outline: none; }
 .check { display: grid; grid-template-columns: 24px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); cursor: pointer; }
 .check input { width: 22px; height: 22px; accent-color: var(--fg); padding: 0; }
 .foot { font-size: 12px; color: var(--muted); text-align: center; }
+a.tel { color: var(--route); font-weight: 600; text-decoration: none; white-space: nowrap; padding: 6px 0; }
 button:focus-visible, .opt:focus-visible, label:focus-within { outline: 3px solid var(--route); outline-offset: 2px; }
 @keyframes pulse { from { r: 20; opacity: .55; } to { r: 140; opacity: 0; } }
 .pulse { fill: var(--fg); animation: pulse 1.8s ease-out infinite; }
 .pulse.b { animation-delay: .9s; }
+/* ---------- Phones: the app fills the whole screen, like a real app ---------- */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { margin: 0; -webkit-tap-highlight-color: transparent; }
+button, .opt, .place, .chip, label { touch-action: manipulation; }   /* no double-tap zoom delay on buttons */
+@media (max-width: 600px) {
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }   /* no page bounce or pull-to-refresh behind the app */
+  .wrap { max-width: none; padding: 0; gap: 0; }
+  .foot { display: none; }   /* the same tip is in the menu (Switch account) */
+  .phone { height: 100vh; height: 100dvh; max-height: none; min-height: 0; border-radius: 0; border: 0; }
+  .sheet, .full, .menu > div { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  /* Keep buttons and text clear of the notch, the status bar and the home bar */
+  .top { top: calc(10px + env(safe-area-inset-top, 0px)); left: calc(12px + env(safe-area-inset-left, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); }
+  .sheet { max-height: calc(100% - 76px - env(safe-area-inset-top, 0px)); padding-left: calc(16px + env(safe-area-inset-left, 0px)); padding-right: calc(16px + env(safe-area-inset-right, 0px)); }
+  .full { padding: calc(14px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px)); }
+  .welcome { padding: calc(24px + env(safe-area-inset-top, 0px)) 18px calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .welcome .logo { top: calc(24px + env(safe-area-inset-top, 0px)); left: 18px; }
+  .menu > div { width: 84%; padding-top: calc(22px + env(safe-area-inset-top, 0px)); padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); overflow-y: auto; }
+  .toast { top: calc(66px + env(safe-area-inset-top, 0px)); }
+  .offer { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); max-height: calc(100% - 80px - env(safe-area-inset-top, 0px)); overflow-y: auto; }
+  .gobtn { bottom: calc(150px + env(safe-area-inset-bottom, 0px)); }
+  /* Bigger tap targets for gloved / on-the-job thumbs */
+  .step { gap: 8px; }
+  .step button { width: 38px; height: 38px; font-size: 20px; }
+  .step output { width: 22px; }
+  .opt { grid-template-columns: 48px 1fr auto; gap: 10px; padding: 10px 8px; }
+  .opt svg { width: 48px; }
+  .chip { padding: 11px 14px; }
+  .chips { scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  /* The main action (Request, Done, Accept…) stays pinned at the bottom while the panel scrolls */
+  .sheet > .btn:last-child, .full > .btn:last-child { position: sticky; bottom: 0; z-index: 1; box-shadow: 0 -14px 0 var(--sheet), 0 calc(26px + env(safe-area-inset-bottom, 0px)) 0 var(--sheet); }
+  /* Text boxes at 16px or more, so iPhones don't zoom in when you tap them */
+  input, select, textarea { font-size: 16px !important; }
+}
 /* ---------- Website layout on computers: full-screen map, panel on the left ---------- */
 .site { display: none; }
 @media (min-width: 960px) {
@@ -278,6 +325,8 @@ let toastTimer, offerTimer, tick;
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// Phone numbers become tap-to-call links (on a phone, tapping one starts the call)
+const tel = s => esc(s).replace(/\(?\d{3}\)?[ .-]?\d{3}-\d{4}/g, n => `<a class="tel" href="tel:+1${n.replace(/\D/g, "")}">${n}</a>`);
 const money = n => "$" + Math.round(n).toLocaleString("en-US");
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const etaMin = (a, b) => Math.max(2, Math.round(dist(a, b) / 9));
@@ -402,7 +451,7 @@ function cSample() {
       <div class="stack" style="gap:4px"><h2>${j.crew.length} of ${j.need} trucks booked</h2><p class="muted small">${dayLabel(j.dayN)} · ${j.start} · about ${j.hours} hrs · ${esc(j.material)}</p></div>
       <div class="bar"><i style="width:${Math.round(100 * j.crew.length / j.need)}%"></i></div>
       <div>${j.crew.map(d => `<div class="driver"><div class="avatar">${d.name.split(" · ")[0].split(" ").map(x => x[0]).join("")}</div><div><b>${esc(d.name)}</b> <span class="muted small">★ ${d.rating}</span><div class="muted small">${TRUCKS[d.type].name} · ${esc(d.plate)}</div></div>
-        <div style="text-align:right"><span class="tag">Accepted</span><div class="small muted" style="margin-top:6px">${d.phone}</div></div></div>`).join("")}</div>
+        <div style="text-align:right"><span class="tag">Accepted</span><div class="small muted" style="margin-top:6px">${tel(d.phone)}</div></div></div>`).join("")}</div>
       ${j.crew.length < j.need ? `<p class="muted small">${j.need - j.crew.length} spots still open. We keep sending it to drivers until it fills.</p>` : ""}
       <button class="btn light" data-act="c-note">Send a note to drivers</button>
     </div>`;
@@ -450,7 +499,7 @@ function crewRows() {
   return job.crew.map(m => `<div class="driver"><div class="avatar">${m.name.split(" · ")[0].split(" ").map(x => x[0]).join("")}</div>
     <div><b>${esc(m.name)}</b> <span class="muted small">★ ${m.rating}</span><div class="muted small">${TRUCKS[m.type].name} · ${esc(m.plate)}${!sched() && job.plantN ? ` · starts at ${startOf(m) === "plant" ? "plant" : "job"}` : ""}</div>${!sched() && m.clockIn != null ? `<div class="small" style="color:var(--go)">In ${fmtMin(m.clockIn)}${m.clockOut != null ? ` · out ${fmtMin(m.clockOut)} · ${m.hours.toFixed(1)} hrs` : ` · ${((dayMin() - m.clockIn) / 60).toFixed(1)} hrs`}</div>` : ""}</div>
     <div style="text-align:right">${!sched() && m.clockOut != null ? '<span class="tag">Clocked out</span>' : !sched() && (m.leg || (m.clockIn != null && m.id === "me")) ? `<span class="tag go">${m.leg ? (m.leg.to === job.place ? "To job · " + Math.max(1, Math.round(m.leg.mins * (1 - movePos(m.leg.from, m.leg.to, m.leg.t0, m.leg.mins).f))) + " min" : "To plant") : m.at === job.place ? "At job" : "At plant"}</span>` : sched() ? (m.reconfirmed ? '<span class="tag go">Coming ✓</span>' : '<span class="tag">Accepted</span>') : m.arrived ? '<span class="tag go">Arrived</span>' : `<span class="tag">${m.status === "Accepted" ? "Accepted" : Math.max(1, Math.round(m.eta * (1 - movePos(m.start, job.place, m.t0, m.eta).f))) + " min"}</span>`}
-      <div class="small muted" style="margin-top:6px;user-select:all">${m.phone}</div></div></div>`).join("");
+      <div class="small muted" style="margin-top:6px">${tel(m.phone)}</div></div></div>`).join("");
 }
 function cSearching() {
   const got = job.crew.length, need = job.need, later = sched();
@@ -662,7 +711,7 @@ function dJobs() {
     return page("Job details", `
       <div class="stack" style="gap:4px"><div class="row" style="justify-content:flex-start;gap:8px"><span class="tag">${j.date} · ${j.start}</span>${j.confirmed ? '<span class="tag go">Confirmed ✓</span>' : ""}</div><h2>${esc(j.place)}</h2><span class="muted small">${esc(j.sub)} · ${esc(j.contractor)}</span></div>
       <div class="kv"><div class="row"><span>Work</span><b>${esc(j.material)}</b></div><div class="row"><span>Trucks on this job</span><b>${j.trucks}</b></div>
-        <div class="row"><span>Pay</span><b>$${j.rate}/hr · ${MIN_HRS} hr min</b></div><div class="row"><span>Contact on site</span><b>${esc(j.contact)}</b></div><div class="row"><span>You start at</span><b>${esc(j.startAt || "The job site")}</b></div></div>
+        <div class="row"><span>Pay</span><b>$${j.rate}/hr · ${MIN_HRS} hr min</b></div><div class="row"><span>Contact on site</span><b>${tel(j.contact)}</b></div><div class="row"><span>You start at</span><b>${esc(j.startAt || "The job site")}</b></div></div>
       ${j.note ? `<div class="small" style="background:var(--chip);padding:10px 12px;border-radius:10px"><b>Notes from the contractor:</b> ${esc(j.note)}</div>` : ""}
       <p class="muted small">We'll ask you to confirm the night before, and remind you an hour before the start.</p>
       ${j.dayN === 1 && !j.confirmed ? `<button class="btn" data-act="d-confirm:${j.key}">Yes, I'm coming tomorrow</button>` : ""}
@@ -848,7 +897,7 @@ function aHome() {
     const problem = Object.values(a.docs).some(([, st]) => st.startsWith("bad"));
     return `<div class="full">
       <div class="row"><button class="round" data-act="a-back" aria-label="Back" style="box-shadow:none;background:var(--chip)">←</button><span class="muted small">Applied ${esc(a.when.toLowerCase())}</span></div>
-      <div class="row" style="justify-content:flex-start;gap:12px"><div class="avatar">${a.name.split(" ").map(x => x[0]).join("")}</div><div><h2>${esc(a.name)}</h2><div class="muted small">${esc(a.city)} · ${esc(a.phone)}</div></div></div>
+      <div class="row" style="justify-content:flex-start;gap:12px"><div class="avatar">${a.name.split(" ").map(x => x[0]).join("")}</div><div><h2>${esc(a.name)}</h2><div class="muted small">${esc(a.city)} · ${tel(a.phone)}</div></div></div>
       <div class="kv">${a.company ? `<div class="row"><span>Company</span><b>${esc(a.company)}</b></div>` : ""}<div class="row"><span>Email</span><b>${esc(a.email || "")}</b></div><div class="row"><span>Experience</span><b>${esc(a.years || "")} years</b></div></div>
       <div class="stack" style="gap:6px"><b>Truck</b>
         <div class="kv"><div class="row"><span>Type</span><b>${TRUCKS[a.type].name}</b></div><div class="row"><span>Truck</span><b>${esc(a.truck.year)} ${esc(a.truck.make)} ${esc(a.truck.model)}</b></div>
