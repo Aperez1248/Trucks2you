@@ -300,6 +300,43 @@ h2 { font: 800 20px/1.2 var(--display); letter-spacing: -.4px; }
   .app { min-height: 100vh; min-height: 100dvh; }
   h1 { font-size: 30px; }
 }
+/* ---------- Map-first home screens (Uber style) ----------
+   A full-width map at the top of the screen, and a white sheet that slides up over its bottom edge. */
+main { --mp: 16px; }
+:root[data-layout="wide"] main { --mp: 22px; }
+.hero { position: relative; margin: calc(-1 * var(--mp)) calc(-1 * var(--mp)) -38px; height: 290px; background: #e9eaec; isolation: isolate; z-index: 0; overflow: hidden; }
+.hero .hm { position: absolute; inset: 0; }
+.hero .hm .leaflet-control-attribution { font-size: 9px; }
+/* Muted, gray street maps (like Uber's) so black pins and the blue route stand out */
+.leaflet-tile-pane { filter: grayscale(1) contrast(.88) brightness(1.06); }
+.hero-top { position: absolute; z-index: 500; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
+.hero-top > * { pointer-events: auto; }
+.fpill { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--fg); border: 0; border-radius: 999px; padding: 9px 14px; font: 700 14px/1 var(--body); box-shadow: var(--shadow); cursor: pointer; white-space: nowrap; }
+.fpill .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 3px var(--good-soft); }
+.sheet { position: relative; z-index: 1; background: var(--surface); border-radius: 24px 24px 0 0; margin: 0 calc(-1 * var(--mp)); padding: 10px var(--mp) 4px; display: grid; gap: 14px; align-content: start; box-shadow: 0 -8px 24px rgb(0 0 0 / .08); min-width: 0; }
+.sheet::before { content: ""; width: 40px; height: 5px; border-radius: 9px; background: #d6d6d6; justify-self: center; }
+/* Uber's big gray "Where to?" bar */
+.whereto { display: flex; align-items: center; gap: 12px; width: 100%; background: var(--tile); border: 0; border-radius: 14px; padding: 16px 16px; font: 700 18px/1.1 var(--body); color: var(--fg); cursor: pointer; text-align: left; min-height: 58px; }
+.whereto i { width: 11px; height: 11px; background: var(--fg); flex: none; }
+.whereto span { margin-left: auto; font: 600 13px/1 var(--body); background: var(--surface); border-radius: 999px; padding: 8px 12px; }
+/* Truck map icons: a small top-down truck */
+.tkicon svg { width: 26px; height: 26px; filter: drop-shadow(0 1px 2px rgb(0 0 0 / .35)); }
+.jobpin { background: #000; color: #fff; font: 700 12px/1 var(--body); padding: 7px 10px; border-radius: 999px; white-space: nowrap; box-shadow: var(--shadow); transform: translate(-50%, -130%); position: relative; display: inline-block; }
+.jobpin::after { content: ""; position: absolute; left: 50%; bottom: -5px; margin-left: -5px; border: 5px solid transparent; border-top-color: #000; border-bottom: 0; }
+.jobpin.me { background: var(--route); }
+.jobpin.me::after { border-top-color: var(--route); }
+/* Truck pictures */
+.tpic { width: 64px; height: auto; flex: none; display: block; }
+.tpic.lg { width: 120px; }
+.tpic.sm { width: 50px; }
+.typecount .tpic { width: 62px; }
+.typecount .tline { display: flex; align-items: center; gap: 12px; min-width: 0; }
+:root[data-layout="wide"] .hero { height: 340px; }
+:root[data-layout="wide"] .sheet { grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); align-items: start; padding-top: 16px; }
+:root[data-layout="wide"] .sheet > * { grid-column: 1 / -1; }
+:root[data-layout="wide"] .sheet > .card { grid-column: auto; }
+:root[data-layout="wide"] .sheet::before { display: none; }
+@media (max-width: 600px) { main { --mp: 14px; } .hero { height: 270px; } }
 /* Leaflet 1.9.4 stylesheet, inlined */
 .leaflet-pane,
 .leaflet-tile,
@@ -962,6 +999,29 @@ function saveSettings(st) { applySettings(st); try { localStorage.setItem(SET_KE
 try { const s = JSON.parse(localStorage.getItem(SET_KEY) || "null"); applySettings(s && s.types ? s : null); } catch (e) { applySettings(null); }
 const ON = () => Object.keys(TYPES).filter(t => !TYPES[t].off);   // truck types you can order today
 const MAINT = () => { const m = ON().filter(t => TYPES[t].main); return m.length ? m : ON().slice(0, 1); };
+/* Truck pictures: simple side views drawn in code (no image files), facing right.
+   Admin-added truck types fall back to the 10-wheeler drawing. */
+function truckPic(t, cls = "tpic") {
+  const W = (x, r = 7) => `<circle cx="${x}" cy="43" r="${r}" fill="#1a1a1a"/><circle cx="${x}" cy="43" r="${r * .42}" fill="#c4c4c4"/>`;
+  const cab = (x0 = 88) => `<path d="M${x0} 41V15q0-4 4-4h${100 - x0 + 4}l11 12q2 2 2 6v12z" fill="#000"/><path d="M${x0 + 6} 15h${100 - x0 + 1}l7 9h-${100 - x0 + 8}z" fill="#dfe6ee"/>`;
+  const frame = (a, b) => `<rect x="${a}" y="37" width="${b - a}" height="4" rx="1" fill="#000"/>`;
+  const bed = (a, b, top = 13) => `<path d="M${a} ${top}h${b - a}l-2 25h-${b - a - 6}z" fill="#2b2b2b"/><path d="M${a + 6} ${top + 6}h${b - a - 12}M${a + 7} ${top + 13}h${b - a - 14}" stroke="#4a4a4a" stroke-width="2"/>`;
+  const d = {
+    w10: bed(8, 84) + frame(8, 112) + cab() + W(30) + W(46) + W(102),
+    w12: bed(8, 84) + frame(8, 114) + cab() + W(28) + W(44) + W(92) + W(106),
+    sd:  bed(4, 82) + frame(2, 112) + cab() + `<path d="M2 39h-0" stroke="#000"/>` + W(20, 6) + W(34, 6) + W(48, 6) + W(62, 6) + W(102),
+    bd:  `<path d="M4 14h82v14l-26 10h-30L4 28z" fill="#2b2b2b"/>` + frame(4, 114) + cab(92) + W(14) + W(28) + W(94) + W(108),
+    sdd: `<path d="M6 15h80v12q-40 16-80 0z" fill="#2b2b2b"/><path d="M12 21h68" stroke="#4a4a4a" stroke-width="2"/>` + frame(4, 114) + cab(92) + W(16) + W(30) + W(94) + W(108),
+    tr:  bed(2, 54, 15) + bed(58, 88) + frame(2, 114) + cab(92) + W(12, 6) + W(26, 6) + W(40, 6) + W(68, 6) + W(82, 6) + W(106),
+    wt:  `<rect x="8" y="14" width="76" height="23" rx="11" fill="#2b2b2b"/><path d="M14 25h64" stroke="#4a4a4a" stroke-width="2"/>` + frame(8, 112) + cab() + W(30) + W(46) + W(102),
+    fb:  `<rect x="4" y="30" width="84" height="6" fill="#2b2b2b"/><rect x="10" y="20" width="22" height="10" fill="#6a6a6a"/><rect x="36" y="22" width="30" height="8" fill="#8a8a8a"/>` + frame(4, 114) + cab(92) + W(16) + W(30) + W(94) + W(108),
+    lb:  `<path d="M90 24H74l-8 10H4v5h86z" fill="#2b2b2b"/><rect x="22" y="20" width="34" height="14" rx="3" fill="#7a7a7a"/>` + frame(66, 114) + cab(92) + W(12, 5) + W(24, 5) + W(96) + W(108)
+  }[t] || null;
+  return `<svg class="${cls}" viewBox="0 0 124 52" aria-hidden="true">${d || truckPic.fallback()}</svg>`;
+}
+truckPic.fallback = () => {   // same as the 10 wheeler
+  const s = truckPic("w10"); return s.slice(s.indexOf(">") + 1, s.lastIndexOf("</svg>"));
+};
 const tname = t => TYPES[t] ? TYPES[t].name : t;
 const tshort = t => TYPES[t] ? TYPES[t].short : t;
 const pct = x => +(x * 100).toFixed(2) + "%";
@@ -1321,6 +1381,41 @@ function initMaps() {
     const tm = truck ? L.circleMarker([A.lat, A.lng], { radius: 7, color: "#fff", weight: 2, fillColor: col("--route"), fillOpacity: 1 }).bindTooltip(truck, { permanent: true, direction: "right", offset: [8, 0] }) : null;
     LMAPS.push({ map, j, truck, tm, all, tms: {}, off: col("--muted"), on: col("--route") });
   });
+  initHeroMaps();
+}
+/* Map-first home screens: a still map across the top with job pins and nearby trucks.
+   pins: [{ lat, lng, label, me }]; trucks: how many sample trucks to sprinkle around. */
+const HEROS = {};
+function heroMap(key, pins, opts = {}) {
+  // Jobs at the same spot share one pin ("2 jobs") instead of stacking on top of each other
+  // How close counts as "the same spot" depends on how zoomed out the map will be (how spread out the pins are)
+  const lats = pins.map(p => p.lat), lngs = pins.map(p => p.lng);
+  const extent = pins.length > 1 ? Math.max(Math.max(...lats) - Math.min(...lats), Math.max(...lngs) - Math.min(...lngs)) : 0;
+  const near = Math.max(0.006, extent * 0.3), groups = [];
+  pins.forEach(p => { const g = groups.find(x => !x.me && !p.me && Math.hypot(x.lat - p.lat, x.lng - p.lng) < near); if (g) { g.n++; g.label = `${g.n} jobs`; } else groups.push({ ...p, n: 1 }); });
+  // Sample trucks spread around the middle of the pins, scaled to how far apart the pins are
+  const c = opts.center || (groups.length ? { lat: groups.reduce((s, p) => s + p.lat, 0) / groups.length, lng: groups.reduce((s, p) => s + p.lng, 0) / groups.length } : SITE);
+  const span = Math.max(0.03, ...groups.map(p => Math.hypot(p.lat - c.lat, p.lng - c.lng)));
+  HEROS[key] = { pins: groups, trucks: opts.trucks || 0, center: c, span };
+  return `<div class="hero" data-omap="${esc(key)}"><div class="hm"></div>${opts.top ? `<div class="hero-top">${opts.top}</div>` : ""}</div>`;
+}
+// Sample trucks around a point, in the same spots every time (no random jumping between screens)
+const nearbyTruckPts = (c, n, span = 0.05) => DRIVERS.slice(0, n).map((d, i) => { const r = span * (0.35 + 0.65 * ((i * 37) % 10) / 9); return { lat: c.lat + Math.sin(i * 2.4) * r * 0.8, lng: c.lng + Math.cos(i * 2.4) * r * 1.25, rot: (i * 47) % 360 }; });
+const TOPTRUCK = rot => `<svg viewBox="0 0 24 24" style="transform:rotate(${rot}deg)"><rect x="7" y="2" width="10" height="20" rx="2.5" fill="#000" stroke="#fff" stroke-width="1.5"/><rect x="8.5" y="3.5" width="7" height="4" rx="1" fill="#dfe6ee"/></svg>`;
+function initHeroMaps() {
+  if (!window.L) return;
+  document.querySelectorAll("[data-omap]").forEach(box => {
+    const h = HEROS[box.dataset.omap]; if (!h) return;
+    const map = L.map(box.querySelector(".hm"), { zoomControl: false, dragging: false, touchZoom: false, doubleClickZoom: false, scrollWheelZoom: false, boxZoom: false, keyboard: false, attributionControl: true });
+    L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Esri" }).addTo(map);
+    const truckPts = nearbyTruckPts(h.center, h.trucks, h.span);
+    truckPts.forEach(p => L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "tkicon", html: TOPTRUCK(p.rot), iconSize: [26, 26], iconAnchor: [13, 13] }), interactive: false }).addTo(map));
+    h.pins.forEach(p => L.marker([p.lat, p.lng], { icon: L.divIcon({ className: "", html: `<span class="jobpin${p.me ? " me" : ""}">${esc(p.label)}</span>`, iconSize: [0, 0] }), interactive: false }).addTo(map));
+    const pts = [...h.pins, ...truckPts.slice(0, 6)].map(p => [p.lat, p.lng]);
+    if (pts.length > 1) map.fitBounds(pts, { paddingTopLeft: [30, 70], paddingBottomRight: [30, 60], maxZoom: 13 });
+    else map.setView(pts[0] || [h.center.lat, h.center.lng], 12);
+    LMAPS.push({ map, hero: true });
+  });
 }
 function directions(j) {
   if (!j.pts) return "";
@@ -1452,8 +1547,8 @@ function contractorLive() {
       <div class="row" style="font-size:12px"><span class="muted">Green circles are geofences: arrival and departure are logged automatically.</span></div>
     </div>
     <div class="card"><div class="row"><h2>${esc(j.name)}</h2><span class="muted num">avg cycle ${CYCLE} min</span></div>
-      <div class="list">${lt.map(({ a }) => `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${esc(tshort(a.type))}</span><div><strong>${esc(a.truck)} · ${esc(a.owner)}</strong><div class="stage" data-stage="${esc(j.id + "|" + a.truck)}">…</div></div></div><span class="muted num" style="font-size:13px">${a.tickets.length} load${a.tickets.length === 1 ? "" : "s"}</span></div>`).join("")}
-      ${waiting.map(a => `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${esc(tshort(a.type))}</span><div><strong>${esc(a.truck)} · ${esc(a.owner)}</strong><div class="stage" data-live="${esc(j.id + "|" + a.truck)}">${esc(liveText(j, a) || "Not checked in yet")}</div></div></div>${a.otw ? '<span class="pill info">On the way</span>' : '<span class="pill warn">Late?</span>'}</div>`).join("")}</div>
+      <div class="list">${lt.map(({ a }) => `<div class="row"><div class="row" style="justify-content:flex-start">${truckPic(a.type, "tpic sm")}<div><strong>${esc(a.truck)} · ${esc(a.owner)}</strong><div class="stage" data-stage="${esc(j.id + "|" + a.truck)}">…</div></div></div><span class="muted num" style="font-size:13px">${a.tickets.length} load${a.tickets.length === 1 ? "" : "s"}</span></div>`).join("")}
+      ${waiting.map(a => `<div class="row"><div class="row" style="justify-content:flex-start">${truckPic(a.type, "tpic sm")}<div><strong>${esc(a.truck)} · ${esc(a.owner)}</strong><div class="stage" data-live="${esc(j.id + "|" + a.truck)}">${esc(liveText(j, a) || "Not checked in yet")}</div></div></div>${a.otw ? '<span class="pill info">On the way</span>' : '<span class="pill warn">Late?</span>'}</div>`).join("")}</div>
       <button class="btn small ghost" type="button" data-go="job:${j.id}" style="justify-self:start">Open the job</button></div>
     ${feedOf(j).length ? feedCard(j) : ""}
     <div class="card"><div class="row"><h2>GPS log</h2><span class="pill info">Live</span></div>
@@ -1619,11 +1714,18 @@ function contractorJobs() {
       <div class="row"><div class="chips">${jobFillChips(j)}</div><span class="muted num" style="font-size:13px;flex:none">${filled(j)} of ${needed(j)} trucks</span></div>
     </button>`;
   };
-  return `${installCard()}<div class="row"><h1>Your jobs</h1><button class="btn small" type="button" data-act="rq-new">+ Request trucks</button></div>
-    <p class="muted" style="font-size:14px;margin-top:-6px">${active.length} open${finding ? ` · ${finding} still finding trucks` : " · all booked"}</p>
-    ${active.map(card).join("") || '<div class="note">No upcoming jobs. Tap Request trucks to book trucks for a job.</div>'}
-    ${done.length ? `<p class="eyebrow">Approved and billed</p>${done.map(card).join("")}` : ""}`;
+  // Map first: your job sites and the trucks around them, then the sheet with "Where's the job?" and your jobs
+  const pins = active.filter(j => j.pts).map(j => ({ ...siteP(j), label: pinName(j.name) }));
+  const nearbyN = DRIVERS.length * 6 + 12;
+  return heroMap("c-home", pins, { trucks: 12, top: `<span class="fpill"><span class="live-dot"></span>${nearbyN} trucks nearby</span><button class="fpill" type="button" data-tab="live">Live map ›</button>` })
+    + `<div class="sheet">
+    <button class="whereto" type="button" data-act="rq-new"><i></i>Where's the job?<span>Tomorrow ▾</span></button>
+    ${installCard()}
+    <div class="stack" style="gap:2px"><h1>Your jobs</h1><p class="muted" style="font-size:14px">${active.length} open${finding ? ` · ${finding} still finding trucks` : " · all booked"}</p></div>
+    ${active.map(card).join("") || '<div class="note">No upcoming jobs. Tap Where\'s the job? to book trucks.</div>'}
+    ${done.length ? `<p class="eyebrow">Approved and billed</p>${done.map(card).join("")}` : ""}</div>`;
 }
+const pinName = n => n.length > 18 ? n.slice(0, 17).trim() + "…" : n;
 
 // The request's status at the top of its job page: finding trucks, booked, or live on the morning of the job
 function reqCard(j) {
@@ -1661,7 +1763,7 @@ function contractorJob(j) {
   const ready = allDone(j), bill = jobBill(j);
   const assignRows = j.assignments.map(a => `
     <div class="stack" style="gap:6px">
-      <div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${esc(tshort(a.type))}</span>
+      <div class="row"><div class="row" style="justify-content:flex-start">${truckPic(a.type, "tpic sm")}
         <div><strong>${esc(a.truck)} · ${esc(a.owner)}</strong>${a.rating ? ` <span class="muted" style="font-size:13px">★ ${a.rating}</span>` : ""}
           <div class="muted" style="font-size:13px">${esc(tname(a.type))}${a.checkIn ? " · in at " + esc(a.checkIn) : ""}${a.out ? " · out " + esc(a.out) : ""}${j.req && j.req.plantN && a.status !== "done" ? ` · starts at ${startsAt(j, a) === "plant" ? "the plant" : "the job"}` : ""}</div></div></div>
         ${asgPill(j, a)}</div>
@@ -1738,7 +1840,7 @@ function reqOptions() {
       <label class="field">${d.kind === 0 ? "Dump site" : "Asphalt plant"} (closest first)<select id="rq-plant">${plants.map(({ p, mi }) => `<option value="${p.id}" ${p.id === d.plant ? "selected" : ""}>${esc(p.name)} · ${mi.toFixed(1)} mi${p.recycle ? " · recycling yard" : ""}</option>`).join("")}</select></label>
       <ol class="trip">${tripSteps(d.kind, pl.name).map(t => `<li>${t}</li>`).join("")}</ol></div>
     <div class="card"><div class="row"><h2>Which trucks?</h2><span class="muted num">${n} total</span></div>
-      ${shown.map(t => `<div class="typecount"><div><strong>${esc(TYPES[t].name)}</strong> <span class="muted num" style="font-size:13px">$${TYPES[t].rate}/hr</span><div class="muted" style="font-size:13px">${nearby(t, d.radius)} nearby · ${esc(TYPES[t].spec)}</div></div>
+      ${shown.map(t => `<div class="typecount"><div class="tline">${truckPic(t)}<div><strong>${esc(TYPES[t].name)}</strong> <span class="muted num" style="font-size:13px">$${TYPES[t].rate}/hr</span><div class="muted" style="font-size:13px">${nearby(t, d.radius)} nearby · ${esc(TYPES[t].spec)}</div></div></div>
         <div class="stepper"><button type="button" data-act="rq-dec:${t}" aria-label="Fewer ${esc(TYPES[t].name)}s">−</button><output class="num">${d.counts[t] || 0}</output><button type="button" data-act="rq-inc:${t}" aria-label="More ${esc(TYPES[t].name)}s">+</button></div></div>`).join("")}
       ${d.more || ON().length === shown.length ? "" : '<button class="btn small ghost" type="button" data-act="rq-more" style="justify-self:start">+ More truck types</button>'}
       <p class="muted" style="font-size:12.5px">Paid by the hour, ${MIN_HRS}-hour minimum per truck.</p>
@@ -1988,7 +2090,7 @@ function ownerPay() {
 }
 function ownerFleet() {
   return `<h1>Fleet</h1><p class="muted">Set each truck's type and pick who drives it. The driver gets job texts and checks in from their own phone; you see every load and get paid for the truck.</p>
-    ${MY_TRUCKS.map(t => `<div class="card"><div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${esc(tshort(t.type))}</span><div><strong>${t.id} · ${esc(tname(t.type))}</strong><div class="muted" style="font-size:13px">plate ${t.plate}</div></div></div><span class="pill good">Active</span></div>
+    ${MY_TRUCKS.map(t => `<div class="card"><div class="row"><div class="row" style="justify-content:flex-start">${truckPic(t.type, "tpic sm")}<div><strong>${t.id} · ${esc(tname(t.type))}</strong><div class="muted" style="font-size:13px">plate ${t.plate}</div></div></div><span class="pill good">Active</span></div>
       <div class="grid2"><label class="field">Truck type<select id="typ-${t.id}">${[...new Set([...ON(), t.type])].map(k => `<option value="${k}" ${t.type === k ? "selected" : ""}>${esc(tname(k))}</option>`).join("")}</select></label>
         <label class="field">Driver<select id="drv-${t.id}">${MY_DRIVERS.map(d => `<option ${S.driverOf[t.id] === d.name ? "selected" : ""}>${esc(d.name)}</option>`).join("")}</select></label></div>
       <button class="btn small" type="button" data-act="driver:${t.id}" data-pick="drv-${t.id}" style="justify-self:start">Save</button></div>`).join("")}
@@ -2017,7 +2119,7 @@ function ownerDocs() {
       <div class="list">${MY_TRUCKS.map(t => { const c = S.insCards[t.id]; return `<div class="stack" style="gap:8px">
         <div class="row"><div class="row" style="justify-content:flex-start">${c && c.url ? `<img class="thumb" src="${c.url}" alt="Insurance card for ${t.id}">` : '<span class="thumb">card</span>'}<div><strong>${t.id} · ${esc(tname(t.type))}</strong><div class="muted" style="font-size:13px">${c ? esc(c.name) + " · added " + esc(c.date) : "No card yet"}</div></div></div>${c ? '<span class="pill good">On file</span>' : '<span class="pill warn">Needed</span>'}</div>
         <div class="row" style="gap:8px"><input id="ic-${t.id}" type="file" accept="image/*,application/pdf" capture="environment" aria-label="Insurance card for ${t.id}" style="flex:1;min-width:0"><button class="btn small" type="button" data-act="inscard:${t.id}" style="flex:none">${c ? "Replace" : "Upload"}</button></div></div>`; }).join("")}</div></div>
-    <div class="card"><h2>Your trucks</h2><div class="list">${MY_TRUCKS.map(t => `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${esc(tshort(t.type))}</span><div><strong>${t.id} · ${esc(tname(t.type))}</strong><div class="muted" style="font-size:13px">${esc(TYPES[t.type] ? TYPES[t.type].spec : "")} · plate ${t.plate}</div></div></div><span class="pill good">Active</span></div>`).join("")}</div></div>`;
+    <div class="card"><h2>Your trucks</h2><div class="list">${MY_TRUCKS.map(t => `<div class="row"><div class="row" style="justify-content:flex-start">${truckPic(t.type, "tpic sm")}<div><strong>${t.id} · ${esc(tname(t.type))}</strong><div class="muted" style="font-size:13px">${esc(TYPES[t.type] ? TYPES[t.type].spec : "")} · plate ${t.plate}</div></div></div><span class="pill good">Active</span></div>`).join("")}</div></div>`;
 }
 
 /* ================= Driver ================= */
@@ -2104,7 +2206,12 @@ function driverToday() {
   const all = driverAssignments(), today = all.filter(x => x.j.dayN === 0);
   const ask = all.filter(x => x.j.dayN === 1 && !x.a.confirmed);
   const next = all.filter(x => x.j.dayN > 0).sort((a, b) => a.j.dayN - b.j.dayN)[0];
-  return driverHead("Today") + installCard() + signupBanner()
+  // Map first: your truck and where you're working today (or next)
+  const live = today.filter(x => x.j.pts).map(({ j, a }) => truckPos(j, a)).find(Boolean);
+  const me = live ? { lat: live.lat, lng: live.lng } : { lat: SITE.lat - 0.035, lng: SITE.lng + 0.03 };
+  const pins = [{ ...me, label: `You · ${t.id}`, me: true }, ...(today.length ? today : next ? [next] : []).filter(x => x.j.pts).map(({ j }) => ({ ...siteP(j), label: pinName(j.name) }))];
+  return heroMap("d-home", pins, { trucks: 8, center: me, top: `<span class="fpill"><span class="live-dot" style="${S.online ? "" : "background:var(--muted);box-shadow:none"}"></span>${S.online ? "Taking same-day jobs" : "Same-day jobs off"}</span><button class="fpill" type="button" data-tab="dfind">Find jobs ›</button>` })
+    + `<div class="sheet">` + driverHead("Today") + installCard() + signupBanner()
     + ask.map(({ j, a }) => `<div class="card" style="border:2px solid var(--warn)"><strong>Tomorrow ${esc(j.start)}: are you still coming?</strong>
       <span class="muted" style="font-size:13px">${esc(j.name)} · ${esc(siteText(j))}. Please confirm by 8 PM tonight, or your spot goes to another driver.</span>
       <div class="grid2"><button class="btn" type="button" data-act="d-confirm:${j.id}:${a.truck}">Yes, I'm coming</button><button class="btn ghost danger" type="button" data-act="d-cant:${j.id}:${a.truck}">I can't make it</button></div></div>`).join("")
@@ -2116,7 +2223,7 @@ function driverToday() {
     + (next ? `<button type="button" class="card tap" data-go="work:${next.j.id}:${next.a.truck}"><span class="eyebrow">Next job</span><strong>${esc(next.j.date)}, ${esc(next.j.start)} · ${esc(next.j.name)}</strong><span class="muted" style="font-size:13px">${esc(siteText(next.j))}</span></button>` : "")
     + `<div class="card"><div class="row"><div><strong>Same-day requests</strong><div class="muted" style="font-size:13px">Jobs that need a truck right now. You get 20 seconds to accept.</div></div>
         <button class="pick" type="button" data-act="d-online" aria-pressed="${S.online}" style="flex:none">${S.online ? "On" : "Off"}</button></div></div>
-    <div class="note">Pick up jobs in Find jobs, or ${ME_OWNER} books them for you. Dispatch updates show up here and by text.</div>`;
+    <div class="note">Pick up jobs in Find jobs, or ${ME_OWNER} books them for you. Dispatch updates show up here and by text.</div></div>`;
 }
 function driverFind() {
   const t = myDriverTruck();
@@ -2189,7 +2296,7 @@ function driverMe() {
   return driverHead("My info") + signupBanner() + `<div class="card"><div class="row" style="justify-content:flex-start;gap:12px"><span class="truck-ic" style="border-radius:50%;width:48px;height:48px">MR</span><div><h2>${ME_DRIVER}</h2><div class="muted" style="font-size:13px">★ 4.9 · 212 jobs · on Trucks2U since 2026 · ${tel(ME_PHONE)}</div></div></div></div>
     <div class="card"><h2>Your documents</h2><div class="list">${S.myDocs.map(doc).join("")}</div>
       <p class="muted" style="font-size:12.5px">We text you 30 days before anything expires. New documents are checked by Trucks2U before they go live.</p></div>
-    ${t ? `<div class="card"><h2>Your truck</h2><div class="row" style="justify-content:flex-start"><span class="truck-ic">${esc(tshort(t.type))}</span><div><strong>${t.id} · ${esc(tname(t.type))}</strong><div class="muted" style="font-size:13px">plate ${t.plate} · owned by ${ME_OWNER} · $${TYPES[t.type] ? TYPES[t.type].rate : ""}/hr, ${MIN_HRS} hr min</div></div></div>
+    ${t ? `<div class="card"><h2>Your truck</h2><div class="row" style="justify-content:flex-start">${truckPic(t.type, "tpic lg")}<div><strong>${t.id} · ${esc(tname(t.type))}</strong><div class="muted" style="font-size:13px">plate ${t.plate} · owned by ${ME_OWNER} · $${TYPES[t.type] ? TYPES[t.type].rate : ""}/hr, ${MIN_HRS} hr min</div></div></div>
       <strong style="font-size:14px">Insurance card</strong>
       ${c ? (c.url ? `<img src="${c.url}" alt="Insurance card for ${t.id}" style="max-width:100%;border-radius:10px;border:1px solid var(--line)">` : `<div class="note">${esc(c.name)} · added ${esc(c.date)}. This sample card has no picture; upload one on the truck owner's Docs tab and it shows here.</div>`) : `<div class="note">No insurance card on file for ${t.id}. Ask ${ME_OWNER} to upload it.</div>`}
       <p class="muted" style="font-size:12.5px">Show this at a scale house or a traffic stop.</p></div>` : ""}
@@ -2271,7 +2378,7 @@ function slotPicker(dayN, type, act) {
 function brokerJob(j) {
   if (!j) { ui.view = null; return brokerBoard(); }
   const sections = Object.keys(j.needs).filter(t => j.needs[t]).map(t => {
-    const rows = j.assigned[t].map(id => { const tr = bTruck(id); return `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${esc(tshort(t))}</span><div><strong>${id} · ${esc(tr.driver)}</strong><div class="muted" style="font-size:13px">${esc(tr.owner)} · ${tel(tr.phone)}</div></div></div>
+    const rows = j.assigned[t].map(id => { const tr = bTruck(id); return `<div class="row"><div class="row" style="justify-content:flex-start">${truckPic(t, "tpic sm")}<div><strong>${id} · ${esc(tr.driver)}</strong><div class="muted" style="font-size:13px">${esc(tr.owner)} · ${tel(tr.phone)}</div></div></div>
       <button class="btn small ghost" type="button" data-act="bun:${j.id}:${t}:${id}" style="flex:none">Remove</button></div>`; }).join("");
     const left = j.needs[t] - j.assigned[t].length;
     return `<div class="card"><div class="row"><h2>${esc(tname(t))}</h2><span class="muted num">${j.assigned[t].length} of ${j.needs[t]}</span></div>
@@ -2302,7 +2409,7 @@ function brokerT2Job(j) {
 function brokerTrucks() {
   const busy = bBusy(0);
   return `<h1>Your trucks</h1><p class="muted">Owner-operators you dispatch. Each one goes through the same Trucks2U vetting; a blocked truck can't be dispatched until its documents are current.</p>
-    <div class="card"><div class="list">${B().roster.map(t => `<div class="row"><div class="row" style="justify-content:flex-start"><span class="truck-ic">${esc(tshort(t.type))}</span><div><strong>${t.id} · ${esc(t.driver)}</strong><div class="muted" style="font-size:13px">${esc(t.owner)} · ${busy.has(t.id) ? "Working today" : "Free today"} · ${tel(t.phone)}</div></div></div>${docsPill(t.docs)}</div>`).join("")}</div></div>
+    <div class="card"><div class="list">${B().roster.map(t => `<div class="row"><div class="row" style="justify-content:flex-start">${truckPic(t.type, "tpic sm")}<div><strong>${t.id} · ${esc(t.driver)}</strong><div class="muted" style="font-size:13px">${esc(t.owner)} · ${busy.has(t.id) ? "Working today" : "Free today"} · ${tel(t.phone)}</div></div></div>${docsPill(t.docs)}</div>`).join("")}</div></div>
     <button class="btn ghost" type="button" data-act="invite">Invite a truck owner</button>`;
 }
 function brokerBilling() {
