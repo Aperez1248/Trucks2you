@@ -13,21 +13,32 @@
 <title>Trucks2U</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Barlow+Condensed:ital,wght@0,600;0,700;1,800&display=swap">
 <style>
 /* Layout: a phone-shaped app; full-bleed map underneath, a white bottom sheet on top, like a ride-hailing app. */
 :root {
   --bg: #e9ebee;
   --sheet: #ffffff;
-  --fg: #000000;
-  --muted: #5e5e5e;
-  --line: #e2e2e2;
-  --chip: #f3f3f3;
-  --btn: #000000;
+  --fg: #101a2b;
+  --muted: #5b6880;
+  --line: #e1e6ee;
+  --chip: #f1f4f8;
+  /* Trucks2U brand: navy + blue */
+  --brand: #0b1730;
+  --brand-2: #16233f;
+  --accent: #1667e8;
+  --accent-soft: #e3edfd;
+  --logo-2u: #4d94ff;
+  --btn: var(--accent);
   --btn-fg: #ffffff;
   --go: #06c167;
+  --good: #1a8a4a;
+  --good-soft: #e1f4e8;
+  --warn-soft: #fdf0d9;
   --route: #276ef1;
-  --warn: #c76a00;
+  --warn: #a86400;
+  --display: "Barlow Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --tabh: 62px;
   --land: #eef0f3;
   --park: #dcefe0;
   --water: #c9def2;
@@ -40,15 +51,17 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0b0b0b; --sheet: #161616; --fg: #ffffff; --muted: #a6a6a6; --line: #2c2c2c; --chip: #262626;
-    --btn: #ffffff; --btn-fg: #000000; --go: #1fd47f; --route: #5b93ff; --warn: #f0a640;
+    --bg: #070e1c; --sheet: #101b31; --fg: #e8eef8; --muted: #93a2bd; --line: #22314f; --chip: #18253f;
+    --brand: #050b17; --brand-2: #121e37; --accent: #3d86ff; --accent-soft: #15284d; --good: #4cc47e; --good-soft: #10301f; --warn-soft: #34260c;
+    --btn: #3d86ff; --btn-fg: #ffffff; --go: #1fd47f; --route: #5b93ff; --warn: #f0a640;
     --land: #1e2126; --park: #1f2b23; --water: #142233; --road: #33373e; --road-edge: #2a2d33; --hwy: #6b5a2c; --hwy-edge: #59491f; --label: #7c828b;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0b0b0b; --sheet: #161616; --fg: #ffffff; --muted: #a6a6a6; --line: #2c2c2c; --chip: #262626;
-  --btn: #ffffff; --btn-fg: #000000; --go: #1fd47f; --route: #5b93ff; --warn: #f0a640;
+  --bg: #070e1c; --sheet: #101b31; --fg: #e8eef8; --muted: #93a2bd; --line: #22314f; --chip: #18253f;
+  --brand: #050b17; --brand-2: #121e37; --accent: #3d86ff; --accent-soft: #15284d; --good: #4cc47e; --good-soft: #10301f; --warn-soft: #34260c;
+  --btn: #3d86ff; --btn-fg: #ffffff; --go: #1fd47f; --route: #5b93ff; --warn: #f0a640;
   --land: #1e2126; --park: #1f2b23; --water: #142233; --road: #33373e; --road-edge: #2a2d33; --hwy: #6b5a2c; --hwy-edge: #59491f; --label: #7c828b;
   color-scheme: dark;
 }
@@ -64,12 +77,15 @@ body { background: var(--bg); color: var(--fg); font: 16px/1.4 var(--font); }
 .top > * { pointer-events: auto; }
 .round { width: 44px; height: 44px; border-radius: 50%; background: var(--sheet); color: var(--fg); border: 0; display: grid; place-items: center; box-shadow: 0 2px 10px rgb(0 0 0 / .18); cursor: pointer; font: 700 15px var(--font); }
 .pill { background: var(--sheet); color: var(--fg); border-radius: 999px; padding: 10px 16px; font-weight: 700; box-shadow: 0 2px 10px rgb(0 0 0 / .18); font-variant-numeric: tabular-nums; }
-.brand { font: 800 19px/1 var(--font); letter-spacing: -.3px; background: var(--sheet); padding: 11px 16px; border-radius: 999px; box-shadow: 0 2px 10px rgb(0 0 0 / .18); }
+.brand { background: var(--brand); color: #fff; padding: 10px 16px; border-radius: 999px; box-shadow: 0 2px 10px rgb(0 0 0 / .18); line-height: 1; }
+/* The TRUCKS2U wordmark: bold condensed italic, with a blue "2U" */
+.logo { font: italic 800 22px/1 var(--display); letter-spacing: .4px; text-transform: uppercase; white-space: nowrap; }
+.logo b { color: var(--logo-2u); font-weight: 800; }
 .sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; background: var(--sheet); border-radius: 20px 20px 0 0; box-shadow: 0 -4px 24px rgb(0 0 0 / .14); padding: 10px 18px calc(18px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 14px; max-height: 78%; overflow-y: auto; }
 .sheet::before { content: ""; width: 38px; height: 5px; border-radius: 9px; background: var(--line); justify-self: center; }
 .full { position: absolute; inset: 0; z-index: 6; background: var(--sheet); padding: 18px; display: grid; gap: 14px; align-content: start; grid-auto-rows: max-content; overflow-y: auto; }
-h1 { font: 800 26px/1.15 var(--font); margin: 0; letter-spacing: -.4px; text-wrap: balance; }
-h2 { font: 700 20px/1.2 var(--font); margin: 0; letter-spacing: -.2px; }
+h1 { font: 700 30px/1.05 var(--display); margin: 0; letter-spacing: 0; text-wrap: balance; }
+h2 { font: 700 23px/1.1 var(--display); margin: 0; letter-spacing: .1px; }
 p { margin: 0; }
 .muted { color: var(--muted); }
 .small { font-size: 14px; }
@@ -91,7 +107,7 @@ p { margin: 0; }
 .chip { border: 0; background: var(--chip); color: var(--fg); font: 600 14px var(--font); padding: 10px 14px; border-radius: 999px; white-space: nowrap; cursor: pointer; }
 .chip[aria-pressed="true"] { background: var(--btn); color: var(--btn-fg); }
 .opt { display: grid; grid-template-columns: 58px 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border: 2px solid transparent; border-radius: 12px; cursor: pointer; }
-.opt.on { border-color: var(--fg); }
+.opt.on { border-color: var(--accent); background: var(--accent-soft); }
 .opt .name { font-weight: 700; font-size: 17px; }
 .opt .meta { font-size: 13px; color: var(--muted); }
 .opt .price { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
@@ -103,13 +119,13 @@ p { margin: 0; }
 .tag { font: 700 12px/1 var(--font); padding: 6px 9px; border-radius: 6px; background: var(--chip); white-space: nowrap; }
 .tag.go { background: var(--go); color: #fff; }
 .bar { height: 4px; background: var(--chip); border-radius: 4px; overflow: hidden; }
-.bar i { display: block; height: 100%; background: var(--fg); transition: width .4s; }
+.bar i { display: block; height: 100%; background: var(--accent); transition: width .4s; }
 .gobtn { position: absolute; left: 50%; transform: translateX(-50%); bottom: 150px; z-index: 5; width: 84px; height: 84px; border-radius: 50%; border: 5px solid var(--sheet); background: var(--route); color: #fff; font: 800 24px var(--font); cursor: pointer; box-shadow: 0 4px 18px rgb(0 0 0 / .3); }
 .gobtn.stop { background: #e11900; font-size: 15px; }
-.offer { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 7; background: #000; color: #fff; border-radius: 18px; padding: 18px; display: grid; gap: 14px; box-shadow: 0 10px 40px rgb(0 0 0 / .45); }
+.offer { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 7; background: var(--brand); color: #fff; border-radius: 18px; padding: 18px; display: grid; gap: 14px; box-shadow: 0 10px 40px rgb(0 0 0 / .45); }
 .offer .muted { color: #b3b3b3; }
 .offer .btn { background: var(--route); color: #fff; }
-.offer .btn.light { background: #2b2b2b; color: #fff; }
+.offer .btn.light { background: var(--brand-2); color: #fff; }
 .ring { width: 56px; height: 56px; flex: none; }
 .big { font: 800 34px/1 var(--font); letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
 .kv { display: grid; gap: 10px; }
@@ -128,14 +144,14 @@ input:focus, select:focus { border-color: var(--fg); outline: none; }
 .menu > div { background: var(--sheet); width: 78%; height: 100%; padding: 22px 18px; display: grid; gap: 4px; align-content: start; }
 .menu .place { border-bottom: 0; }
 .toast { position: absolute; top: 70px; left: 50%; transform: translateX(-50%); z-index: 9; background: var(--btn); color: var(--btn-fg); padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; width: max-content; max-width: calc(100% - 32px); text-align: center; }
-.welcome { position: absolute; inset: 0; z-index: 6; background: #000; color: #fff; padding: 28px 20px; display: grid; gap: 12px; align-content: end; }
-.welcome .logo { font: 800 30px/1 var(--font); letter-spacing: -.6px; position: absolute; top: 28px; left: 20px; }
-.welcome h1 { font-size: 34px; letter-spacing: -.8px; margin-bottom: 8px; }
-.role { display: grid; grid-template-columns: 46px 1fr 16px; gap: 14px; align-items: center; background: #1c1c1c; border: 0; color: #fff; border-radius: 14px; padding: 16px; text-align: left; font: inherit; cursor: pointer; }
-.role:hover { background: #2a2a2a; }
+.welcome { position: absolute; inset: 0; z-index: 6; background: var(--brand); color: #fff; padding: 28px 20px; display: grid; gap: 12px; align-content: end; }
+.welcome .logo { font-size: 32px; position: absolute; top: 28px; left: 20px; }
+.welcome h1 { font-size: 44px; line-height: 1; margin-bottom: 8px; }
+.role { display: grid; grid-template-columns: 46px 1fr 16px; gap: 14px; align-items: center; background: var(--brand-2); border: 1px solid #22314f; color: #fff; border-radius: 14px; padding: 16px; text-align: left; font: inherit; cursor: pointer; }
+.role:hover { background: #1c2b4b; }
 .role .ic { width: 46px; height: 46px; border-radius: 50%; background: #fff; color: #000; display: grid; place-items: center; font-size: 22px; }
 .role b { display: block; font-size: 18px; }
-.role span { color: #b3b3b3; font-size: 14px; }
+.role span { color: #a9b6cc; font-size: 14px; }
 .check { display: grid; grid-template-columns: 24px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); cursor: pointer; }
 .check input { width: 22px; height: 22px; accent-color: var(--fg); padding: 0; }
 .foot { font-size: 12px; color: var(--muted); text-align: center; }
@@ -144,6 +160,33 @@ button:focus-visible, .opt:focus-visible, label:focus-within { outline: 3px soli
 @keyframes pulse { from { r: 20; opacity: .55; } to { r: 140; opacity: 0; } }
 .pulse { fill: var(--fg); animation: pulse 1.8s ease-out infinite; }
 .pulse.b { animation-delay: .9s; }
+/* ---------- Status badges, job cards, truck-type chips ---------- */
+.badge { font: 700 11px/1 var(--font); letter-spacing: .7px; text-transform: uppercase; padding: 6px 8px; border-radius: 6px; white-space: nowrap; background: var(--chip); color: var(--muted); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+.badge.good { background: var(--good-soft); color: var(--good); }
+.badge.info { background: var(--accent-soft); color: var(--accent); }
+.full.tint { background: var(--bg); }
+.jcard { display: grid; gap: 10px; width: 100%; text-align: left; font: inherit; color: var(--fg); background: var(--sheet); border: 1px solid var(--line); border-radius: 14px; padding: 14px; cursor: pointer; }
+@media (hover: hover) { .jcard:hover { border-color: var(--accent); } }
+.jcard.hot { border-color: var(--accent); }
+.jcard .when { font: 600 12px/1 var(--font); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
+.jcard h3 { font: 700 21px/1.1 var(--display); margin: 0; }
+.tchips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+.tchip { font: 600 12px/1 var(--font); padding: 6px 9px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.tchip.ok { color: var(--good); border-color: transparent; background: var(--good-soft); }
+.appbar { margin: -18px -18px 2px; padding: 14px 18px; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.appbar .who { font: 600 12px/1.2 var(--font); letter-spacing: 1.2px; text-transform: uppercase; color: #a9b6cc; text-align: right; }
+.head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.btn.sm { width: auto; padding: 12px 16px; font-size: 15px; border-radius: 10px; }
+/* ---------- Bottom tab bar (phones); it moves into the top header on computers ---------- */
+.tabbar { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; height: var(--tabh); display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--sheet); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: content-box; }
+.tabbar button { border: 0; background: none; color: var(--muted); font: 600 12px/1 var(--font); display: grid; justify-items: center; align-content: center; gap: 4px; cursor: pointer; position: relative; padding: 6px 2px; min-width: 0; }
+.tabbar button[aria-current] { color: var(--accent); }
+.tabbar svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.tabbar .dot { position: absolute; top: 4px; left: calc(50% + 6px); min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #e11900; color: #fff; font: 700 11px/17px var(--font); }
+.has-tabs .sheet { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0px)); padding-bottom: 18px; border-radius: 20px 20px 0 0; }
+.has-tabs .full { bottom: calc(var(--tabh) + env(safe-area-inset-bottom, 0px)); }
+.has-tabs .gobtn { bottom: calc(150px + var(--tabh)); }
 /* ---------- Phones: the app fills the whole screen, like a real app ---------- */
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body { margin: 0; -webkit-tap-highlight-color: transparent; }
@@ -158,6 +201,7 @@ button, .opt, .place, .chip, label { touch-action: manipulation; }   /* no doubl
   .top { top: calc(10px + env(safe-area-inset-top, 0px)); left: calc(12px + env(safe-area-inset-left, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); }
   .sheet { max-height: calc(100% - 76px - env(safe-area-inset-top, 0px)); padding-left: calc(16px + env(safe-area-inset-left, 0px)); padding-right: calc(16px + env(safe-area-inset-right, 0px)); }
   .full { padding: calc(14px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px)); }
+  .appbar { margin: calc(-14px - env(safe-area-inset-top, 0px)) calc(-16px - env(safe-area-inset-right, 0px)) 2px calc(-16px - env(safe-area-inset-left, 0px)); padding: calc(12px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) 12px calc(16px + env(safe-area-inset-left, 0px)); }
   .welcome { padding: calc(24px + env(safe-area-inset-top, 0px)) 18px calc(24px + env(safe-area-inset-bottom, 0px)); }
   .welcome .logo { top: calc(24px + env(safe-area-inset-top, 0px)); left: 18px; }
   .menu > div { width: 84%; padding-top: calc(22px + env(safe-area-inset-top, 0px)); padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px)); overflow-y: auto; }
@@ -184,9 +228,9 @@ button, .opt, .place, .chip, label { touch-action: manipulation; }   /* no doubl
   .wrap { max-width: none; padding: 0; gap: 0; }
   .foot { display: none; }
   .phone { height: 100vh; max-height: none; min-height: 560px; border-radius: 0; border: 0; }
-  .site { display: flex; position: absolute; top: 0; left: 0; right: 0; height: 64px; z-index: 10; background: #000; color: #fff; align-items: center; gap: 28px; padding: 0 28px; }
-  .site b { font: 800 22px/1 var(--font); letter-spacing: -.4px; }
-  .site .who { color: #b3b3b3; font-weight: 600; }
+  .site { display: flex; position: absolute; top: 0; left: 0; right: 0; height: 64px; z-index: 10; background: var(--brand); color: #fff; align-items: center; gap: 28px; padding: 0 28px; }
+  .site .logo { font-size: 26px; }
+  .site .who { color: #a9b6cc; font-weight: 600; }
   .site button { margin-left: auto; background: #fff; color: #000; border: 0; border-radius: 999px; padding: 10px 18px; font: 700 14px var(--font); cursor: pointer; }
   .site button[hidden] { display: none; }
   .top { top: 82px; left: 24px; right: auto; width: 440px; }
@@ -200,14 +244,26 @@ button, .opt, .place, .chip, label { touch-action: manipulation; }   /* no doubl
   .toast { top: 82px; left: calc(50% + 232px); }
   .welcome { top: 64px; align-content: center; padding: 40px max(24px, calc(50% - 280px)); }
   .welcome .logo { display: none; }
-  .welcome h1 { font-size: 52px; }
+  /* The tabs sit in the dark header bar, next to the logo */
+  .tabbar { top: 0; bottom: auto; left: 300px; right: 190px; height: 64px; padding: 0; background: none; border: 0; grid-auto-columns: max-content; gap: 4px; z-index: 11; }
+  .tabbar button { grid-auto-flow: column; gap: 8px; padding: 0 14px; color: #a9b6cc; font-size: 15px; }
+  .tabbar button[aria-current] { color: #fff; box-shadow: inset 0 -3px 0 var(--logo-2u); }
+  .tabbar svg { width: 20px; height: 20px; }
+  .tabbar .dot { position: static; }
+  .site .who { display: none; }
+  .appbar { display: none; }
+  .top .brand { display: none; }   /* the header already shows the logo */
+  .has-tabs .sheet { bottom: auto; border-radius: 16px; padding-bottom: 20px; }
+  .has-tabs .full { bottom: 0; }
+  .has-tabs .gobtn { bottom: 56px; }
+  .welcome h1 { font-size: 64px; }
 }
 @media (prefers-reduced-motion: reduce) { .pulse { animation: none; opacity: .12; } .bar i { transition: none; } }
 </style>
 
 <div class="wrap">
   <div class="phone" id="phone">
-    <header class="site"><b>Trucks2U</b><span class="who" id="who"></span><button data-mode="welcome" id="site-switch" hidden>Switch account</button></header>
+    <header class="site"><span class="logo">Trucks<b>2U</b></span><span class="who" id="who"></span><button data-mode="welcome" id="site-switch" hidden>Switch account</button></header>
     <svg class="map" id="map" viewBox="0 0 400 760" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
     <div id="ui"></div>
   </div>
@@ -316,7 +372,7 @@ const ME = { name: "Marco R.", type: "w12", plate: "8XKD218", rating: "4.9", x: 
 /* ---------- State ---------- */
 let mode = null;   // null = welcome screen; "contractor", "driver" or "fleet" once signed in
 let F = { tab: "requests", picked: [], menu: false };
-let C = { screen: "home", place: null, material: MATERIALS[0], counts: Object.fromEntries(Object.keys(TRUCKS).map(t => [t, t === "w12" ? 2 : 0])), focus: "w12", note: "", plantN: 0, plant: 0, day: 1, time: "6:00 AM", hours: 8, menu: false, radius: 25, more: false };
+let C = { screen: "home", tab: "jobs", place: null, material: MATERIALS[0], counts: Object.fromEntries(Object.keys(TRUCKS).map(t => [t, t === "w12" ? 2 : 0])), focus: "w12", note: "", plantN: 0, plant: 0, day: 1, time: "6:00 AM", hours: 8, menu: false, radius: 25, more: false };
 let A = { tab: "review", open: null, menu: false };   // Trucks2U admin
 let D = { page: null, jobTab: "up", openJob: null, radius: 50, avail: ["Weekdays", "Saturdays"], online: false, screen: "home", offerLeft: 0, earnedToday: 0, tickets: [], menu: false, signup: null, approved: true };
 syncState();
@@ -326,6 +382,28 @@ let toastTimer, offerTimer, tick;
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // Phone numbers become tap-to-call links (on a phone, tapping one starts the call)
+const logo = () => `<span class="logo">Trucks<b>2U</b></span>`;
+const appbar = who => `<div class="appbar">${logo()}<span class="who">${who}</span></div>`;
+// Simple line icons for the bottom tab bar (24×24, drawn with the text color)
+const ICON = {
+  jobs: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/>',
+  map: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  plant: '<path d="M3 21V10l5 3V10l5 3V5h4v16H3zM17 8h4v13M7 17h2M12 17h2"/>',
+  bill: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3zM9 8h6M9 12h6M9 16h3"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  money: '<path d="M12 3v18M17 7.5C17 5.6 14.8 5 12 5S7 6 7 8.2c0 4.6 10 2.2 10 7 0 2.2-2.2 2.8-5 2.8s-5.2-.8-5.2-2.8"/>',
+  truck: '<path d="M2 6h11v10H2zM13 10h4l4 4v2h-8z"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+  inbox: '<path d="M3 13l3-8h12l3 8v6H3zM3 13h5l1 3h6l1-3h5"/>',
+  check: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+  alert: '<path d="M12 3l10 18H2zM12 10v5M12 18v.01"/>',
+  people: '<circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0 1 14 0M16 4.5a3.5 3.5 0 0 1 0 7M18 13.5a6.5 6.5 0 0 1 4 6.5"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>'
+};
+// items: [action, icon, label, isCurrent, badgeCount]
+const tabbar = items => `<nav class="tabbar" aria-label="Sections">${items.map(([a, ic, label, on, n]) =>
+  `<button data-act="${a}" ${on ? 'aria-current="page"' : ""}><svg viewBox="0 0 24 24" aria-hidden="true">${ICON[ic]}</svg><span>${label}</span>${n ? `<span class="dot">${n}</span>` : ""}</button>`).join("")}</nav>`;
 const tel = s => esc(s).replace(/\(?\d{3}\)?[ .-]?\d{3}-\d{4}/g, n => `<a class="tel" href="tel:+1${n.replace(/\D/g, "")}">${n}</a>`);
 const money = n => "$" + Math.round(n).toLocaleString("en-US");
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -423,26 +501,84 @@ const plantPin = pl => `<g transform="translate(${pl.x} ${pl.y})"><circle r="11"
 
 /* ---------- Contractor app ---------- */
 /* Lucas Paving's other upcoming jobs (sample) */
+// want = how many of each truck type the job needs
 const C_JOBS = [
-  { dayN: 3, start: "6:00 AM", hours: 8, place: PLACES[3], material: "Bring asphalt", need: 8, crew: ["Marco R.", "Luis O.", "Tam N.", "Ben C.", "Raj P.", "Joe S."].map(n => DRIVERS.find(d => d.name === n)) },
-  { dayN: 5, start: "7:00 PM", hours: 8, place: PLACES[4], material: "Haul off grindings", need: 4, crew: ["Dana K.", "Mike H.", "Rosa G.", "Kim L."].map(n => DRIVERS.find(d => d.name === n)) }
+  { dayN: 3, start: "6:00 AM", hours: 8, place: PLACES[3], material: "Bring asphalt", need: 8, want: { w10: 2, w12: 3, bd: 1, tr: 1, sd: 1 }, crew: ["Marco R.", "Luis O.", "Tam N.", "Ben C.", "Raj P.", "Joe S."].map(n => DRIVERS.find(d => d.name === n)) },
+  { dayN: 5, start: "7:00 PM", hours: 8, place: PLACES[4], material: "Haul off grindings", need: 4, want: { sd: 1, w12: 3 }, crew: ["Dana K.", "Mike H.", "Rosa G.", "Kim L."].map(n => DRIVERS.find(d => d.name === n)) }
 ];
+// Per truck type: "12W 2/3" (booked / needed)
+const typeFill = (want, crew) => Object.entries(want).filter(([, n]) => n > 0).map(([t, n]) => ({ t, n, got: crew.filter(m => m.type === t).length }));
 function cUpcoming() {
-  const l = C_JOBS.map((j, i) => ({ key: String(i), name: j.place.name, date: dayLabel(j.dayN), dayN: j.dayN, start: j.start, got: j.crew.length, need: j.need }));
-  if (job && sched() && job.status !== "cancelled") l.push({ key: "demo", name: job.place.name, date: job.date, dayN: job.dayN, start: job.start, got: job.crew.length, need: job.need });
+  const l = C_JOBS.map((j, i) => ({ key: String(i), name: j.place.name, sub: j.place.sub, material: j.material, date: dayLabel(j.dayN), dayN: j.dayN, start: j.start, got: j.crew.length, need: j.need, fill: typeFill(j.want, j.crew), now: false }));
+  if (job && job.status !== "cancelled" && job.status !== "done") l.push({ key: "demo", name: job.place.name, sub: job.place.sub, material: job.material, date: job.date, dayN: sched() ? job.dayN : 0, start: sched() ? job.start : "Now", got: job.crew.length, need: job.need, fill: typeFill(job.wantByType, job.crew), now: !sched(), hot: true });
   return l.sort((a, b) => a.dayN - b.dayN);
 }
-function cHome() {
-  const ups = cUpcoming();
-  return `<div class="top"><button class="round" data-act="c-menu" aria-label="Menu">☰</button><span class="brand">Trucks2U</span><span style="width:44px"></span></div>
+function jobBadge(u) {
+  if (u.got < u.need) return '<span class="badge warn">Finding trucks</span>';
+  if (u.now) return '<span class="badge info">Trucks rolling</span>';
+  return '<span class="badge good">All booked</span>';
+}
+function jobCard(u) {
+  const when = u.now ? "Today · now" : `${u.dayN === 1 ? "Tomorrow" : u.date} · ${u.start}`;
+  return `<button class="jcard ${u.hot ? "hot" : ""}" data-act="c-openjob:${u.key}">
+    <div class="row"><span class="when">${esc(when)}</span>${jobBadge(u)}</div>
+    <div class="stack" style="gap:4px"><h3>${esc(u.name)}</h3><span class="muted small">${esc(u.material)} · ${esc(u.sub)}</span></div>
+    <div class="bar"><i style="width:${Math.round(100 * u.got / u.need)}%"></i></div>
+    <div class="row" style="align-items:flex-end"><div class="tchips">${u.fill.map(f => `<span class="tchip ${f.got >= f.n ? "ok" : ""}">${TRUCKS[f.t] ? TRUCKS[f.t].short : f.t} ${f.got}/${f.n}</span>`).join("")}</div>
+      <span class="muted small" style="white-space:nowrap">${u.got} of ${u.need} trucks</span></div>
+  </button>`;
+}
+/* Contractor home: one of the bottom tabs */
+function cHome() { return ({ jobs: cJobs, map: cMap, plants: cPlants, billing: cBilling, account: cAccount }[C.tab] || cJobs)(); }
+function cJobs() {
+  const ups = cUpcoming(), open = ups.filter(u => u.got < u.need).length;
+  return `<div class="full tint">${appbar("Lucas Paving")}
+    <div class="head"><h1>Your jobs</h1><button class="btn sm" data-act="c-where">+ Request trucks</button></div>
+    ${ups.length ? `<p class="muted small" style="margin-top:-6px">${ups.length} upcoming${open ? ` · ${open} still finding trucks` : " · all booked"}</p>${ups.map(jobCard).join("")}`
+      : `<p class="muted">No upcoming jobs. Tap Request trucks to book trucks for a job.</p>`}
+  </div>`;
+}
+function cMap() {
+  return `<div class="top"><span class="brand">${logo()}</span><span class="pill">${DRIVERS.length * 6 + 12} trucks nearby</span></div>
     <div class="sheet">
       <h2>Need trucks?</h2>
       <button class="search" data-act="c-where"><i></i>Where's the job?</button>
       <div>${PLACES.slice(0, 2).map((p, i) => `<button class="place" data-act="c-pick:${i}"><span class="ic">⟲</span><span><b>${esc(p.name)}</b><span>${esc(p.sub)}</span></span></button>`).join("")}</div>
-      ${ups.length ? `<div class="stack" style="gap:0"><b style="margin:4px 0 2px">Your upcoming jobs</b>${ups.map(u => `<button class="place" data-act="c-openjob:${u.key}"><span class="ic">📅</span><span style="flex:1"><b>${esc(u.name)}</b><span>${u.date} · ${u.start}</span>
-          <span class="bar" style="display:block;margin:7px 0 5px"><i style="width:${Math.round(100 * u.got / u.need)}%"></i></span><span style="display:block">${u.got} of ${u.need} trucks ${u.got >= u.need ? "booked ✓" : "booked"}</span></span></button>`).join("")}</div>` : ""}
       <p class="muted small">${DRIVERS.length * 6 + 12} vetted trucks within 25 miles.</p>
     </div>`;
+}
+function cPlants() {
+  return `<div class="full tint">${appbar("Lucas Paving")}
+    <h1>Asphalt plants</h1>
+    <p class="muted small" style="margin-top:-6px">Choose one when you request trucks, and the trucks that start at the plant load there first.</p>
+    ${PLANTS.map(pl => `<div class="jcard" style="cursor:default"><div class="row"><div class="stack" style="gap:4px"><h3>${esc(pl.name)}</h3><span class="muted small">${esc(pl.sub)}</span></div>
+      <button class="chip" data-act="c-plantdir">Directions</button></div></div>`).join("")}
+  </div>`;
+}
+const INVOICES = [
+  { date: dayLabel(-1), name: "Harbor Blvd & 2nd St", trucks: 6, hrs: 9, rate: 130, paid: false },
+  { date: dayLabel(-4), name: "Main St & Oak Ave", trucks: 4, hrs: 9, rate: 130, paid: true },
+  { date: dayLabel(-8), name: "Lakeside Plaza parking lot", trucks: 3, hrs: 8, rate: 115, paid: true }
+];
+function cBilling() {
+  const due = INVOICES.filter(i => !i.paid).reduce((s, i) => s + i.trucks * i.hrs * i.rate, 0);
+  return `<div class="full tint">${appbar("Lucas Paving")}
+    <h1>Billing</h1>
+    <div class="jcard" style="cursor:default"><span class="when">Waiting for your approval</span><div class="big">${money(due)}</div>
+      <span class="muted small">Approve the drivers' hours and tickets, then it's charged to your bank account ending 4417.</span></div>
+    <div class="stack" style="gap:0">${INVOICES.map(i => `<div class="doc"><div><b>${esc(i.name)}</b><div class="muted small">${i.date} · ${i.trucks} trucks · ${i.hrs} hrs</div></div>
+      <div class="row" style="gap:8px"><b>${money(i.trucks * i.hrs * i.rate)}</b>${i.paid ? '<span class="badge good">Paid</span>' : '<span class="badge info">Approve</span>'}</div></div>`).join("")}</div>
+    <p class="muted small">Paid by the hour, ${MIN_HRS}-hour minimum per truck. No card fees: jobs are paid by bank transfer.</p>
+  </div>`;
+}
+function cAccount() {
+  return `<div class="full tint">${appbar("Lucas Paving")}<h1>Account</h1>
+    <div class="row" style="justify-content:flex-start;gap:12px"><div class="avatar">AL</div><div><b>Lucas Paving</b><div class="muted small">Contractor</div></div></div>
+    <div class="stack" style="gap:0">
+      <button class="place" data-act="c-pay"><span class="ic">🏦</span><span><b>Payment</b><span>Bank account ending 4417</span></span></button>
+      <button class="place" data-act="c-help"><span class="ic">?</span><span><b>Help</b><span>Talk to Trucks2U</span></span></button>
+      <button class="place" data-mode="welcome"><span class="ic">⇄</span><span><b>Switch account</b><span>Demo: see the driver or fleet side</span></span></button>
+    </div></div>`;
 }
 function cSample() {
   const j = C_JOBS[C.sample];
@@ -503,7 +639,7 @@ function crewRows() {
 }
 function cSearching() {
   const got = job.crew.length, need = job.need, later = sched();
-  return `<div class="top">${later ? '<button class="round" data-act="c-home" aria-label="Back">←</button>' : '<button class="round" data-act="c-menu" aria-label="Menu">☰</button>'}<span class="pill">${esc(job.place.name)}</span><span style="width:44px"></span></div>
+  return `<div class="top"><button class="round" data-act="c-home" aria-label="Back to your jobs">←</button><span class="pill">${esc(job.place.name)}</span><span style="width:44px"></span></div>
     <div class="sheet">
       <div class="stack" style="gap:6px"><h2>${got ? `${got} of ${need} trucks booked` : "Sending your request…"}</h2>
         ${later ? `<p class="small"><b>${job.date} · ${job.start}</b> · about ${job.hours} hrs</p>` : ""}
@@ -527,7 +663,7 @@ function cLive() {
         <button class="btn" data-act="c-morning">Jump to the morning of the job</button></div>
     </div>`; }
   const here = job.crew.filter(m => m.arrived).length;
-  return `<div class="top"><button class="round" data-act="c-menu" aria-label="Menu">☰</button><span class="pill">${esc(job.place.name)}</span><span style="width:44px"></span></div>
+  return `<div class="top"><button class="round" data-act="c-home" aria-label="Back to your jobs">←</button><span class="pill">${esc(job.place.name)}</span><span style="width:44px"></span></div>
     <div class="sheet">
       <div class="stack" style="gap:4px"><h2>${here === job.crew.length ? "All trucks are on site" : `${here} of ${job.crew.length} trucks on site`}</h2>
         <p class="muted small">${esc(job.material)} · ${job.dayN ? esc(job.date) + " · " + esc(job.start) : "today"} · ${fmtMin(dayMin())} now</p></div>
@@ -582,7 +718,7 @@ function dHome() {
   if (!D.approved) return dPending();
   const ups = myUpcoming(), next = ups[0], b = board();
   const ask = ups.find(j => j.dayN === 1 && !j.confirmed);
-  return `<div class="top"><button class="round" data-act="d-menu" aria-label="Menu">☰</button><span class="pill">${money(D.earnedToday)}</span><span style="width:44px"></span></div>
+  return `<div class="top"><span class="brand">${logo()}</span><span class="pill">${money(D.earnedToday)} today</span></div>
     <div class="sheet" style="padding-top:10px">
       ${ask ? `<div class="stack" style="background:var(--chip);border-radius:12px;padding:12px 14px;gap:6px"><b>Tomorrow ${ask.start}: are you still coming?</b><span class="muted small">${esc(ask.place)}, ${esc(ask.sub)}. Please confirm by 8 PM tonight, or your spot goes to another driver.</span><button class="btn" data-act="d-confirm:${ask.key}">Yes, I'm coming</button></div>`
         : next ? `<button class="place" data-act="d-openjob:${next.key}"><span class="ic">📅</span><span><b>Next job: ${next.date}, ${next.start}</b><span>${esc(next.place)} · ${esc(next.sub)}</span></span></button>` : ""}
@@ -686,8 +822,19 @@ const PAST = [
 ];
 const MYDOCS = [["Driver's license (CDL)", "Class A · expires Mar 2028", "ok"], ["DOT medical card", "Expires Aug 2027", "ok"], ["Insurance certificate", "Expires Dec 3, 2026 (in 19 days)", "warn"], ["Truck registration", "Expires Jun 2027", "ok"], ["USDOT 3184472", "Active on FMCSA", "ok"]];
 const paidHrs = h => Math.max(MIN_HRS, h);
-function page(title, body) {
-  return `<div class="full"><div class="row"><button class="round" data-act="d-page:" aria-label="Back" style="box-shadow:none;background:var(--chip)">←</button><h2 style="flex:1">${title}</h2></div>${body}</div>`;
+function page(title, body, back = "d-page:") {
+  if (!back) return `<div class="full">${appbar(ME.name)}<h1>${title}</h1>${body}</div>`;
+  return `<div class="full"><div class="row"><button class="round" data-act="${back}" aria-label="Back" style="box-shadow:none;background:var(--chip)">←</button><h2 style="flex:1">${title}</h2></div>${body}</div>`;
+}
+/* Driver Account tab: profile, documents, demo extras */
+function dAccount() {
+  return page("Account", `
+    <button class="place" data-act="d-page:profile"><span class="avatar">MR</span><span><b>${ME.name}</b><span>★ ${ME.rating} · ${TRUCKS[ME.type].name} · View profile</span></span></button>
+    <div class="stack" style="gap:0">
+      <button class="place" data-act="d-page:profile"><span class="ic">✓</span><span><b>Truck and documents</b>${MYDOCS[2][2] === "warn" ? '<span style="color:var(--warn)">Insurance expires in 19 days</span>' : "<span>All verified</span>"}</span></button>
+      <button class="place" data-act="d-signup"><span class="ic">+</span><span><b>Sign up as a new driver</b><span>Demo: see what new drivers fill in</span></span></button>
+      <button class="place" data-mode="welcome"><span class="ic">⇄</span><span><b>Switch account</b><span>Demo: see the contractor or fleet side</span></span></button>
+    </div>`, null);
 }
 function dProfile() {
   const ok = (t, sub, st) => `<div class="doc"><div><b>${t}</b><div class="small" style="color:${st === "warn" ? "var(--warn)" : "var(--muted)"}">${sub}</div></div>${st === "warn" ? `<label>Update<input type="file" accept="image/*,application/pdf" data-mydoc="ins"></label>` : '<span class="ok">✓ Verified</span>'}</div>`;
@@ -701,7 +848,7 @@ function dProfile() {
     <div class="stack" style="gap:6px"><b>When you're available</b>
       <div class="chips" style="flex-wrap:wrap">${["Weekdays", "Saturdays", "Sundays", "Night work"].map(a => `<button class="chip" data-act="d-days:${a}" aria-pressed="${D.avail.includes(a)}">${a}</button>`).join("")}</div></div>
     <div class="stack" style="gap:0"><b>Documents</b>${MYDOCS.map(d => ok(...d)).join("")}</div>
-    <p class="muted small">Edits to your truck or documents are checked by Trucks2U before they go live.</p>`);
+    <p class="muted small">Edits to your truck or documents are checked by Trucks2U before they go live.</p>`, "d-tab:account");
 }
 function dJobs() {
   const ups = myUpcoming();
@@ -722,7 +869,7 @@ function dJobs() {
   const past = PAST.map(j => { const h = paidHrs(j.worked); return `<div class="doc"><div><b>${esc(j.place)}</b><div class="muted small">${j.date} · ${j.worked} hrs worked${j.worked < MIN_HRS ? `, paid ${MIN_HRS} (minimum)` : ""} · ${j.tickets} tickets</div></div><b>${money(h * j.rate * (1 - FEE))}</b></div>`; }).join("");
   return page("My jobs", `
     <div class="chips">${[["up", `Upcoming · ${ups.length}`], ["past", "Past"]].map(([k, l]) => `<button class="chip" data-act="d-jobtab:${k}" aria-pressed="${D.jobTab === k}">${l}</button>`).join("")}</div>
-    <div>${D.jobTab === "up" ? up : past}</div>`);
+    <div>${D.jobTab === "up" ? up : past}</div>`, null);
 }
 function dEarn() {
   const week = PAST.reduce((s, j) => s + paidHrs(j.worked) * j.rate * (1 - FEE), 0) + D.earnedToday;
@@ -730,7 +877,7 @@ function dEarn() {
     <div class="stack" style="gap:4px"><span class="muted small">This week</span><div class="big">${money(week)}</div><p class="muted small">After the ${pct(FEE)} Trucks2U fee. Paid every ${PAYDAY} to your bank account ending 2231.</p></div>
     <div>${D.earnedToday ? `<div class="doc"><div><b>Today</b><div class="muted small">Waiting for the contractor to approve your hours</div></div><b>${money(D.earnedToday)}</b></div>` : ""}
       ${PAST.map(j => `<div class="doc"><div><b>${j.date}</b><div class="muted small">${esc(j.contractor)} · ${paidHrs(j.worked)} hrs × $${j.rate}</div></div><b>${money(paidHrs(j.worked) * j.rate * (1 - FEE))}</b></div>`).join("")}</div>
-    <div class="kv"><div class="row"><span>Last week</span><b>$6,214</b></div><div class="row"><span>This year</span><b>$71,860</b></div></div>`);
+    <div class="kv"><div class="row"><span>Last week</span><b>$6,214</b></div><div class="row"><span>This year</span><b>$71,860</b></div></div>`, null);
 }
 
 /* Driver sign-up: three short steps */
@@ -805,7 +952,7 @@ function dPending() {
 
 /* ---------- Welcome (everyone downloads the same app) ---------- */
 function welcome() {
-  return `<div class="welcome"><div class="logo">Trucks2U</div>
+  return `<div class="welcome"><div class="logo">Trucks<b>2U</b></div>
     <h1>Dump trucks on demand.</h1>
     <button class="role" data-mode="contractor"><span class="ic">🏗</span><span><b>I need trucks</b><span>Paving and construction companies</span></span><span>›</span></button>
     <button class="role" data-mode="driver"><span class="ic">🚛</span><span><b>I drive a truck</b><span>Owner-operators and drivers</span></span><span>›</span></button>
@@ -837,9 +984,13 @@ function fHome() {
         <p class="muted small">Your drivers get the job details on their phone right away.</p>`;
     } else body = `<h2>No open requests</h2><p class="muted small">When a contractor nearby needs trucks you have free, the request shows up here and you choose which trucks to send. ${job && job.status === "searching" ? "" : "Try it: switch to the contractor account and request trucks."}</p>`;
   } else if (F.tab === "trucks") {
-    body = `<div>${FLEET.trucks.map(k => `<div class="driver"><div class="avatar">${TRUCKS[k.type].short}</div><div><b>${k.id} · ${esc(k.driver)}</b><div class="muted small">${TRUCKS[k.type].name}${k.jobName ? " · " + esc(k.jobName) : ""}</div></div>
+    body = `<h2>My trucks</h2><div>${FLEET.trucks.map(k => `<div class="driver"><div class="avatar">${TRUCKS[k.type].short}</div><div><b>${k.id} · ${esc(k.driver)}</b><div class="muted small">${TRUCKS[k.type].name}${k.jobName ? " · " + esc(k.jobName) : ""}</div></div>
         <span class="tag ${k.status === "job" ? "go" : ""}">${{ online: "Free", job: "On a job", offline: "Offline" }[k.status]}</span></div>`).join("")}</div>
       <button class="btn light" data-act="f-add">Add a truck or driver</button>`;
+  } else if (F.tab === "account") {
+    body = `<div class="row" style="justify-content:flex-start;gap:12px"><div class="avatar">SH</div><div><b>${FLEET.name}</b><div class="muted small">Fleet · ${FLEET.trucks.length} trucks · ${esc(FLEET.owner)}</div></div></div>
+      <div class="stack" style="gap:0"><button class="place" data-act="f-tab:trucks"><span class="ic">🚛</span><span><b>Trucks and drivers</b><span>Documents and status</span></span></button>
+        <button class="place" data-mode="welcome"><span class="ic">⇄</span><span><b>Switch account</b><span>Demo: see the contractor or driver side</span></span></button></div>`;
   } else {
     const rows = FLEET.trucks.filter(k => k.status !== "offline").map((k, i) => ({ k, amt: [1180, 1340, 1240, 1410, 1560, 1490, 0, 1520][i] || 0 }));
     const week = 31840;
@@ -847,9 +998,8 @@ function fHome() {
       <p class="muted small">Dispatching your own trucks to your own customers through the app: ${money(FLEET_FEE)} per truck per day.</p>
       <div>${rows.map(({ k, amt }) => `<div class="row" style="padding:8px 0;border-top:1px solid var(--line)"><span>${k.id} · ${esc(k.driver)}</span><b>${money(amt)} today</b></div>`).join("")}</div>`;
   }
-  return `<div class="top"><button class="round" data-act="f-menu" aria-label="Menu">☰</button><span class="pill">${working} of ${on} trucks working</span><span style="width:44px"></span></div>
+  return `<div class="top"><span class="brand">${logo()}</span><span class="pill">${working} of ${on} trucks working</span></div>
     <div class="sheet">
-      <div class="chips">${[["requests", `Requests${fits.length ? " · 1" : ""}`], ["trucks", "My trucks"], ["earn", "Earnings"]].map(([k, l]) => `<button class="chip" data-act="f-tab:${k}" aria-pressed="${F.tab === k}">${l}</button>`).join("")}</div>
       ${body}
     </div>`;
 }
@@ -920,12 +1070,12 @@ function aHome() {
   else if (A.tab === "expiring") body = `<p class="muted small" style="margin:0">Drivers get a text 30, 14 and 3 days before a document expires. When it expires, they can't take new jobs until a new one is checked.</p>` +
     EXPIRING.map(e => `<div class="doc"><div><b>${esc(e.name)}</b><div class="small" style="color:var(--warn)">${esc(e.doc)} expires ${esc(e.when)}</div></div><button class="chip" data-act="a-remind">Remind</button></div>`).join("");
   else if (A.tab === "settings") body = aSettings();
+  else if (A.tab === "account") body = `<div class="stack" style="gap:0"><button class="place" data-mode="welcome"><span class="ic">⇄</span><span><b>Switch account</b><span>Demo: see the other sides</span></span></button></div>`;
   else body = ROSTER.map(r => `<div class="doc"><div><b>${esc(r.name)}</b><div class="muted small">${TRUCKS[r.type].name} · ${esc(r.city)}</div></div>
       <div class="row" style="gap:8px"><span class="tag ${r.status === "Approved" ? "go" : ""}">${r.status}</span><button class="chip" data-act="a-suspend:${esc(r.name)}">${r.status === "Suspended" ? "Reinstate" : "Suspend"}</button></div></div>`).join("");
   return `<div class="full">
-    <div class="row"><button class="round" data-act="a-menu" aria-label="Menu" style="box-shadow:none;background:var(--chip)">☰</button><span class="tag">Trucks2U admin</span></div>
+    ${A.open ? "" : appbar("Admin · staff only")}
     <div class="row" style="gap:8px">${[[ROSTER.filter(r => r.status === "Approved").length + 120, "Approved drivers"], [APPS.length, "Waiting for review"], [EXPIRING.length, "Expiring soon"]].map(([n, l]) => `<div style="flex:1;background:var(--chip);border-radius:12px;padding:10px 12px"><div style="font-size:22px;font-weight:800">${n}</div><div class="muted small">${l}</div></div>`).join("")}</div>
-    <div class="chips" style="flex-wrap:wrap">${[["review", `To review · ${APPS.length}`], ["expiring", "Expiring"], ["drivers", "Drivers"], ["settings", "Settings"]].map(([k, l]) => `<button class="chip" data-act="a-tab:${k}" aria-pressed="${A.tab === k}">${l}</button>`).join("")}</div>
     <div>${body}</div>
   </div>`;
 }
@@ -1062,6 +1212,29 @@ function maybeOffer() {
 function closeOffer() { clearInterval(offerTimer); D.screen = "home"; }
 
 /* ---------- Render ---------- */
+// The bottom tabs for each side of the app. Only on main screens: hidden in step-by-step flows,
+// detail pages and during a job, which have their own back button.
+function tabsFor() {
+  if (mode === "contractor") {
+    if (C.screen !== "home") return "";
+    return tabbar([["c-tab:jobs", "jobs", "Jobs", C.tab === "jobs", cUpcoming().filter(u => u.got < u.need).length], ["c-tab:map", "map", "Live map", C.tab === "map"],
+      ["c-tab:plants", "plant", "Plants", C.tab === "plants"], ["c-tab:billing", "bill", "Billing", C.tab === "billing", INVOICES.filter(i => !i.paid).length], ["c-tab:account", "user", "Account", C.tab === "account"]]);
+  }
+  if (mode === "driver") {
+    if (D.signup || !D.approved || D.menu || !["home", "offer"].includes(D.screen) || D.openJob != null || (D.page && !["jobs", "earn", "account"].includes(D.page))) return "";
+    const ask = myUpcoming().filter(j => j.dayN === 1 && !j.confirmed).length;
+    return tabbar([["d-tab:home", "home", "Find jobs", !D.page], ["d-tab:jobs", "cal", "My jobs", D.page === "jobs", ask], ["d-tab:earn", "money", "Earnings", D.page === "earn"], ["d-tab:account", "user", "Account", D.page === "account"]]);
+  }
+  if (mode === "fleet") {
+    const req = Object.keys(openSpots()).some(t => freeTrucks(t).length) ? 1 : 0;
+    return tabbar([["f-tab:requests", "inbox", "Requests", F.tab === "requests", req], ["f-tab:trucks", "truck", "My trucks", F.tab === "trucks"], ["f-tab:earn", "money", "Earnings", F.tab === "earn"], ["f-tab:account", "user", "Account", F.tab === "account"]]);
+  }
+  if (mode === "admin") {
+    if (A.open) return "";
+    return tabbar([["a-tab:review", "check", "Review", A.tab === "review", APPS.length], ["a-tab:expiring", "alert", "Expiring", A.tab === "expiring"], ["a-tab:drivers", "people", "Drivers", A.tab === "drivers"], ["a-tab:settings", "gear", "Settings", A.tab === "settings"], ["a-tab:account", "user", "Account", A.tab === "account"]]);
+  }
+  return "";
+}
 function render() {
   let h = "";
   if (!mode) h = welcome();
@@ -1076,10 +1249,13 @@ function render() {
     if (me && D.screen === "home" && me.status !== "Done for the day") { D.screen = "job"; D.page = null; }
     maybeOffer();
     if (D.signup) h = dSignup();
-    else if (D.page) h = { profile: dProfile, jobs: dJobs, earn: dEarn, board: dBoard }[D.page]();
+    else if (D.page) h = { profile: dProfile, jobs: dJobs, earn: dEarn, board: dBoard, account: dAccount }[D.page]();
     else h = { home: dHome, offer: () => dHome() + dOffer(), job: dJob, done: dDone }[D.screen]();
     if (D.menu) h += dMenu();
   }
+  const tabs = tabsFor();
+  h += tabs;
+  $("#phone").classList.toggle("has-tabs", !!tabs);
   const keepQ = $("#q") ? $("#q").value : null;
   const ae = document.activeElement, keepF = ae && ae.dataset && (ae.dataset.sf || ae.dataset.tk) ? [ae.dataset.sf ? `[data-sf="${ae.dataset.sf}"]` : `[data-tk="${ae.dataset.tk}"][data-tf="${ae.dataset.tf}"]`, ae.selectionStart, $(".full") && $(".full").scrollTop] : null;
   const keepS = mode === "admin" && A.tab === "settings" && $(".full") ? $(".full").scrollTop : null;
@@ -1099,7 +1275,9 @@ function act(name, arg) {
   switch (name) {
     case "c-menu": C.menu = true; break;
     case "c-menu-close": C.menu = false; break;
-    case "c-hist": C.menu = false; toast("Your past jobs and invoices show here."); break;
+    case "c-hist": C.menu = false; C.tab = "billing"; C.screen = "home"; break;
+    case "c-tab": C.tab = arg; C.screen = "home"; C.place = null; C.menu = false; break;
+    case "c-plantdir": toast("Opens Google Maps or Apple Maps with the route."); return;
     case "c-pay": C.menu = false; toast("Jobs are paid by bank transfer, not card."); break;
     case "c-help": C.menu = false; toast("Help chat opens here in the full app."); break;
     case "c-home": C.screen = "home"; C.place = null; break;
@@ -1133,6 +1311,7 @@ function act(name, arg) {
     case "d-menu-close": D.menu = false; break;
     case "d-page": D.menu = false; if (D.page === "jobs" && D.openJob != null && !arg) D.openJob = null; else { D.page = arg || null; D.openJob = null; } break;
     case "d-jobtab": D.jobTab = arg; break;
+    case "d-tab": D.menu = false; D.openJob = null; D.page = arg === "home" ? null : arg; break;
     case "d-openjob": D.page = "jobs"; D.jobTab = "up"; D.openJob = arg; break;
     case "d-board": D.page = "board"; D.boardKey = arg; break;
     case "d-take": {
@@ -1288,7 +1467,7 @@ render();
 tick = setInterval(() => {
   if (job && (job.status === "searching" || job.status === "live")) {
     if (mode === "driver" && D.screen === "job" && !D.menu && !D.page && !D.signup) render();
-    else if (((mode === "contractor" && (C.screen === "live" || C.screen === "searching")) || (mode === "fleet" && F.tab === "requests" && !F.picked.length)) && !document.activeElement?.matches("input, select")) render(); else drawMap();
+    else if (((mode === "contractor" && (C.screen === "live" || C.screen === "searching" || (C.screen === "home" && C.tab === "jobs" && job && job.status === "searching"))) || (mode === "fleet" && F.tab === "requests" && !F.picked.length)) && !document.activeElement?.matches("input, select")) render(); else drawMap();
   }
 }, 1000);
 </script>
