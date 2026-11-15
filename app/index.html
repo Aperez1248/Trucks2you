@@ -41,8 +41,13 @@
   --route: #276ef1;   /* map routes and truck dots */
   --good: #06a35a;
   --good-soft: #e3f6ec;
-  --warn: #c76a00;
-  --warn-soft: #fdf0dc;
+  /* One meaning per color: green = done or good, orange = needs your action, gray = just information */
+  --act: #e8890c;        /* orange fills, bars, dots */
+  --act-ink: #a85500;    /* orange text (readable on white) */
+  --act-bg: #fff1de;     /* orange tint behind text */
+  --act-deep: #6b3c00;   /* text inside an orange box */
+  --warn: var(--act-ink);
+  --warn-soft: var(--act-bg);
   --bad: #e11900;
   --bad-soft: #fde6e3;
   --display: "Figtree", "Helvetica Neue", Arial, sans-serif;
@@ -69,17 +74,17 @@ button, label, a { touch-action: manipulation; }   /* no double-tap zoom delay o
 .bar { background: var(--surface); color: var(--fg); border-bottom: 1px solid var(--line); padding: 14px 16px 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .logo { font: 800 24px/1 var(--display); letter-spacing: -.5px; }
 .logo b { color: inherit; }
-.bar small { font: 600 11px/1.2 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); text-align: right; }
+.bar small { font: 600 12px/1.2 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); text-align: right; }
 .demo { display: grid; gap: 6px; }
 .roles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
 .roles button { border: 0; background: transparent; color: var(--muted); font: 600 13px/1.2 var(--body); padding: 9px 2px; min-height: 38px; border-radius: 9px; cursor: pointer; }
 .roles button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); }
-.roles-label { font: 600 11px/1 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
+.roles-label { font: 600 12px/1 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
 .roles-label button { background: none; border: 0; color: var(--accent); font: inherit; letter-spacing: inherit; cursor: pointer; padding: 6px 0; }
 main { flex: 1; padding: 16px; display: grid; gap: 14px; align-content: start; min-width: 0; }
 h1 { font: 800 26px/1.15 var(--display); margin: 0; letter-spacing: -.4px; text-wrap: balance; }
 h2 { font: 700 19px/1.2 var(--display); margin: 0; letter-spacing: -.2px; }
-.eyebrow { font: 600 11px/1.2 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
+.eyebrow { font: 600 12px/1.2 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
 p { margin: 0; }
 .muted { color: var(--muted); }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
@@ -94,7 +99,7 @@ p { margin: 0; }
 /* Choice chips (job type, distance, day): big enough for a gloved thumb */
 .pick { font: 600 14px/1 var(--body); min-height: 38px; padding: 10px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--fg); cursor: pointer; }
 .pick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
-.pill { font: 700 11px/1 var(--body); letter-spacing: .6px; text-transform: uppercase; padding: 5px 8px; border-radius: 6px; white-space: nowrap; }
+.pill { font: 700 12px/1 var(--body); letter-spacing: .2px; text-transform: uppercase; padding: 5px 8px; border-radius: 6px; white-space: nowrap; }
 .pill.good { background: var(--good-soft); color: var(--good); }
 .pill.warn { background: var(--warn-soft); color: var(--warn); }
 .pill.bad { background: var(--bad-soft); color: var(--bad); }
@@ -128,7 +133,7 @@ a.btn { display: inline-flex; align-items: center; justify-content: center; text
 .list > div, .list > button.place { padding: 10px 0; border-top: 1px solid var(--line); }
 .list > div:first-child, .list > button.place:first-child { border-top: 0; padding-top: 0; }
 .truck-ic { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; flex: none; font: 700 13px/1 var(--display); }
-.thumb { width: 44px; height: 44px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); object-fit: cover; flex: none; display: grid; place-items: center; font-size: 10px; color: var(--muted); }
+.thumb { width: 44px; height: 44px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); object-fit: cover; flex: none; display: grid; place-items: center; font-size: 12px; color: var(--muted); }
 label.field { display: grid; gap: 6px; font: 600 13px/1.2 var(--body); color: var(--muted); min-width: 0; }
 input, select, textarea { width: 100%; font: 500 15px/1.3 var(--body); color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; min-height: 44px; }
 input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; accent-color: var(--accent); flex: none; }
@@ -167,10 +172,10 @@ textarea { resize: vertical; }
 a.tel { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; display: inline-block; padding: 9px 0; margin: -9px 0; }
 .tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--surface); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); position: sticky; bottom: 0; z-index: 6; }
 .tabs[hidden] { display: none; }
-.tabs button { background: none; border: 0; color: var(--muted); font: 600 11.5px/1.1 var(--body); padding: 10px 2px 8px; min-height: 56px; display: grid; justify-items: center; align-content: center; gap: 4px; cursor: pointer; position: relative; min-width: 0; }
+.tabs button { background: none; border: 0; color: var(--muted); font: 600 12px/1.1 var(--body); padding: 10px 2px 8px; min-height: 56px; display: grid; justify-items: center; align-content: center; gap: 4px; cursor: pointer; position: relative; min-width: 0; }
 .tabs button[aria-current="page"] { color: var(--accent); }
 .tabs svg { width: 22px; height: 22px; }
-.tabs .dot { position: absolute; top: 5px; left: calc(50% + 6px); min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--bad); color: #fff; font: 700 11px/17px var(--body); }
+.tabs .dot { position: absolute; top: 5px; left: calc(50% + 6px); min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--bad); color: #fff; font: 700 12px/17px var(--body); }
 .toast { position: fixed; left: 50%; bottom: calc(var(--tabh) + 16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--brand); color: var(--brand-fg); padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 14px; width: max-content; max-width: calc(100% - 32px); z-index: 40; text-align: center; box-shadow: 0 6px 24px rgb(0 0 0 / .25); }
 /* Same-day request: a dark card over the screen with a 20-second countdown */
 .offer { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabh) + 12px + env(safe-area-inset-bottom, 0px)); width: min(440px, calc(100% - 20px)); max-height: calc(100% - 100px); overflow-y: auto; z-index: 30; background: var(--brand); color: #fff; border-radius: 18px; padding: 18px; display: grid; gap: 12px; box-shadow: 0 10px 40px rgb(0 0 0 / .45); }
@@ -181,7 +186,7 @@ a.tel { color: var(--accent); font-weight: 600; text-decoration: none; white-spa
 .map .road { fill: none; stroke: var(--line); stroke-width: 9; stroke-linecap: round; }
 .map .road2 { fill: none; stroke: var(--surface); stroke-width: 2; stroke-dasharray: 6 6; }
 .map .fence { fill: var(--good-soft); stroke: var(--good); stroke-width: 1.5; stroke-dasharray: 4 3; }
-.map .place { fill: var(--fg); font: 700 11px var(--body); }
+.map .place { fill: var(--fg); font: 700 12px var(--body); }
 .map .tk { fill: var(--route); stroke: var(--surface); stroke-width: 2; }
 .map .tk.in { fill: var(--good); }
 .map .tk.off { fill: var(--muted); }
@@ -193,10 +198,10 @@ a.tel { color: var(--accent); font-weight: 600; text-decoration: none; white-spa
 .gmap .leg { fill: none; stroke: var(--route); stroke-width: 3; stroke-dasharray: 7 5; stroke-linecap: round; }
 .gmap .pinA { fill: var(--good); stroke: var(--surface); stroke-width: 1.5; }
 .gmap .pinB { fill: var(--route); stroke: var(--surface); stroke-width: 1.5; }
-.gmap .pinl { fill: var(--fg); font: 700 10.5px var(--body); paint-order: stroke; stroke: var(--surface-2); stroke-width: 3px; }
+.gmap .pinl { fill: var(--fg); font: 700 12px var(--body); paint-order: stroke; stroke: var(--surface-2); stroke-width: 3px; }
 .gmap .scale { stroke: var(--fg); stroke-width: 1.5; }
 .gmap .scalel { fill: var(--fg); font: 600 9px var(--body); }
-.map .tl { fill: var(--fg); font: 700 10px var(--body); }
+.map .tl { fill: var(--fg); font: 700 12px var(--body); }
 .stage { font-size: 12.5px; color: var(--muted); }
 /* Leaflet stacks its layers up to z-index 1000; keep them inside the map so they never cover the tab bar or pinned buttons */
 .mapbox { isolation: isolate; z-index: 0; }
@@ -227,7 +232,7 @@ a.tel { color: var(--accent); font-weight: 600; text-decoration: none; white-spa
 @media (max-width: 640px) {
   :root[data-layout="wide"] .app { grid-template-columns: minmax(0, 1fr); grid-template-areas: "bar" "main" "side"; }
   :root[data-layout="wide"] .tabs { position: sticky; grid-auto-flow: column; grid-auto-columns: 1fr; border-right: 0; border-top: 1px solid var(--line); padding: 0 0 env(safe-area-inset-bottom, 0px); }
-  :root[data-layout="wide"] .tabs button { display: grid; justify-items: center; gap: 4px; font-size: 11.5px; padding: 10px 2px 8px; }
+  :root[data-layout="wide"] .tabs button { display: grid; justify-items: center; gap: 4px; font-size: 12px; padding: 10px 2px 8px; }
 }
 /* ---------- Real phones: the app fills the screen edge to edge, like a native app ---------- */
 @media (max-width: 600px) {
@@ -237,7 +242,7 @@ a.tel { color: var(--accent); font-weight: 600; text-decoration: none; white-spa
   .demo { gap: 4px; padding: calc(6px + env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) 6px max(8px, env(safe-area-inset-left, 0px)); background: var(--surface); border-bottom: 1px solid var(--line); }
   .roles { border: 0; padding: 0; gap: 3px; }
   .roles button { font-size: 12px; padding: 4px 1px; }
-  .roles-label { font-size: 10px; }
+  .roles-label { font-size: 12px; }
   .roles-label button { padding: 2px 0; }
   .app { border: 0; border-radius: 0; min-height: calc(100vh - 66px); min-height: calc(100dvh - 66px - env(safe-area-inset-top, 0px)); }
   .bar { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -287,7 +292,7 @@ h2 { font: 800 20px/1.2 var(--display); letter-spacing: -.4px; }
 .demo summary svg { width: 14px; height: 14px; transition: transform .15s; }
 .demo[open] summary svg { transform: rotate(180deg); }
 .demo-menu { position: absolute; right: 0; top: calc(100% + 8px); width: 220px; background: var(--surface); border-radius: 16px; box-shadow: 0 10px 34px rgb(0 0 0 / .18); padding: 8px; display: grid; gap: 2px; z-index: 50; }
-.demo-menu .vh { font: 600 11px/1 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); padding: 8px 10px 6px; }
+.demo-menu .vh { font: 600 12px/1 var(--body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); padding: 8px 10px 6px; }
 .demo-menu .roles { display: grid; grid-template-columns: 1fr; gap: 2px; border: 0; padding: 0; background: none; }
 .demo-menu .roles button { text-align: left; font: 600 15px/1.2 var(--body); color: var(--fg); padding: 11px 10px; min-height: 44px; border-radius: 10px; }
 .demo-menu .roles button:hover { background: var(--tile); }
@@ -309,7 +314,7 @@ main { --mp: 16px; }
 /* Pins on Google maps (drawn as HTML, anchored at the map point) */
 .gmk { position: absolute; width: 0; height: 0; }
 .gdot { position: absolute; left: -8px; top: -8px; width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid #fff; box-shadow: 0 1px 4px rgb(0 0 0 / .35); }
-.glab { position: absolute; left: 13px; top: -11px; white-space: nowrap; background: #fff; color: #000; font: 700 11px/1 var(--body); padding: 5px 7px; border-radius: 999px; box-shadow: 0 1px 4px rgb(0 0 0 / .2); }
+.glab { position: absolute; left: 13px; top: -11px; white-space: nowrap; background: #fff; color: #000; font: 700 12px/1 var(--body); padding: 5px 7px; border-radius: 999px; box-shadow: 0 1px 4px rgb(0 0 0 / .2); }
 .glab.top { left: 0; top: -36px; transform: translateX(-50%); }
 .gtk { position: absolute; left: -13px; top: -13px; width: 26px; height: 26px; }
 .gtk svg { width: 26px; height: 26px; filter: drop-shadow(0 1px 2px rgb(0 0 0 / .35)); }
@@ -341,7 +346,7 @@ main { --mp: 16px; }
 .stbtn { position: relative; border: 0; border-radius: 12px; background: #fff; color: var(--fg); font: 700 14.5px/1.2 var(--body); min-height: 58px; padding: 18px 10px 10px; cursor: pointer; text-align: center; }
 .stbtn.next { background: var(--fg); color: #fff; }
 .stbtn[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--good); }
-.st-now { position: absolute; top: 5px; left: 0; right: 0; font: 700 10.5px/1 var(--body); letter-spacing: .6px; text-transform: uppercase; color: var(--good); }
+.st-now { position: absolute; top: 5px; left: 0; right: 0; font: 700 12px/1 var(--body); letter-spacing: .6px; text-transform: uppercase; color: var(--good); }
 /* Driver day: compact clock bar */
 .clockbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--good-soft); border-radius: 16px; padding: 12px 14px; box-shadow: inset 0 0 0 2px var(--good); }
 .clockbar.brk { background: var(--warn-soft); box-shadow: inset 0 0 0 2px var(--warn); }
@@ -363,9 +368,9 @@ main { --mp: 16px; }
 .dstrip { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -2px; padding: 2px; }
 .dstrip::-webkit-scrollbar { display: none; }
 .dday { flex: 0 0 52px; display: grid; justify-items: center; gap: 1px; border: 0; border-radius: 14px; background: var(--tile); padding: 8px 0 6px; cursor: pointer; font-family: var(--body); color: var(--ink); }
-.dday .dw { font-size: 11px; color: var(--muted); font-weight: 600; }
+.dday .dw { font-size: 12px; color: var(--muted); font-weight: 600; }
 .dday .dn { font-size: 19px; font-weight: 700; line-height: 1.1; }
-.dday .dc { font-size: 11px; font-weight: 700; min-height: 14px; }
+.dday .dc { font-size: 12px; font-weight: 700; min-height: 14px; }
 .dday.on { background: #000; color: #fff; }
 .dday.on .dw, .dday.on .dc { color: #fff; }
 .dday.bk .dc { color: var(--good); }
@@ -378,24 +383,24 @@ main { --mp: 16px; }
 .bk-big { font-size: 30px; font-weight: 700; line-height: 1.1; }
 .bk-big .muted { font-size: 16px; font-weight: 500; }
 .bk-card .meter i { background: var(--good); }
-.bk-card .meter.short i { background: #e8890c; }
+.bk-card .meter.short i { background: var(--act); }
 .bk-days { display: grid; margin-top: 2px; }
 .bk-day { display: grid; grid-template-columns: 74px 1fr 52px; gap: 10px; align-items: center; border: 0; border-top: 1px solid var(--line); background: none; padding: 10px 0; font: 500 14px var(--body); color: var(--ink); cursor: pointer; text-align: left; }
 .bk-day .num { text-align: right; font-weight: 700; }
 .bk-ok { color: var(--good); }
-.bk-warn { color: #b35f00; }
-.bk-short { display: grid; gap: 4px; background: #fff4e5; border-radius: 14px; padding: 12px; font-size: 13.5px; color: #6b3c00; }
-.bk-short .linkbtn { color: #6b3c00; font-size: 14px; padding: 0; }
+.bk-warn { color: var(--act-ink); }
+.bk-short { display: grid; gap: 4px; background: var(--act-bg); border-radius: 14px; padding: 12px; font-size: 13.5px; color: var(--act-deep); }
+.bk-short .linkbtn { color: var(--act-deep); font-size: 14px; padding: 0; }
 .bk-fix { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
 .bk-fix .btn { background: #fff; }
-.bk-toggle { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; border: 0; background: #fff4e5; color: #6b3c00; border-radius: 12px; padding: 10px 12px; font: 600 13.5px var(--body); text-align: left; cursor: pointer; min-height: 44px; }
+.bk-toggle { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; border: 0; background: var(--act-bg); color: var(--act-deep); border-radius: 12px; padding: 10px 12px; font: 600 13.5px var(--body); text-align: left; cursor: pointer; min-height: 44px; }
 .bk-chev { font-size: 14px; flex: none; }
 .bk-types { font-size: 12.5px; border-top: 1px solid var(--line); padding-top: 8px; }
 .bk-full { flex-direction: row; }
 .bk-full strong { font-size: 15px; }
 .cdot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 3px; vertical-align: 1px; }
 .cdot.g { background: var(--good); }
-.cdot.o { background: #e8890c; }
+.cdot.o { background: var(--act); }
 .dday.on .cdot { box-shadow: 0 0 0 1.5px #fff; }
 .dday.call { flex-basis: 56px; }
 .dday.call .dn { font-size: 15px; padding: 2px 0; }
@@ -406,18 +411,18 @@ main { --mp: 16px; }
 :root[data-layout="wide"] .cstrip, :root[data-layout="wide"] .cstrip + .clegend { display: none; }
 :root[data-layout="wide"] .cmonth { display: block; border: 1px solid var(--line); border-radius: 16px; padding: 10px; }
 .cm-head, .cm-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
-.cm-head span { font-size: 11px; font-weight: 600; color: var(--muted); text-align: center; padding-bottom: 4px; }
+.cm-head span { font-size: 12px; font-weight: 600; color: var(--muted); text-align: center; padding-bottom: 4px; }
 .cm-cell { min-height: 74px; background: var(--tile); border-radius: 10px; padding: 4px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .cm-cell.past { opacity: .5; }
 .cm-cell.today { box-shadow: inset 0 0 0 2px #000; }
 .cm-cell.on { background: #e4e4e4; }
 .cm-num { border: 0; background: none; font: 700 12px var(--body); text-align: left; padding: 2px; cursor: pointer; color: var(--ink); }
-.cm-ev { border: 0; border-radius: 6px; padding: 3px 5px; font: 600 11px/1.2 var(--body); text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cm-ev { border: 0; border-radius: 6px; padding: 3px 5px; font: 600 12px/1.2 var(--body); text-align: left; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cm-ev.g { background: #e3f4e7; color: #16692c; }
-.cm-ev.o { background: #fff4e5; color: #8a4b00; }
+.cm-ev.o { background: var(--act-bg); color: var(--act-ink); }
 .rep-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .rep-stats .big { font-size: 22px; }
-.rep-warn { color: #b35f00; }
+.rep-warn { color: var(--fg); font-weight: 700; text-decoration: underline dotted; text-underline-offset: 3px; }
 .rep-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; border: 0; background: none; padding: 10px 0; text-align: left; font: inherit; color: inherit; cursor: pointer; border-top: 1px solid var(--line); }
 .rep-row:first-child { border-top: 0; }
 .rep-tl { position: relative; margin-left: 6px; border-left: 2px solid #d4d4d4; padding-left: 16px; display: grid; }
@@ -425,28 +430,53 @@ main { --mp: 16px; }
 .rep-ev::before { content: ""; position: absolute; left: -23px; top: 50%; margin-top: -6px; width: 8px; height: 8px; border-radius: 50%; background: #fff; border: 2px solid #000; }
 .rep-ev.ld::before { background: #000; }
 .rep-ev .num { font-weight: 700; font-size: 13px; }
-.rep-src { font-size: 10.5px; font-weight: 700; border-radius: 99px; padding: 2px 7px; }
+.rep-src { font-size: 12px; font-weight: 700; border-radius: 99px; padding: 2px 7px; }
 .rep-src.gps { background: #e3f4e7; color: #16692c; }
 .rep-src.tap { background: var(--tile); color: var(--muted); }
 .rep-load { font-size: 12px; font-weight: 700; color: var(--muted); margin: 10px 0 0 -16px; padding-left: 16px; }
 .rep-more { border: 0; background: var(--tile); border-radius: 10px; padding: 9px 12px; font: 700 13px var(--body); text-align: left; cursor: pointer; margin: 8px 0; }
 @media print { #tabs, header.bar, .noprint, .toast { display: none !important; } body { background: #fff; } }
-.dday.unconf .dc { color: #b35f00; }
+.dday.unconf .dc { color: var(--act-ink); }
 .fs-wrap { overflow-x: auto; margin: 0 -4px; padding: 0 4px; }
 .fs { border-collapse: separate; border-spacing: 4px; font-size: 12px; }
 .fs thead th { font-weight: 700; text-align: center; min-width: 58px; font-size: 13px; }
-.fs thead th span { display: block; font-size: 10.5px; font-weight: 600; color: var(--muted); }
+.fs thead th span { display: block; font-size: 12px; font-weight: 600; color: var(--muted); }
 .fs thead th.today { color: #000; }
 .fs tbody th { position: sticky; left: 0; background: var(--surface); text-align: left; padding-right: 6px; z-index: 1; min-width: 56px; }
 .fs tbody th strong { display: block; font-size: 13px; }
-.fs tbody th span { color: var(--muted); font-weight: 500; font-size: 11px; }
+.fs tbody th span { color: var(--muted); font-weight: 500; font-size: 12px; }
 .fs td { padding: 0; }
-.fs-job, .fs-free { width: 100%; min-height: 44px; border: 0; border-radius: 10px; font: 700 11px/1.15 var(--body); padding: 4px; cursor: pointer; }
+.fs-job, .fs-free { width: 100%; min-height: 44px; border: 0; border-radius: 10px; font: 700 12px/1.15 var(--body); padding: 4px; cursor: pointer; }
 .fs-job { background: #000; color: #fff; }
 .fs-job.live { background: var(--good); }
-.fs-job.unconf { background: #e8890c; }
-.fs-free { background: #fff; color: #b35f00; border: 1.5px dashed #e8890c; }
+.fs-job.unconf { background: var(--act); }
+.fs-free { background: #fff; color: var(--act-ink); border: 1.5px dashed var(--act); }
 .fs-off { text-align: center; color: #b5b5b5; }
+.split { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.split-l, .split-r { display: grid; gap: 14px; min-width: 0; align-content: start; }
+.split-l { position: sticky; top: 12px; max-height: calc(100vh - 110px); overflow: auto; padding: 2px 6px 12px 2px; }
+.split-l .cmonth { display: none !important; }
+:root[data-layout="wide"] .split-l .cstrip { display: flex; }
+:root[data-layout="wide"] .split-l .cstrip + .clegend { display: flex; }
+.split-l h1 { font-size: 24px; }
+.card.sel { box-shadow: inset 0 0 0 2px #000; }
+.chev { font-size: 22px; line-height: 1; }
+.next-list { display: grid; gap: 6px; font-size: 14px; border-top: 1px solid var(--line); padding-top: 8px; }
+.next-list .row > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.linkish { font-weight: 700; font-size: 14px; }
+.act-ink { color: var(--act-ink); font-weight: 700; }
+.good-ink { color: var(--good); font-weight: 700; }
+.mk { font-weight: 800; margin-right: 2px; }
+.mk.ok { color: var(--good); }
+.mk.act { color: var(--act-ink); }
+.dday.on .mk.ok { color: #7be495; }
+.dday.on .mk.act { color: #ffb45c; }
+.big.rep-warn { text-decoration: none; }
+.jsum { display: grid; gap: 10px; position: sticky; top: 0; z-index: 5; background: var(--surface); padding: 8px 0; margin: -8px 0; }
+.jsum-line { font-size: 15px; }
+.jumps { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.jumps::-webkit-scrollbar { display: none; }
+.anchor { scroll-margin-top: 110px; }
 .seg2 { display: inline-flex; background: var(--tile); border-radius: 999px; padding: 3px; gap: 3px; flex: none; margin-left: auto; }
 .seg2 button { border: 0; background: none; font: 700 13px/1 var(--body); color: var(--muted); padding: 9px 14px; border-radius: 999px; cursor: pointer; min-height: 36px; }
 .seg2 button[aria-pressed="true"] { background: var(--fg); color: #fff; }
@@ -468,7 +498,7 @@ main { --mp: 16px; }
 .alertbar .ab-btns { display: grid; gap: 4px; justify-items: center; flex: none; }
 .alertbar .btn.small { background: var(--route); color: #fff; }
 .alertbar .linkbtn { color: #cfcfcf; font-size: 12.5px; }
-.gpowered { font: 600 11px/1 var(--body); color: var(--muted); text-align: right; padding-top: 8px; }
+.gpowered { font: 600 12px/1 var(--body); color: var(--muted); text-align: right; padding-top: 8px; }
 .hero .hm .leaflet-control-attribution { font-size: 9px; }
 /* Muted, gray street maps (like Uber's) so black pins and the blue route stand out */
 .leaflet-tile-pane { filter: grayscale(1) contrast(.88) brightness(1.06); }
@@ -1101,9 +1131,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 .mapbox .lm { position: absolute; inset: 0; border-radius: 10px; opacity: 0; pointer-events: none; transition: opacity .3s; background: var(--surface-2); }
 .mapbox.live .lm { opacity: 1; pointer-events: auto; }
 .mapbox.live > svg { visibility: hidden; }
-.mapbox .leaflet-tooltip { font: 700 11px/1.2 var(--body); padding: 3px 6px; }
+.mapbox .leaflet-tooltip { font: 700 12px/1.2 var(--body); padding: 3px 6px; }
 .route .dot.site { border-color: var(--good); background: var(--good); }
-.route small { display: block; font-size: 11.5px; color: var(--muted); font-weight: 600; letter-spacing: .3px; }
+.route small { display: block; font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .3px; }
 </style>
 </head>
 <body>
@@ -1789,8 +1819,9 @@ function heroMap(key, pins, opts = {}) {
   // How close counts as "the same spot" depends on how zoomed out the map will be (how spread out the pins are)
   const lats = pins.map(p => p.lat), lngs = pins.map(p => p.lng);
   const extent = pins.length > 1 ? Math.max(Math.max(...lats) - Math.min(...lats), Math.max(...lngs) - Math.min(...lngs)) : 0;
-  const near = Math.max(0.006, extent * 0.3), groups = [];
-  pins.forEach(p => { const g = groups.find(x => !x.me && !p.me && Math.hypot(x.lat - p.lat, x.lng - p.lng) < near); if (g) { g.n++; g.label = `${g.n} jobs`; if (p.info) g.infos.push(p.info); } else groups.push({ ...p, n: 1, infos: p.info ? [p.info] : [] }); });
+  // Labels are wide and short, so "too close" is measured sideways more than up and down
+  const nearX = Math.max(0.006, extent * 0.24), nearY = Math.max(0.004, extent * 0.08), groups = [];
+  pins.forEach(p => { const g = groups.find(x => !x.me && !p.me && Math.abs(x.lng - p.lng) < nearX && Math.abs(x.lat - p.lat) < nearY); if (g) { g.n++; g.label = `${g.n} jobs`; if (p.info) g.infos.push(p.info); } else groups.push({ ...p, n: 1, infos: p.info ? [p.info] : [] }); });
   // Sample trucks spread around the middle of the pins, scaled to how far apart the pins are
   const c = opts.center || (groups.length ? { lat: groups.reduce((s, p) => s + p.lat, 0) / groups.length, lng: groups.reduce((s, p) => s + p.lng, 0) / groups.length } : SITE);
   const span = Math.max(0.03, ...groups.map(p => Math.hypot(p.lat - c.lat, p.lng - c.lng)));
@@ -2115,7 +2146,7 @@ function installCard() {
 /* ================= Contractor ================= */
 function jobPill(j) {
   if (j.approved) return '<span class="pill good">Approved</span>';
-  if (allDone(j)) return '<span class="pill info">Ready to approve</span>';
+  if (allDone(j)) return '<span class="pill warn">Ready to approve</span>';
   if (filled(j) < needed(j)) return '<span class="pill warn">Finding trucks</span>';
   if (j.req && j.req.live) return '<span class="pill info">Trucks rolling</span>';
   return '<span class="pill good">Fully booked</span>';
@@ -2158,46 +2189,66 @@ function bookedCard() {
     ${open ? `<div class="bk-days">${days}</div>${shortJobs}
     <div class="bk-types muted">By truck type: ${types}</div>` : ""}</div>`;
 }
-function contractorJobs() {
-  const mine = myJobs(), active = mine.filter(j => !j.approved).sort((a, b) => a.dayN - b.dayN), done = mine.filter(j => j.approved);
-  const finding = active.filter(j => filled(j) < needed(j)).length;
-  const card = j => {
-    const p = Math.round(100 * filled(j) / Math.max(1, needed(j)));
-    return `<button type="button" class="card tap${j.req && !j.approved ? " hot" : ""}" data-go="job:${j.id}">
+// One job as a card in the contractor's lists
+function cJobCard(j) {
+  const p = Math.round(100 * filled(j) / Math.max(1, needed(j)));
+  return `<button type="button" class="card tap${j.req && !j.approved ? " hot" : ""}${ui.view === "job:" + j.id ? " sel" : ""}" data-go="job:${j.id}">
       <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span>${jobPill(j)}</div>
       <h2>${esc(j.name)}</h2>
       <p class="muted" style="font-size:14px">${esc(kindOf(j))}</p>
       <div class="meter" aria-label="${p}% of trucks booked"><i style="width:${p}%"></i></div>
       <div class="row"><div class="chips">${jobFillChips(j)}</div><span class="muted num" style="font-size:13px;flex:none">${filled(j)} of ${needed(j)} trucks</span></div>
     </button>`;
-  };
-  // Map first: your job sites and the trucks around them, then the sheet with "Request trucks" and your jobs
-  const pins = active.filter(j => j.pts).map(j => ({ ...siteP(j), label: pinName(j.name) }));
-  const nearbyN = DRIVERS.length * 6 + 12;
-  return heroMap("c-home", pins, { trucks: 12, top: `<span class="fpill"><span class="live-dot"></span>${nearbyN} trucks nearby</span><button class="fpill" type="button" data-tab="live">Live map ›</button>` })
+}
+const cActive = () => myJobs().filter(j => !j.approved).sort((a, b) => a.dayN - b.dayN);
+// Home: the map, Request trucks, Trucks booked and Working now. The full job list and calendar are one tap away.
+function contractorJobs() {
+  const active = cActive(), done = myJobs().filter(j => j.approved), finding = active.filter(shortJob).length;
+  const pins = active.filter(j => j.pts).map(j => { const p = Math.round(100 * filled(j) / Math.max(1, needed(j)));
+    return { ...siteP(j), label: pinName(j.name.split(" ").slice(0, 2).join(" ")),
+      info: `<div class="hc-job"><div class="row"><span class="eyebrow">${esc(dayName(j.dayN))} · ${esc(j.start)}</span>${jobPill(j)}</div><strong class="hc-name">${esc(j.name)}</strong>
+        <span class="muted">${esc(short(siteText(j)))} · ${esc(kindOf(j))}</span>
+        <div class="row"><span class="num">${filled(j)} of ${needed(j)} trucks</span><button class="btn small" type="button" data-go="job:${j.id}">Open job ›</button></div></div>` }; });
+  const nearbyN = DRIVERS.length * 6 + 12, next = active.filter(j => j.dayN >= 0).slice(0, 3);
+  return heroMap("c-home", pins, { trucks: 12, cards: true, top: `<span class="fpill"><span class="live-dot"></span>${nearbyN} trucks nearby</span><button class="fpill" type="button" data-tab="live">Live map ›</button>` })
     + `<div class="sheet">
     <button class="whereto" type="button" data-act="rq-new"><i></i>Request trucks<span>Tomorrow ▾</span></button>
     ${bookedCard()}
     ${contractorWorkingNow()}
     ${installCard()}
-    <div class="stack" style="gap:2px"><h1>Your jobs</h1><p class="muted" style="font-size:14px">${active.length ? `${active.length} open${finding ? ` · ${finding} still finding trucks` : " · all booked"}` : "No jobs yet"}</p></div>
-    ${jobsCalendar(active, card)}
-    ${done.length ? `<p class="eyebrow">Approved and billed</p>${done.map(card).join("")}` : ""}</div>`;
+    <button type="button" class="card tap" data-go="alljobs"><div class="row"><h2>Your jobs</h2><span class="chev" aria-hidden="true">›</span></div>
+      <span class="muted" style="font-size:14px">${active.length ? `${active.length} open${finding ? ` · <span class="act-ink">${finding} still finding trucks</span>` : " · all booked"}` : "No jobs yet"}${done.length ? ` · ${done.length} approved` : ""}</span>
+      ${next.length ? `<div class="next-list">${next.map(j => `<div class="row"><span>${esc(calLabel(j.dayN))} · ${esc(j.name)}</span><span class="num ${shortJob(j) ? "act-ink" : "good-ink"}">${filled(j)}/${needed(j)}</span></div>`).join("")}</div>` : ""}
+      <span class="linkish">See all jobs and the calendar ›</span></button></div>`;
 }
+// All jobs: the calendar and every job
+function contractorAllJobs(inSplit) {
+  const active = cActive(), done = myJobs().filter(j => j.approved), finding = active.filter(shortJob).length;
+  return `${inSplit ? "" : '<button class="back" type="button" data-go="back">‹ Home</button>'}
+    <div class="row"><div class="stack" style="gap:2px"><h1>Your jobs</h1><p class="muted" style="font-size:14px">${active.length ? `${active.length} open${finding ? ` · ${finding} still finding trucks` : " · all booked"}` : "No jobs yet"}</p></div>
+      <button class="btn small" type="button" data-act="rq-new" style="flex:none">+ Request trucks</button></div>
+    ${jobsCalendar(active, cJobCard)}
+    ${done.length ? `<p class="eyebrow">Approved and billed</p>${done.map(cJobCard).join("")}` : ""}`;
+}
+const isWide = () => document.documentElement.dataset.layout === "wide";
+const split = (left, right) => `<div class="split"><div class="split-l">${left}</div><div class="split-r">${right}</div></div>`;
 /* Jobs tab calendar: a two-week strip on the phone (opens on "All"), a 4-week month grid on the Computer layout.
    Dots: green = every truck booked, orange = still short. An empty day offers "Request trucks" for that day. */
 const CAL_DAYS = 14;
+// The same marks on every day strip in the app: ✓ booked (green), ! needs your action (orange), — day off, a number = how many jobs
+const MK = { ok: '<b class="mk ok">✓</b>', act: '<b class="mk act">!</b>' };
+const calKey = parts => `<div class="clegend muted">${parts.map(k => ({ ok: `<span>${MK.ok} booked</span>`, act: `<span>${MK.act} needs you</span>`, off: "<span>— day off</span>", n: "<span>3 = jobs</span>" })[k]).join("")}</div>`;
 const shortJob = j => filled(j) < needed(j);
 const calLabel = n => n === 0 ? "Today" : n === 1 ? "Tomorrow" : n === -1 ? "Yesterday" : dateOf(n).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 function jobsCalendar(active, card) {
   const sel = ui.cday == null ? "all" : ui.cday, on = n => active.filter(j => j.dayN === n);
-  const dot = js => js.length ? `<span class="cdot ${js.some(shortJob) ? "o" : "g"}"></span>${js.length}` : "";
+  const dot = js => js.length ? `${js.some(shortJob) ? MK.act : MK.ok}${js.length}` : "";
   const strip = `<div class="dstrip cstrip" aria-label="Pick a day">
       <button type="button" class="dday call${sel === "all" ? " on" : ""}" data-act="c-day:all" aria-pressed="${sel === "all"}"><span class="dw">${dateOf(0).toLocaleDateString("en-US", { month: "short" })}</span><span class="dn">All</span><span class="dc">${active.length}</span></button>
       ${Array.from({ length: CAL_DAYS }, (_, n) => { const d = dateOf(n), js = on(n);
         return `<button type="button" class="dday${sel === n ? " on" : ""}" data-act="c-day:${n}" aria-pressed="${sel === n}" aria-label="${esc(calLabel(n))}: ${js.length ? js.length + " job" + (js.length === 1 ? "" : "s") + (js.some(shortJob) ? ", still short" : ", all booked") : "no jobs"}">
           <span class="dw">${n === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday: "short" })}</span><span class="dn">${d.getDate()}</span><span class="dc">${dot(js)}</span></button>`; }).join("")}</div>
-    <div class="clegend muted"><span><span class="cdot g"></span> all booked</span><span><span class="cdot o"></span> still short</span></div>`;
+    ${calKey(["ok", "act", "n"])}`;
   // Month grid (Computer layout): from the Sunday of this week, 4 weeks
   const start = -dateOf(0).getDay();
   const month = `<div class="cmonth"><div class="cm-head">${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(x => `<span>${x}</span>`).join("")}</div><div class="cm-grid">
@@ -2259,7 +2310,7 @@ function reportsTab() {
   const js = reportJobs();
   return `<h1>Reports</h1><p class="muted">One report for each job, each day: every truck's loads, hours and round trips, with the times the trucks came and went.</p>
     ${js.map(j => { const w = repWorked(j), loads = w.reduce((s, a) => s + a.tickets.length, 0);
-      return `<button type="button" class="card tap" data-go="rep:${j.id}"><div class="row"><span class="eyebrow">${esc(dayName(j.dayN))}</span>${j.approved ? '<span class="pill good">Approved</span>' : j.dayN === 0 && w.some(a => a.status !== "done") ? '<span class="pill live"><i></i>Live</span>' : '<span class="pill info">Ready to approve</span>'}</div>
+      return `<button type="button" class="card tap${(ui.view || "").startsWith("rep:" + j.id) ? " sel" : ""}" data-go="rep:${j.id}"><div class="row"><span class="eyebrow">${esc(dayName(j.dayN))}</span>${j.approved ? '<span class="pill good">Approved</span>' : j.dayN === 0 && w.some(a => a.status !== "done") ? '<span class="pill live"><i></i>Live</span>' : '<span class="pill warn">Ready to approve</span>'}</div>
         <h2>${esc(j.name)}</h2><span class="muted" style="font-size:14px">${w.length} truck${w.length === 1 ? "" : "s"} · ${loads} load${loads === 1 ? "" : "s"}</span></button>`; }).join("")
       || '<div class="note">Reports show up here once trucks clock in on your jobs.</div>'}`;
 }
@@ -2353,30 +2404,39 @@ function contractorJob(j) {
     </div>`).join("");
   const tickets = j.assignments.flatMap(a => a.tickets.map(t => ({ ...t, truck: a.truck })));
   const open = Object.keys(j.needs).filter(t => openFor(j, t) > 0).map(t => `${openFor(j, t)} × ${tname(t)}`);
-  return `<button class="back" type="button" data-go="back">‹ All jobs</button>
+  return `<button class="back" type="button" data-go="alljobs">‹ All jobs</button>
     <div class="stack" style="gap:4px"><span class="eyebrow">${esc(j.id)} · ${esc(j.date)} · start ${esc(j.start)}</span><h1>${esc(j.name)}</h1><p class="muted">${esc(kindOf(j))}</p></div>
+    ${jobSummary(j, ready)}
     ${j.req ? reqCard(j) : ""}
     <div class="card">${jobMap(j, { all: true })}${route(j)}${directions(j)}</div>
     ${feedOf(j).length ? feedCard(j) : ""}
-    ${dspEditor(j, j.assignments.length)}
+    <div id="sec-info" class="anchor">${dspEditor(j, j.assignments.length)}</div>
     ${j.assignments.length ? (() => { const loads = j.assignments.reduce((s, a) => s + a.tickets.length, 0), tn = j.assignments.reduce((s, a) => s + tons(a), 0), on = j.assignments.filter(a => a.status === "onsite").length;
       return `<div class="stats"><div class="stat"><span>Loads</span><div class="big">${loads}</div></div><div class="stat"><span>Tons hauled</span><div class="big">${tn.toFixed(0)}</div></div><div class="stat"><span>On the clock</span><div class="big">${on}</div></div></div>`; })() : ""}
     ${j.dayN === 0 && !ready ? `<div class="row" style="gap:8px"><button class="btn small" type="button" data-act="live-open:${j.id}" style="flex:1">See trucks on the map</button><button class="btn small ghost" type="button" data-act="share:${j.id}" style="flex:1">Share tracking link</button></div>` : ""}
     ${repWorked(j).length ? `<button class="btn ghost" type="button" data-act="rep-open:${j.id}">${j.dayN === 0 && !ready ? "Day report so far" : "Day report"} ›</button>` : ""}
-    <div class="card"><div class="row"><h2>Trucks</h2><span class="muted num">${filled(j)} of ${needed(j)} booked</span></div>
+    <div class="card anchor" id="sec-trucks"><div class="row"><h2>Trucks</h2><span class="muted num">${filled(j)} of ${needed(j)} booked</span></div>
       ${open.length ? `<p class="muted" style="font-size:13px">Still looking for ${open.join(", ")}. Sent to ${j.req ? j.req.sentTo : 46} vetted drivers with the right trucks. The first ones to accept get the spots.</p>
         <button class="btn small ghost" type="button" data-act="as-driver" style="justify-self:start">See what drivers see</button>` : ""}
       <div class="list">${assignRows || '<div class="muted">No trucks yet.</div>'}</div></div>
-    <div class="card"><div class="row"><h2>Load tickets</h2><span class="muted num">${tickets.length}</span></div>
+    <div class="card anchor" id="sec-tickets"><div class="row"><h2>Load tickets</h2><span class="muted num">${tickets.length}</span></div>
       <div class="list">${tickets.length ? tickets.map(t => `<div class="row"><div class="row" style="justify-content:flex-start">${t.photo ? `<img class="thumb" src="${t.photo}" alt="Ticket ${esc(t.no)}">` : '<span class="thumb">photo</span>'}<div><strong class="num">#${esc(t.no)}</strong><div class="muted" style="font-size:13px">${esc(t.truck)} · ${esc(t.time)}</div></div></div><span class="num">${t.tons.toFixed(1)} t</span></div>`).join("") : '<div class="muted">Tickets show up here as drivers snap them.</div>'}</div></div>
-    ${ready || j.approved ? `<div class="card"><h2>${j.approved ? "Invoice" : j.req ? "Job complete: check hours and pay" : "Approve the day"}</h2>
+    ${ready || j.approved ? `<div class="card anchor" id="sec-bill"><h2>${j.approved ? "Invoice" : j.req ? "Job complete: check hours and pay" : "Approve the day"}</h2>
       <div class="sum">${j.assignments.map(a => `<div class="row"><span>${esc(a.truck)} · ${a.hours} hrs${a.hours < MIN_HRS ? ` (paid ${MIN_HRS}, the minimum)` : ""} × $${rateOf(j, a.type)}</span><span class="num">${money(billOf(j, a))}</span></div>`).join("")}
       <div class="row total"><span>Total, paid by bank transfer</span><span class="num">${money(bill)}</span></div></div>
       ${j.approved ? "" : `<button class="linkbtn" type="button" data-act="rep-open:${j.id}" style="justify-self:start">Check each truck's day before you approve ›</button>`}
       <p class="muted" style="font-size:13px">Paid by the hour, ${MIN_HRS}-hour minimum per truck. Trucks2U's ${pct(FEE)} fee comes out of the drivers' pay, not your bill. A broker at ${pct(BROKER)} would usually keep about ${money(bill * BROKER)}.</p>
       <div class="stack" style="gap:2px"><strong style="font-size:14px">Rate your drivers</strong><div class="stars" role="group" aria-label="Rating">${[1, 2, 3, 4, 5].map(i => `<button type="button" data-act="rq-star:${j.id}:${i}" class="${i <= (j.stars || 0) ? "on" : ""}" aria-label="${i} star${i > 1 ? "s" : ""}">★</button>`).join("")}</div></div>
       ${j.approved ? '<span class="pill good" style="justify-self:start">Approved · drivers paid within 2 business days</span>' : `<button class="btn good pin" type="button" data-act="approve:${j.id}">Approve hours and tickets</button>`}</div>`
-    : `<div class="note">When every truck checks out, you approve hours and tickets here, and the invoice goes out automatically.</div>`}`;
+    : `<div class="note anchor" id="sec-bill">When every truck checks out, you approve hours and tickets here, and the invoice goes out automatically.</div>`}`;
+}
+// Top of a job page: where it stands in one line, then jump links to the long sections below
+function jobSummary(j, ready) {
+  const loads = j.assignments.reduce((s, a) => s + a.tickets.length, 0), on = j.assignments.filter(a => a.status === "onsite").length, short = needed(j) - filled(j);
+  const state = j.approved ? '<span class="good-ink">Approved</span>' : ready ? '<span class="act-ink">Ready to approve</span>' : short > 0 ? `<span class="act-ink">${short} truck${short === 1 ? "" : "s"} short</span>` : '<span class="good-ink">All trucks booked</span>';
+  return `<div class="jsum"><div class="jsum-line"><strong>${filled(j)} of ${needed(j)} trucks</strong>${loads ? ` · ${loads} load${loads === 1 ? "" : "s"}` : ""}${on ? ` · ${on} on the clock` : ""} · ${state}</div>
+    <div class="jumps">${[["sec-trucks", "Trucks"], ["sec-tickets", "Tickets"], ["sec-info", "Info"], ["sec-bill", j.approved ? "Invoice" : "Bill"]].map(([id, l]) => `<button class="pick" type="button" data-act="jump:${id}">${l}</button>`).join("")}
+      ${repWorked(j).length ? `<button class="pick" type="button" data-act="rep-open:${j.id}">Report</button>` : ""}</div></div>`;
 }
 
 /* ---------- Request trucks: job site, then trucks, start and time (one flow; replaces "Post a job") ---------- */
@@ -2585,6 +2645,7 @@ Object.assign(ACTS, {
   "rq-star": (id, n) => { job(id).stars = +n; },
   "rep-open": id => { ui.tab = "reps"; ui.view = "rep:" + id; ui.repAll = false; window.scrollTo(0, 0); },
   "rep-all": () => { ui.repAll = true; },
+  "jump": id => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); return false; },
   "rep-print": () => { setTimeout(() => window.print(), 50); return false; },
   "approve": id => { job(id).approved = true; toast("Approved. Invoice sent and drivers paid out."); },
   "live-open": id => { ui.tab = "live"; ui.view = null; ui.liveJob = id; window.scrollTo(0, 0); },
@@ -3047,7 +3108,7 @@ function driverFind() {
       return `<button type="button" class="dday${n === sel ? " on" : ""}${bk ? " bk" : ""}${off && !bk ? " off" : ""}" data-act="d-fday:${n}" aria-pressed="${n === sel}"
         aria-label="${esc(dayName(n))}: ${bk ? "you're booked" : c ? c + " job" + (c === 1 ? "" : "s") : off ? "day off" : "no jobs"}">
         <span class="dw">${n === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday: "short" })}</span><span class="dn">${d.getDate()}</span>
-        <span class="dc">${bk ? "✓" : c ? c : off ? "—" : ""}</span></button>`; }).join("")}</div>`;
+        <span class="dc">${bk ? MK.ok : c ? c : off ? "—" : ""}</span></button>`; }).join("")}</div>${calKey(["n", "ok", "off"])}`;
   const bk = bookedOn(sel), list = onDay(sel), selName = sel === 0 ? "Today" : sel === 1 ? "Tomorrow" : dateOf(sel).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
   const dayBody = bk ? `<button type="button" class="card tap fj-booked" data-go="work:${bk.j.id}:${bk.a.truck}"><span class="pill good" style="justify-self:start">You're booked</span>
         <h2>${esc(bk.j.name)} · ${esc(bk.j.start)}</h2><span class="muted" style="font-size:13px">${esc(bk.j.by)}</span></button>
@@ -3122,8 +3183,8 @@ function myJobsCal(up, upHtml) {
     ${Array.from({ length: CAL_DAYS }, (_, n) => { const d = dateOf(n), js = on(n), off = !worksDay(n), unconf = js.some(x => n >= 1 && !x.a.confirmed);
       return `<button type="button" class="dday${sel === n ? " on" : ""}${js.length ? " bk" : ""}${unconf ? " unconf" : ""}${off && !js.length ? " off" : ""}" data-act="d-mjday:${n}" aria-pressed="${sel === n}"
         aria-label="${esc(calLabel(n))}: ${js.length ? (unconf ? "booked, not confirmed yet" : "booked") : off ? "day off" : "free"}"><span class="dw">${n === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday: "short" })}</span><span class="dn">${d.getDate()}</span>
-        <span class="dc">${js.length ? (unconf ? "!" : "✓") : off ? "—" : ""}</span></button>`; }).join("")}</div>
-    <div class="clegend muted"><span><b class="bk-ok">✓</b> booked</span><span><b class="bk-warn">!</b> confirm</span><span>— day off</span><span>blank = free</span></div>`;
+        <span class="dc">${js.length ? (unconf ? MK.act : MK.ok) : off ? "—" : ""}</span></button>`; }).join("")}</div>
+    ${calKey(["ok", "act", "off"])}`;
   if (sel === "all") return strip + upHtml;
   const js = on(sel), cards = upHtml && js.length ? js.map(({ j, a }) => `<button type="button" class="card tap" data-go="work:${j.id}:${a.truck}">
       <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span>${j.dayN === 1 ? (a.confirmed ? '<span class="pill good">Confirmed ✓</span>' : '<span class="pill warn">Please confirm</span>') : statusPill(a)}</div>
@@ -3999,9 +4060,11 @@ function screen() {
   if (ui.signup) return signupScreen();
   if (ui.role === "contractor") {
     if (ui.req) return ui.req.step === "where" ? reqWhere() : reqOptions();
-    if (v && v.startsWith("job:")) return contractorJob(job(v.slice(4)));
+    // Computer layout: the list stays on the left and the job or report opens on the right
+    if (v === "alljobs") return contractorAllJobs(false);
+    if (v && v.startsWith("job:")) return isWide() ? split(contractorAllJobs(true), contractorJob(job(v.slice(4)))) : contractorJob(job(v.slice(4)));
     if (v && v.startsWith("plant:")) return plantDetail(plant(v.slice(6)));
-    if (v && v.startsWith("rep:")) { const [, id, tr] = v.split(":"); return tr ? driverReport(job(id), tr) : jobReport(job(id)); }
+    if (v && v.startsWith("rep:")) { const [, id, tr] = v.split(":"), r = tr ? driverReport(job(id), tr) : jobReport(job(id)); return isWide() ? split(reportsTab(), r) : r; }
     return ({ bill: contractorBilling, live: contractorLive, plants: plantsScreen, reps: reportsTab }[ui.tab] || contractorJobs)();
   }
   if (ui.role === "owner") {
