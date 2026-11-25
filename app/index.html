@@ -1156,9 +1156,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
           <div class="vh">Viewing as</div>
           <div class="roles" role="group" aria-label="Viewing as">
             <button type="button" data-role="contractor">Contractor</button>
-            <button type="button" data-role="owner">Truck owner</button>
-            <button type="button" data-role="driver">Driver</button>
-            <button type="button" data-role="broker">Broker</button>
+            <button type="button" data-role="driver">Trucker</button>
+            <button type="button" data-role="owner">Broker</button>
+            <button type="button" data-role="hired">Hired driver</button>
             <button type="button" data-role="admin">Admin</button>
           </div>
           <button id="welcomeBtn" type="button" data-act="w-open">New user (welcome screen)</button>
@@ -1313,19 +1313,24 @@ const PLACES = [
 /* ================= People and trucks ================= */
 const DEFAULT_CONTRACTOR = "Lucas Paving", DEFAULT_CONTACT = { name: "Al Perez", phone: "(510) 555-0100" };
 let ME_CONTRACTOR = DEFAULT_CONTRACTOR, ME_CONTACT = { ...DEFAULT_CONTACT };   // a new contractor who signs up becomes "me"
-const ME_OWNER = "Delgado Hauling";   // the truck owner we view as
+const ME_OWNER = "Delgado Hauling";   // the broker we view as: more than one truck, with hired drivers
 const MY_TRUCKS = [
   { id: "T-14", type: "w12", plate: "4XKD218" },
-  { id: "T-22", type: "sd",  plate: "7HTR904" }
+  { id: "T-30", type: "w10", plate: "6JPL553" }
 ];
 const MY_TRUCKS_SEED = MY_TRUCKS.map(t => t.type);   // so Reset demo puts truck types back
 const MY_DRIVERS = [
   { name: "Ray Delgado (you)", cdl: "Class A", med: "May 2027" },
-  { name: "Marco Ruiz", cdl: "Class A", med: "Feb 2027" },
-  { name: "Sam Diaz", cdl: "Class B", med: "Dec 2026" }
+  { name: "Sam Diaz", cdl: "Class A", med: "Dec 2026" },
+  { name: "Luis Mendez", cdl: "Class B", med: "Mar 2027" }
 ];
 const MY_DRIVERS_N = MY_DRIVERS.length;   // so Reset demo removes drivers added by invite
-const ME_DRIVER = "Marco Ruiz", ME_PHONE = "(510) 555-0142";   // the driver we view as; their truck follows the owner's Fleet tab
+// Trucker: Marco owns and drives one truck. Hired driver: Sam drives a Delgado Hauling truck and only sees the jobs the broker gives him.
+const ME_DRIVER = "Marco Ruiz", ME_PHONE = "(510) 555-0142", TRUCKER_CO = "Ruiz Trucking";
+const MY_TRUCK = { id: "T-22", type: "sd", plate: "7HTR904" };
+const HIRED = "Sam Diaz", HIRED_PHONE = "(510) 555-0171";
+const hiredView = () => { try { return ui.role === "hired"; } catch (e) { return false; } };   // ui is made later on
+const meName = () => hiredView() ? HIRED : ME_DRIVER, mePhone = () => hiredView() ? HIRED_PHONE : ME_PHONE;
 // Sample owner-operators who accept requests in the demo
 const NAMES = ["Pedro V.", "Luis O.", "Dana K.", "Tam N.", "Ben C.", "Ana R.", "Raj P.", "Mike H.", "Joe S.", "Carlos M.", "Steve B.", "Rosa G.", "Dev P.", "Frank T.", "Lena W.", "Omar A.", "Jim W.", "Tony V.", "Kim L.", "Sal D."];
 const DTYPES = ["w10", "w12", "sd", "w12", "bd", "w10", "tr", "w12", "sd", "wt", "w10", "w12", "lb", "sd", "w12", "sdd", "w10", "fb", "w12", "sd"];
@@ -1359,9 +1364,9 @@ function seed() {
           { time: "5:40 AM", text: "Plant is loading on time. First 4 trucks go straight to the plant, the rest wait at staging.", readBy: ["T-14", "R-3", "B-7"] },
           { time: "9:15 AM", text: "Paver is slowing down. Hold 15 minutes at the plant before loading your next asphalt load.", readBy: ["R-3"] }
         ],
-        feed: [ { time: "9:22 AM", who: "Ray Delgado (T-14)", text: "Waiting at the plant. About 10 minutes behind the paver.", at: 0 } ],
+        feed: [ { time: "9:22 AM", who: "Sam Diaz (T-14)", text: "Waiting at the plant. About 10 minutes behind the paver.", at: 0 } ],
         assignments: [
-          { truck: "T-14", type: "w12", owner: ME_OWNER, driver: "Ray Delgado", phone: "(510) 555-0171", status: "onsite", checkIn: "5:52 AM", hours: null,
+          { truck: "T-14", type: "w12", owner: ME_OWNER, driver: "Sam Diaz", phone: "(510) 555-0171", status: "onsite", checkIn: "5:52 AM", hours: null,
             tickets: [ { no: "448712", tons: 18.6, time: "7:15 AM", photo: null }, { no: "448790", tons: 19.1, time: "9:02 AM", photo: null } ] },
           { truck: "R-3", type: "w12", owner: "R&J Trucking", phone: "(510) 555-0172", status: "onsite", checkIn: "5:58 AM", hours: null,
             tickets: [ { no: "448715", tons: 18.9, time: "7:24 AM", photo: null } ] },
@@ -1377,7 +1382,7 @@ function seed() {
         notes: "Practice job for trying the time clock. Nothing is billed.", approved: false,
         dsp: { contact: "Al Perez, Lucas Paving", phone: "(510) 555-0100", staging: "Along the curb, north side", ppe: "Hard hat and vest", notes: "Practice job for trying the time clock. Nothing is billed." },
         updates: [ { time: "9:25 AM", text: "Welcome to the test job. Clock in, add a load ticket, take a break, then clock out.", readBy: [] } ],
-        assignments: [ { truck: "T-22", type: "sd", owner: ME_OWNER, driver: ME_DRIVER, phone: ME_PHONE, status: "assigned", checkIn: null, hours: null, tickets: [] } ]
+        assignments: [ { truck: "T-22", type: "sd", owner: TRUCKER_CO, driver: ME_DRIVER, phone: ME_PHONE, status: "assigned", checkIn: null, hours: null, tickets: [] } ]
       },
       {
         id: "J-1038", ...lucas, name: "Lakeside lot repave", kindIx: 0, pts: { pickup: { lat: 37.808, lng: -122.253 }, dropoff: { lat: 37.73, lng: -122.18 } },
@@ -1385,7 +1390,7 @@ function seed() {
         dayN: -1, date: "Yesterday", start: "7:00 AM", hours: 9, needs: { w12: 2 }, rate: { w10: 115, w12: 130, sd: 150 },
         notes: "", approved: false,
         assignments: [
-          { truck: "T-14", type: "w12", owner: ME_OWNER, driver: "Ray Delgado", status: "done", checkIn: "6:55 AM", hours: 9.5,
+          { truck: "T-14", type: "w12", owner: ME_OWNER, driver: "Sam Diaz", status: "done", checkIn: "6:55 AM", hours: 9.5,
             tickets: [ { no: "77104", tons: 18.2, time: "8:10 AM", photo: null }, { no: "77131", tons: 18.7, time: "10:20 AM", photo: null }, { no: "77160", tons: 18.4, time: "1:05 PM", photo: null } ] },
           { truck: "R-5", type: "w12", owner: "R&J Trucking", status: "done", checkIn: "6:58 AM", hours: 9.5,
             tickets: [ { no: "77108", tons: 18.0, time: "8:22 AM", photo: null }, { no: "77140", tons: 18.8, time: "10:41 AM", photo: null } ] }
@@ -1399,7 +1404,7 @@ function seed() {
         dsp: { contact: "Al Perez, Lucas Paving", phone: "(510) 555-0100", notes: "Night crew handoff at 5:15 AM. Tarps required." },
         assignments: [
           { truck: "M-2", type: "sd", owner: "Moreno Bros", phone: "(510) 555-0175", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: true },
-          { truck: "T-22", type: "sd", owner: ME_OWNER, driver: ME_DRIVER, phone: ME_PHONE, status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: false }
+          { truck: "T-22", type: "sd", owner: TRUCKER_CO, driver: ME_DRIVER, phone: ME_PHONE, status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: false }
         ]
       },
       // More Lucas Paving jobs at real street corners (real places on the map, no customer addresses), from 3 days ago to next week
@@ -1408,7 +1413,7 @@ function seed() {
         pickup: "Job site: Hesperian Blvd & W A St, San Lorenzo", dropoff: "Gallagher & Burk, 344 High St, Oakland",
         ...day(-3), start: "6:00 AM", hours: 9, needs: { w12: 2, sd: 1 }, rate: RATE, notes: "", approved: true, stars: 5,
         assignments: [
-          { truck: "T-14", type: "w12", owner: ME_OWNER, driver: "Ray Delgado", status: "done", checkIn: "5:50 AM", hours: 9, tickets: [ { no: "447910", tons: 18.4, time: "7:05 AM", photo: null }, { no: "447981", tons: 18.9, time: "9:40 AM", photo: null }, { no: "448033", tons: 18.6, time: "12:20 PM", photo: null } ] },
+          { truck: "T-14", type: "w12", owner: ME_OWNER, driver: "Sam Diaz", status: "done", checkIn: "5:50 AM", hours: 9, tickets: [ { no: "447910", tons: 18.4, time: "7:05 AM", photo: null }, { no: "447981", tons: 18.9, time: "9:40 AM", photo: null }, { no: "448033", tons: 18.6, time: "12:20 PM", photo: null } ] },
           { truck: "R-3", type: "w12", owner: "R&J Trucking", status: "done", checkIn: "5:55 AM", hours: 9.5, tickets: [ { no: "447915", tons: 18.8, time: "7:18 AM", photo: null }, { no: "447990", tons: 19.0, time: "10:02 AM", photo: null }, { no: "448041", tons: 18.5, time: "12:45 PM", photo: null } ] },
           { truck: "M-2", type: "sd", owner: "Moreno Bros", status: "done", checkIn: "6:05 AM", hours: 8.5, tickets: [ { no: "447922", tons: 24.6, time: "7:40 AM", photo: null }, { no: "448002", tons: 25.1, time: "11:15 AM", photo: null } ] }
         ]
@@ -1438,7 +1443,7 @@ function seed() {
         pickup: "Job site: Doolittle Dr & Davis St, San Leandro", dropoff: "Gallagher & Burk, 344 High St, Oakland",
         ...day(2), start: "6:00 AM", hours: 10, needs: { w12: 2, sd: 1 }, rate: RATE, notes: "", approved: false,
         assignments: [
-          { truck: "T-14", type: "w12", owner: ME_OWNER, driver: "Ray Delgado", phone: "(510) 555-0171", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: true },
+          { truck: "T-14", type: "w12", owner: ME_OWNER, driver: "Sam Diaz", phone: "(510) 555-0171", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: true },
           { truck: "R-3", type: "w12", owner: "R&J Trucking", phone: "(510) 555-0172", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: true },
           { truck: "M-2", type: "sd", owner: "Moreno Bros", phone: "(510) 555-0175", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: true }
         ]
@@ -1521,14 +1526,14 @@ function seed() {
       { who: "R&J Trucking", doc: "DOT medical card (driver J. Ruiz)", when: "Nov 30" },
       { who: "Moreno Bros", doc: "Annual inspection, M-2", when: "Dec 4" }
     ],
-    driverOf: { "T-14": "Ray Delgado (you)", "T-22": ME_DRIVER },
+    driverOf: { "T-14": HIRED, "T-30": "Ray Delgado (you)" },
     insuranceRenewed: false,
     shifts: { "T-14": { inMs: at(5, 52), where: "at the job site", far: false, breaks: [], outMs: null } },   // driver's day, by truck
     gpsPaused: {},   // truck id -> true while the driver has paused GPS
     gpsLog: [ { time: "6:04 AM", text: "B-7 entered the Main St job site. Checked in automatically." },
       { time: "5:58 AM", text: "R-3 entered the Main St job site. Checked in automatically." },
       { time: "5:52 AM", text: "T-14 entered the Main St job site. Checked in automatically." } ],
-    insCards: { "T-14": { name: "T-14 insurance card.jpg", url: null, date: "Oct 2, 2026" }, "T-22": { name: "T-22 insurance card.jpg", url: null, date: "Oct 2, 2026" } },
+    insCards: { "T-14": { name: "T-14 insurance card.jpg", url: null, date: "Oct 2, 2026" }, "T-22": { name: "T-22 insurance card.jpg", url: null, date: "Oct 2, 2026" }, "T-30": { name: "T-30 insurance card.jpg", url: null, date: "Oct 2, 2026" } },
     passed: [],
     online: false,      // driver: same-day requests on or off
     declined: [],       // same-day requests the driver let go
@@ -1899,7 +1904,7 @@ const updatesOf = j => (j.updates ||= []);
 const unreadFor = (j, truck) => updatesOf(j).filter(u => !u.readBy.includes(truck));
 function dspList(j, forDriver = false) {
   const d = dsp(j), rows = DSP_FIELDS.filter(([k]) => d[k]);
-  const textContact = forDriver && digits10(d.phone).length === 10 ? talk(d.phone, `Hi ${firstName(d.contact)}, this is ${ME_DRIVER} with Trucks2U, truck on ${j.name}: `, d.contact) : "";
+  const textContact = forDriver && digits10(d.phone).length === 10 ? talk(d.phone, `Hi ${firstName(d.contact)}, this is ${meName()} with Trucks2U, truck on ${j.name}: `, d.contact) : "";
   return rows.length ? `<div class="sum">${rows.map(([k, label]) => `<div class="row" style="align-items:flex-start"><span class="muted" style="flex:none;width:40%">${label}</span><span style="text-align:right">${tel(d[k])}</span></div>`).join("")}</div>${textContact}` : '<p class="muted">No dispatch info yet.</p>';
 }
 function dspEditor(j, drivers) {
@@ -2205,9 +2210,9 @@ async function notifyMe(title, body, go = "", delay = 0) {
 function pushCard(role) {
   const st = pushState();
   const line = { granted: "On for this phone.", denied: "Blocked. Allow notifications for Trucks2U in your phone or browser settings.", default: "Off for this phone.", home: "On iPhone, add Trucks2U to your Home Screen first, then turn this on.", none: "This browser can't show notifications." }[st];
-  const sample = role === "driver" ? "Thu Nov 19 · 7:00 AM · Dublin Blvd overlay · 12 mi away · $150/hr" : "Main St needs one 10 wheeler and one 12 wheeler.";
+  const sample = role === "driver" ? "Thu Nov 19 · 7:00 AM · Dublin Blvd overlay · 12 mi away · $150/hr" : role === "hired" ? "Delgado Hauling put you on T-14 · Doolittle Dr overlay · 6:00 AM" : "Main St needs one 10 wheeler and one 12 wheeler.";
   return `<div class="card"><div class="row"><h2>Phone notifications</h2>${st === "granted" ? '<span class="pill good">On</span>' : ""}</div>
-    <p class="muted" style="font-size:14px">${role === "driver" ? "New jobs near you, tomorrow's confirm, dispatch changes and pay." : "A truck short, a driver cancelling, a request fully booked, and days ready to approve."} Free, and they show up like a text.</p>
+    <p class="muted" style="font-size:14px">${role === "driver" ? "New jobs near you, tomorrow's confirm, dispatch changes and pay." : role === "hired" ? "Your next job, tomorrow's confirm and dispatch changes." : "A truck short, a driver cancelling, a request fully booked, and days ready to approve."} Free, and they show up like a text.</p>
     <p style="font-size:14px">${esc(line)}</p>
     <div class="row" style="justify-content:flex-start;gap:8px;flex-wrap:wrap">
       ${st === "default" || st === "home" ? '<button class="btn small" type="button" data-act="push-on">Turn on notifications</button>' : ""}
@@ -2743,12 +2748,12 @@ Object.assign(ACTS, {
   "as-driver": () => { ui = freshUi("driver"); ui.tab = "dfind"; window.scrollTo(0, 0); }
 });
 
-/* ================= Truck owner ================= */
+/* ================= Broker: more than one truck ================= */
 function myAssignments() {
   return S.jobs.flatMap(j => j.assignments.filter(a => a.owner === ME_OWNER).map(a => ({ j, a })));
 }
 const busyTrucks = j => new Set(S.jobs.filter(x => x.dayN === j.dayN).flatMap(x => x.assignments.filter(a => a.owner === ME_OWNER).map(a => a.truck)));
-const ownerAsg = t => ({ truck: t.id, type: t.type, owner: ME_OWNER, driver: (S.driverOf[t.id] || "").replace(" (you)", ""), phone: t.id === "T-22" ? ME_PHONE : "(510) 555-0171", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: false });
+const ownerAsg = t => ({ truck: t.id, type: t.type, owner: ME_OWNER, driver: (S.driverOf[t.id] || "").replace(" (you)", ""), phone: S.driverOf[t.id] === HIRED ? HIRED_PHONE : "(510) 555-0170", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: false });
 function ownerOpen() {
   return S.jobs.filter(j => !j.approved && j.dayN >= 0).map(j => {
     const busy = busyTrucks(j);
@@ -2801,8 +2806,8 @@ function ownerWork(j, a, driver = false) {
   if (later) {
     const sp = startsAt(j, a) === "plant" ? destText(j) : "the job site";
     action = `<div class="card"><h2>${j.dayN === 1 ? "Tomorrow" : esc(j.date)} at ${esc(j.start)}</h2>
-      <div class="sum"><div class="row"><span>Pay</span><span class="num">$${rateOf(j, a.type)}/hr · ${MIN_HRS} hr min</span></div>
-        <div class="row"><span>About ${j.hours || 10} hours</span><span class="num">${money0(paidHrs(j.hours || 10) * rateOf(j, a.type) * (1 - FEE))} after the fee</span></div>
+      <div class="sum">${hiredView() ? `<div class="row"><span>About ${j.hours || 10} hours</span><span>Booked by ${esc(ME_OWNER)}</span></div>` : `<div class="row"><span>Pay</span><span class="num">$${rateOf(j, a.type)}/hr · ${MIN_HRS} hr min</span></div>
+        <div class="row"><span>About ${j.hours || 10} hours</span><span class="num">${money0(paidHrs(j.hours || 10) * rateOf(j, a.type) * (1 - FEE))} after the fee</span></div>`}
         <div class="row"><span>You start at</span><span style="text-align:right">${esc(sp)}</span></div>
         <div class="row"><span>Contractor</span><span>${esc(j.by)}</span></div></div>
       <p class="muted" style="font-size:13px">We ask you to confirm the night before, and remind you an hour before the start.</p>
@@ -2821,10 +2826,10 @@ function ownerWork(j, a, driver = false) {
       <label class="field">Hours on the clock<input id="t-hours" type="number" step="0.25" inputmode="decimal" value="10"></label>
       <button class="btn ghost" type="button" data-act="checkout:${j.id}:${truck}">Check out</button>
       <p class="muted" style="font-size:12.5px">Drivers you assign clock in and out on their own phone; their hours fill in here.</p></div>`}`;
-  else if (driver) action = `<div class="card"><h2>Checked out</h2><p>${a.hours} hours, ${a.tickets.length} load${a.tickets.length === 1 ? "" : "s"}, ${tons(a).toFixed(1)} t. Sent to ${ME_OWNER} and the contractor.</p>
-      <div class="sum"><div class="row"><span>${paidHrs(a.hours)} hrs × $${rateOf(j, a.type)}${a.hours < MIN_HRS ? " (the minimum)" : ""}</span><span class="num">${money(billOf(j, a))}</span></div>
+  else if (driver) action = `<div class="card"><h2>Checked out</h2><p>${a.hours} hours, ${a.tickets.length} load${a.tickets.length === 1 ? "" : "s"}, ${tons(a).toFixed(1)} t. Sent to ${sentTo()}.</p>
+      ${hiredView() ? "" : `<div class="sum"><div class="row"><span>${paidHrs(a.hours)} hrs × $${rateOf(j, a.type)}${a.hours < MIN_HRS ? " (the minimum)" : ""}</span><span class="num">${money(billOf(j, a))}</span></div>
         <div class="row"><span>Trucks2U fee (${pct(FEE)})</span><span class="num">−${money(billOf(j, a) * FEE)}</span></div>
-        <div class="row total"><span>Earned for ${esc(truck)}</span><span class="num">${money(billOf(j, a) * (1 - FEE))}</span></div></div>
+        <div class="row total"><span>Earned for ${esc(truck)}</span><span class="num">${money(billOf(j, a) * (1 - FEE))}</span></div></div>`}
       ${j.approved ? '<span class="pill good" style="justify-self:start">Approved by the contractor</span>' : '<span class="pill warn" style="justify-self:start">Waiting on contractor approval</span>'}</div>`;
   else action = `<div class="card"><div class="sum">
       <div class="row"><span>${paidHrs(a.hours)} hrs × $${rateOf(j, a.type)}</span><span class="num">${money(billOf(j, a))}</span></div>
@@ -2911,8 +2916,8 @@ function ownerPay() {
     <div class="card"><h2>Recent work</h2><div class="list">${mine.length ? mine.map(({ j, a }) => `<div class="row"><div><strong>${esc(j.name)}</strong><div class="muted" style="font-size:13px">${esc(a.truck)} · ${a.hours} hrs · ${esc(j.date)}</div></div>
       <div style="text-align:right;flex:none"><div class="num">${money(billOf(j, a) * (1 - FEE))}</div>${j.approved ? '<span class="pill good">Paying out</span>' : '<span class="pill warn">Pending</span>'}</div></div>`).join("") : '<div class="muted">Nothing yet.</div>'}</div></div>
     <div class="card"><h2>Weekly statements</h2><div class="list">
-      <div class="row"><div><strong>Week of Oct 12</strong><div class="muted" style="font-size:13px">T-14: 5 days, 61 loads · T-22: 4 days, 38 loads</div></div><span class="num">$9,880.50</span></div>
-      <div class="row"><div><strong>Week of Oct 5</strong><div class="muted" style="font-size:13px">T-14: 5 days, 58 loads · T-22: 5 days, 44 loads</div></div><span class="num">$8,539.50</span></div></div></div>
+      <div class="row"><div><strong>Week of Oct 12</strong><div class="muted" style="font-size:13px">T-14: 5 days, 61 loads · T-30: 4 days, 38 loads</div></div><span class="num">$9,880.50</span></div>
+      <div class="row"><div><strong>Week of Oct 5</strong><div class="muted" style="font-size:13px">T-14: 5 days, 58 loads · T-30: 5 days, 44 loads</div></div><span class="num">$8,539.50</span></div></div></div>
     <div class="note">Paid every ${PAYDAY}, after the contractor approves the day. The ${pct(FEE)} Trucks2U fee comes out of each payout. Broker loads often pay in 30 days or more.</div>`;
 }
 // Fleet schedule: one row per truck, one column per day for two weeks. Empty workdays are trucks earning nothing, so they stand out.
@@ -2958,10 +2963,10 @@ function ownerDocs() {
     ["DOT medical card", "good", "Expires May 2027"],
     ["Drug testing program and Clearinghouse", "good", "Clear"],
     ["T-14 registration and annual inspection", "good", "Inspected Apr 2026"],
-    ["T-22 registration and annual inspection", "good", "Inspected Jul 2026"],
+    ["T-30 registration and annual inspection", "good", "Inspected Jul 2026"],
     ["W-9 and payout bank account", "good", "Verified by payment provider"]
   ];
-  return `<button class="card tap" type="button" data-act="su-start" style="border-style:dashed"><span class="eyebrow">New driver or truck owner?</span><strong>Sign up and upload your documents</strong><span class="muted" style="font-size:13px">License, insurance, DOT number, registration and more. We read the details from your photos. About 10 minutes on your phone.</span></button>
+  return `<button class="card tap" type="button" data-act="su-start" style="border-style:dashed"><span class="eyebrow">New trucker or broker?</span><strong>Sign up and upload your documents</strong><span class="muted" style="font-size:13px">License, insurance, DOT number, registration and more. We read the details from your photos. About 10 minutes on your phone.</span></button>
     <h1>Documents</h1><p class="muted">Every item has to stay green for your trucks to see jobs. We remind you 30 days before anything expires.</p>
     <div class="card"><div class="list">${items.map(([t, s, d]) => `<div class="check"><span class="mark ${s}">${s === "good" ? "✓" : "!"}</span><div><strong style="font-size:14px">${t}</strong><div class="muted" style="font-size:13px">${d}</div></div><span></span></div>`).join("")}</div></div>
     ${S.insuranceRenewed ? "" : `<div class="card"><h2>Renew insurance certificate</h2><label class="field">Certificate of insurance (PDF or photo)<input id="coi" type="file" accept="image/*,application/pdf"></label><button class="btn" type="button" data-act="coi">Upload</button></div>`}
@@ -2973,12 +2978,14 @@ function ownerDocs() {
 }
 
 /* ================= Driver ================= */
-// Marco drives T-22 for Delgado Hauling. He can pick up jobs himself (Find jobs) or Delgado books them for him.
-const myDriverTruck = () => MY_TRUCKS.find(t => S.driverOf[t.id] === ME_DRIVER);
+// The trucker's truck is his own. The hired driver's truck is whichever one the broker put him on (Fleet tab).
+const myDriverTruck = () => hiredView() ? MY_TRUCKS.find(t => S.driverOf[t.id] === HIRED) : MY_TRUCK;
+const truckerAsg = t => ({ ...ownerAsg(t), owner: TRUCKER_CO, driver: ME_DRIVER, phone: ME_PHONE });
+const sentTo = () => hiredView() ? `${ME_OWNER} and the contractor` : "the contractor";
 const driverAssignments = () => { const t = myDriverTruck(); return t ? S.jobs.flatMap(j => j.assignments.filter(a => a.truck === t.id).map(a => ({ j, a }))) : []; };
 function driverHead(title) {
   const t = myDriverTruck();
-  return `<div class="stack" style="gap:4px"><span class="eyebrow">${ME_DRIVER} · driving for ${ME_OWNER}${t ? " · " + t.id + " · " + esc(tname(t.type)) : ""}</span><h1>${title}</h1></div>`;
+  return `<div class="stack" style="gap:4px"><span class="eyebrow">${meName()} · ${hiredView() ? "driving for " + ME_OWNER : "owner-operator"}${t ? " · " + t.id + " · " + esc(tname(t.type)) : ""}</span><h1>${title}</h1></div>`;
 }
 /* Clock in / clock out: the driver's paid day. Hours go to the job when they clock out. */
 const breakMs = (sh, until) => sh.breaks.reduce((s, b) => s + ((b.e || until) - b.s), 0);
@@ -3045,11 +3052,11 @@ function clockCard(t) {
     const corr = sh.correction;
     return `<div class="card"><div class="row"><span class="eyebrow">Day done · signed by ${esc(sh.sign)}</span>${corr ? '<span class="pill warn">Correction asked</span>' : '<span class="pill good">Clocked out</span>'}</div>
       ${shiftSum(sh)}
-      ${corr ? `<div class="note">You asked: "${esc(corr.text)}" (${esc(corr.time)}). ${ME_OWNER} and the contractor will fix it and approve.</div>`
+      ${corr ? `<div class="note">You asked: "${esc(corr.text)}" (${esc(corr.time)}). ${hiredView() ? ME_OWNER + " and the contractor will" : "The contractor will"} fix it and approve.</div>`
         : ui.corr ? `<label class="field">What needs fixing?<textarea id="corr-text" rows="2" placeholder="e.g. I forgot to clock out. I left the site at 2:30 PM."></textarea></label>
           <div class="row" style="gap:8px"><button class="btn small" type="button" data-act="corr-send:${t.id}" style="flex:1">Send</button><button class="btn small ghost" type="button" data-act="corr-cancel" style="flex:1">Cancel</button></div>`
         : `<button class="btn small ghost" type="button" data-act="corr-open" style="justify-self:start">Ask for a correction</button>`}
-      <p class="muted" style="font-size:12.5px">Times can't be changed after you clock out. Corrections go to ${ME_OWNER} and the contractor.</p>
+      <p class="muted" style="font-size:12.5px">Times can't be changed after you clock out. Corrections go to ${sentTo()}.</p>
       <button class="btn small ghost" type="button" data-act="clock-reset:${t.id}" style="justify-self:start">Demo: start a new day</button></div>`;
   }
   const brk = onBreak(sh);
@@ -3069,7 +3076,7 @@ function driverClockOut() {
     <div class="card">${shiftSum(sh)}</div>
     <div class="stats"><div class="stat"><span>Loads</span><div class="big">${loads}</div></div><div class="stat"><span>Tons</span><div class="big">${tn.toFixed(1)}</div></div><div class="stat"><span>Truck</span><div class="big">${t.id}</div></div></div>
     ${today.length ? `<div class="note">Did you add every load ticket? ${today.map(({ j, a }) => `<button class="back" type="button" data-go="work:${j.id}:${a.truck}" style="display:inline;font-size:12.5px">Add one to ${esc(j.name)}</button>`).join(" ")}</div>` : ""}
-    <label class="field">Type your name to sign for today's time<input id="co-sign" autocomplete="name" placeholder="${esc(ME_DRIVER)}"></label>
+    <label class="field">Type your name to sign for today's time<input id="co-sign" autocomplete="name" placeholder="${esc(meName())}"></label>
     <p class="muted" style="font-size:12.5px">${onBreak(sh) ? "Your break ends when you clock out. " : ""}GPS turns off when you clock out.</p>
     <button class="btn good pin" type="button" data-act="clock-out:${t.id}">Clock out and sign</button>`;
 }
@@ -3127,8 +3134,8 @@ function driverToday() {
   const live = today.filter(x => x.j.pts).map(({ j, a }) => truckPos(j, a)).find(Boolean);
   const me = live ? { lat: live.lat, lng: live.lng } : { lat: SITE.lat - 0.035, lng: SITE.lng + 0.03 };
   const pins = [{ ...me, label: `You · ${t.id}`, me: true }, ...(today.length ? today : next ? [next] : []).filter(x => x.j.pts).map(({ j }) => ({ ...siteP(j), label: pinName(j.name) }))];
-  return heroMap("d-home", pins, { trucks: 8, center: me, top: `<span class="fpill"><span class="live-dot" style="${S.online ? "" : "background:var(--muted);box-shadow:none"}"></span>${S.online ? "Taking same-day jobs" : "Same-day jobs off"}</span><button class="fpill" type="button" data-tab="dfind">Find jobs ›</button>` })
-    + `<div class="sheet">` + driverHead("Today") + alertBanner() + installCard() + signupBanner()
+  return heroMap("d-home", pins, { trucks: 8, center: me, top: `<span class="fpill"><span class="live-dot" style="${S.online ? "" : "background:var(--muted);box-shadow:none"}"></span>${hiredView() ? "Driving for " + esc(ME_OWNER) : S.online ? "Taking same-day jobs" : "Same-day jobs off"}</span>${hiredView() ? "" : '<button class="fpill" type="button" data-tab="dfind">Find jobs ›</button>'}` })
+    + `<div class="sheet">` + driverHead("Today") + (hiredView() ? "" : alertBanner()) + installCard() + (hiredView() ? "" : signupBanner())
     + ask.map(({ j, a }) => `<div class="card" style="border:2px solid var(--warn)"><strong>Tomorrow ${esc(j.start)}: are you still coming?</strong>
       <span class="muted" style="font-size:13px">${esc(j.name)} · ${esc(siteText(j))}. Please confirm by 8 PM tonight, or your spot goes to another driver.</span>
       <div class="grid2"><button class="btn" type="button" data-act="d-confirm:${j.id}:${a.truck}">Yes, I'm coming</button><button class="btn ghost danger" type="button" data-act="d-cant:${j.id}:${a.truck}">I can't make it</button></div></div>`).join("")
@@ -3138,9 +3145,10 @@ function driverToday() {
       <h2>${esc(j.name)}</h2>${n ? `<span class="pill warn" style="justify-self:start">${n} new dispatch note${n > 1 ? "s" : ""}</span>` : ""}${jobMap(j, { truck: a.truck, h: 160 })}${route(j)}
       <div class="row"><span class="muted" style="font-size:13px">${esc(kindOf(j))}</span><span class="muted num" style="font-size:13px">${a.tickets.length} ticket${a.tickets.length === 1 ? "" : "s"}</span></div></button>`; }).join("") : '<div class="note">No jobs on your truck today.</div>')
     + (next ? `<button type="button" class="card tap" data-go="work:${next.j.id}:${next.a.truck}"><span class="eyebrow">Next job</span><strong>${esc(next.j.date)}, ${esc(next.j.start)} · ${esc(next.j.name)}</strong><span class="muted" style="font-size:13px">${esc(siteText(next.j))}</span></button>` : "")
-    + `<div class="card"><div class="row"><div><strong>Same-day requests</strong><div class="muted" style="font-size:13px">Jobs that need a truck right now. You get 20 seconds to accept.</div></div>
+    + (hiredView() ? `<div class="note">${ME_OWNER} books your jobs and puts you on a truck. Dispatch updates show up here and by text.</div></div>`
+    : `<div class="card"><div class="row"><div><strong>Same-day requests</strong><div class="muted" style="font-size:13px">Jobs that need a truck right now. You get 20 seconds to accept.</div></div>
         <button class="pick" type="button" data-act="d-online" aria-pressed="${S.online}" style="flex:none">${S.online ? "On" : "Off"}</button></div></div>
-    <div class="note">Pick up jobs in Find jobs, or ${ME_OWNER} books them for you. Dispatch updates show up here and by text.</div></div>`;
+    <div class="note">Pick up jobs in Find jobs. Dispatch updates show up here and by text.</div></div>`);
 }
 /* The driver's whole day on one screen (like Uber's driver app): map and next stop, the clock, status buttons,
    load tickets, then dispatch notes. One tap for each thing they do in the truck. */
@@ -3254,9 +3262,9 @@ function driverMyJobs() {
   const upHtml = up.map(({ j, a }) => `<button type="button" class="card tap" data-go="work:${j.id}:${a.truck}">
       <div class="row"><span class="eyebrow">${esc(j.date)} · ${esc(j.start)}</span>${j.dayN === 1 ? (a.confirmed ? '<span class="pill good">Confirmed ✓</span>' : '<span class="pill warn">Please confirm</span>') : statusPill(a)}</div>
       <h2>${esc(j.name)}</h2><span class="muted" style="font-size:13px">${esc(siteText(j))} · ${esc(j.by)}</span>
-      <div class="row" style="font-size:13px"><span class="muted">${esc(kindOf(j))}</span><span class="num" style="flex:none">$${rateOf(j, a.type)}/hr</span></div></button>`).join("") || '<div class="note">No upcoming jobs. Jobs you accept in Find jobs show up here.</div>';
-  const pastHtml = `<div class="card"><div class="list">${done.map(({ j, a }) => `<div class="row"><div><strong>${esc(j.name)}</strong><div class="muted" style="font-size:13px">${esc(j.date)} · ${a.hours} hrs worked${a.hours < MIN_HRS ? `, paid ${MIN_HRS} (minimum)` : ""} · ${a.tickets.length} tickets</div></div><span class="num" style="flex:none">${money0(billOf(j, a) * (1 - FEE))}</span></div>`).join("")}
-    ${PAST.map(p => `<div class="row"><div><strong>${esc(p.place)}</strong><div class="muted" style="font-size:13px">${pastDate(p.n)} · ${esc(p.by)} · ${p.worked} hrs worked${p.worked < MIN_HRS ? `, paid ${MIN_HRS} (minimum)` : ""} · ${p.tickets} tickets</div></div><span class="num" style="flex:none">${money0(paidHrs(p.worked) * rate * (1 - FEE))}</span></div>`).join("")}</div></div>`;
+      <div class="row" style="font-size:13px"><span class="muted">${esc(kindOf(j))}</span>${hiredView() ? "" : `<span class="num" style="flex:none">$${rateOf(j, a.type)}/hr</span>`}</div></button>`).join("") || `<div class="note">No upcoming jobs. ${hiredView() ? `Jobs ${esc(ME_OWNER)} puts you on` : "Jobs you accept in Find jobs"} show up here.</div>`;
+  const pastHtml = `<div class="card"><div class="list">${done.map(({ j, a }) => `<div class="row"><div><strong>${esc(j.name)}</strong><div class="muted" style="font-size:13px">${esc(j.date)} · ${a.hours} hrs worked${a.hours < MIN_HRS ? `, paid ${MIN_HRS} (minimum)` : ""} · ${a.tickets.length} tickets</div></div>${hiredView() ? "" : `<span class="num" style="flex:none">${money0(billOf(j, a) * (1 - FEE))}</span>`}</div>`).join("")}
+    ${PAST.map(p => `<div class="row"><div><strong>${esc(p.place)}</strong><div class="muted" style="font-size:13px">${pastDate(p.n)} · ${esc(p.by)} · ${p.worked} hrs worked${p.worked < MIN_HRS ? `, paid ${MIN_HRS} (minimum)` : ""} · ${p.tickets} tickets</div></div>${hiredView() ? "" : `<span class="num" style="flex:none">${money0(paidHrs(p.worked) * rate * (1 - FEE))}</span>`}</div>`).join("")}</div></div>`;
   return driverHead("My jobs") + `<div class="chips">${[["up", `Upcoming · ${up.length}`], ["past", "Past"]].map(([k, l]) => `<button class="pick" type="button" data-act="d-jtab:${k}" aria-pressed="${tab === k}">${l}</button>`).join("")}</div>
     ${tab === "up" ? myJobsCal(up, upHtml) : pastHtml}`;
 }
@@ -3293,21 +3301,21 @@ function driverPay() {
     <div class="card"><h2>Recent days</h2><div class="list">${done.map(({ j, a }) => `<div class="row"><div><strong>${esc(j.date)} · ${esc(j.name)}</strong><div class="muted" style="font-size:13px">${paidHrs(a.hours)} hrs × $${rateOf(j, a.type)} · ${j.approved ? "approved" : "waiting for approval"}</div></div><span class="num" style="flex:none">${money0(billOf(j, a) * (1 - FEE))}</span></div>`).join("")}
       ${PAST.map(p => `<div class="row"><div><strong>${pastDate(p.n)}</strong><div class="muted" style="font-size:13px">${esc(p.by)} · ${paidHrs(p.worked)} hrs × $${rate}</div></div><span class="num" style="flex:none">${money0(paidHrs(p.worked) * rate * (1 - FEE))}</span></div>`).join("")}</div>
       <div class="sum" style="border-top:1px solid var(--line);padding-top:10px"><div class="row"><span>Last week</span><span class="num">$6,214</span></div><div class="row"><span>This year</span><span class="num">$71,860</span></div></div></div>
-    <div class="note">T-22's pay goes to ${ME_OWNER}, who pays you. If you own your truck, it's paid straight to your bank.</div>`;
+    <div class="note">Your truck, your pay: it goes straight to ${TRUCKER_CO}'s bank account.</div>`;
 }
 function driverMe() {
-  const d = MY_DRIVERS.find(x => x.name === ME_DRIVER), t = myDriverTruck(), c = t && S.insCards[t.id];
+  const t = myDriverTruck(), c = t && S.insCards[t.id], hired = hiredView(), nm = meName();
   const doc = ([title, sub, st], i) => `<div class="check"><span class="mark ${st}">${st === "good" ? "✓" : "!"}</span><div><strong style="font-size:14px">${title}</strong><div class="${st === "warn" ? "" : "muted"}" style="font-size:13px${st === "warn" ? ";color:var(--warn)" : ""}">${sub}</div>
     ${st === "warn" ? `<label class="btn small ghost" style="margin-top:6px;display:inline-flex;align-items:center">Upload a new one<input type="file" accept="image/*,application/pdf" data-mydoc="${i}" hidden></label>` : ""}</div><span></span></div>`;
-  return driverHead("My info") + signupBanner() + `<div class="card"><div class="row" style="justify-content:flex-start;gap:12px"><span class="truck-ic" style="border-radius:50%;width:48px;height:48px">MR</span><div><h2>${ME_DRIVER}</h2><div class="muted" style="font-size:13px">★ 4.9 · 212 jobs · on Trucks2U since 2026 · ${tel(ME_PHONE)}</div></div></div></div>
-    ${pushCard("driver")}
-    <div class="card"><h2>Your documents</h2><div class="list">${S.myDocs.map(doc).join("")}</div>
+  return driverHead("My info") + (hired ? "" : signupBanner()) + `<div class="card"><div class="row" style="justify-content:flex-start;gap:12px"><span class="truck-ic" style="border-radius:50%;width:48px;height:48px">${nm.split(" ").map(w => w[0]).join("")}</span><div><h2>${esc(nm)}</h2><div class="muted" style="font-size:13px">${hired ? `Driver for ${esc(ME_OWNER)} · joined by invite` : `${esc(TRUCKER_CO)} · ★ 4.9 · 212 jobs · on Trucks2U since 2026`} · ${tel(mePhone())}</div></div></div></div>
+    ${pushCard(hired ? "hired" : "driver")}
+    <div class="card"><h2>Your documents</h2><div class="list">${S.myDocs.map(doc).filter((_, i) => !hired || !S.myDocs[i][0].startsWith("Truck")).join("")}</div>
       <p class="muted" style="font-size:12.5px">We text you 30 days before anything expires. New documents are checked by Trucks2U before they go live.</p></div>
-    ${t ? `<div class="card"><h2>Your truck</h2><div class="row" style="justify-content:flex-start">${truckPic(t.type, "tpic lg")}<div><strong>${t.id} · ${esc(tname(t.type))}</strong><div class="muted" style="font-size:13px">plate ${t.plate} · owned by ${ME_OWNER} · $${TYPES[t.type] ? TYPES[t.type].rate : ""}/hr, ${MIN_HRS} hr min</div></div></div>
+    ${t ? `<div class="card"><h2>Your truck</h2><div class="row" style="justify-content:flex-start">${truckPic(t.type, "tpic lg")}<div><strong>${t.id} · ${esc(tname(t.type))}</strong><div class="muted" style="font-size:13px">plate ${t.plate} · ${hired ? "owned by " + esc(ME_OWNER) : `your truck · $${TYPES[t.type] ? TYPES[t.type].rate : ""}/hr, ${MIN_HRS} hr min`}</div></div></div>
       <strong style="font-size:14px">Insurance card</strong>
-      ${c ? (c.url ? `<img src="${c.url}" alt="Insurance card for ${t.id}" style="max-width:100%;border-radius:10px;border:1px solid var(--line)">` : `<div class="note">${esc(c.name)} · added ${esc(c.date)}. This sample card has no picture; upload one on the truck owner's Docs tab and it shows here.</div>`) : `<div class="note">No insurance card on file for ${t.id}. Ask ${ME_OWNER} to upload it.</div>`}
+      ${c ? (c.url ? `<img src="${c.url}" alt="Insurance card for ${t.id}" style="max-width:100%;border-radius:10px;border:1px solid var(--line)">` : `<div class="note">${esc(c.name)} · added ${esc(c.date)}. This sample card has no picture; ${hired ? "upload one on the Broker's Docs tab and it shows here." : "upload a photo of yours in the full app."}</div>`) : `<div class="note">No insurance card on file for ${t.id}.${hired ? ` Ask ${esc(ME_OWNER)} to upload it.` : ""}</div>`}
       <p class="muted" style="font-size:12.5px">Show this at a scale house or a traffic stop.</p></div>` : ""}
-    <div class="card"><h2>Job alerts</h2><p class="muted" style="font-size:13px">When a contractor posts a job for your truck, inside your distance, on a day you work, and you're not already booked, we tell you right away.</p>
+    ${hired ? "" : `<div class="card"><h2>Job alerts</h2><p class="muted" style="font-size:13px">When a contractor posts a job for your truck, inside your distance, on a day you work, and you're not already booked, we tell you right away.</p>
       <strong style="font-size:14px">How far you'll drive</strong><span class="muted" style="font-size:13px;margin-top:-6px">From ${esc(DHOME.name)}, your home base. Also sets what Find jobs shows.</span>
       <div class="chips">${RADII.map(r => `<button class="pick" type="button" data-act="d-radius:${r}" aria-pressed="${S.radius === r}">${r} mi</button>`).join("")}</div>
       <strong style="font-size:14px">Days you work</strong>
@@ -3318,7 +3326,7 @@ function driverMe() {
         <div class="row"><div><strong style="font-size:14px">Same-day requests</strong><div class="muted" style="font-size:12.5px">Jobs that need a truck right now. 20 seconds to accept.</div></div>
         <button class="pick" type="button" data-act="d-online" aria-pressed="${S.online}" style="flex:none">${S.online ? "On" : "Off"}</button></div></div>
       ${alerts().length ? `<strong style="font-size:14px">Recent alerts</strong><div class="list">${alerts().slice(0, 5).map(x => `<div class="row" style="align-items:flex-start"><span style="font-size:13.5px">${esc(x.text)}</span><span class="muted num" style="font-size:12px;flex:none">${esc(x.time)}</span></div>`).join("")}</div>` : ""}</div>
-    <button class="card tap" type="button" data-act="su-start" style="border-style:dashed"><span class="eyebrow">Demo</span><strong>Sign up as a new driver</strong><span class="muted" style="font-size:13px">See what new drivers fill in: details, truck, documents and terms.</span></button>`;
+    <button class="card tap" type="button" data-act="su-start" style="border-style:dashed"><span class="eyebrow">Demo</span><strong>Sign up as a new trucker</strong><span class="muted" style="font-size:13px">See what new truckers fill in: details, truck, documents and terms.</span></button>`}`;
 }
 // Same-day request: pops up over the driver's screen with a 20-second countdown
 function offerJob() {
@@ -3463,12 +3471,12 @@ Object.assign(ACTS, {
     const hrs = shiftHours(sh), first = todayFor(tk).find(x => x.a.status !== "done");   // the day's hours go on the day's job
     if (first) { first.a.status = "done"; first.a.hours = hrs; first.a.out = fmtT(now); if (!first.a.checkIn) first.a.checkIn = fmtT(sh.inMs); postFeed(first.j, whoOf(first.a), `Clocked out at ${fmtT(now)} after ${hrs} hours.`); }
     delete S.gpsPaused[tk]; logGps(`${tk} clocked out after ${hrs} hrs. GPS off.`);
-    ui.view = null; toast(`Clocked out. ${hrs} hours sent to ${ME_OWNER} and the contractor.`);
+    ui.view = null; toast(`Clocked out. ${hrs} hours sent to ${sentTo()}.`);
   },
   "corr-open": () => { ui.corr = true; },
   "corr-cancel": () => { ui.corr = false; },
   "corr-send": tk => { const t = $("#corr-text").value.trim(); if (!t) { toast("Say what needs fixing first."); return false; }
-    S.shifts[tk].correction = { text: t, time: nowTime() }; ui.corr = false; toast(`Sent to ${ME_OWNER} and the contractor.`); },
+    S.shifts[tk].correction = { text: t, time: nowTime() }; ui.corr = false; toast(`Sent to ${sentTo()}.`); },
   "clock-reset": tk => { delete S.shifts[tk]; todayFor(tk).forEach(({ a }) => { a.status = "assigned"; a.hours = null; a.checkIn = null; a.out = null; }); ui.corr = false; toast("Demo: a new day. Tap Clock in."); },
   "gps-arrive": (id, tk) => { const j = job(id), a = j.assignments.find(x => x.truck === tk); a.status = "onsite"; a.otw = null; a.checkIn = nowTime(); a.where = startsAt(j, a) === "plant" ? "plant" : "site";
     postFeed(j, whoOf(a), "Arrived at the job site. Checked in automatically."); logGps(`${tk} arrived at the job site. Checked in automatically.`); toast(`GPS: ${tk} arrived at ${a.checkIn}. Checked in automatically and the clock started.`); },
@@ -3506,7 +3514,7 @@ Object.assign(ACTS, {
   // Driver
   "d-take": id => { const j = job(id), t = myDriverTruck();
     if (!j || openFor(j, t.type) <= 0) { toast("Sorry, that job just filled."); return; }
-    addAssignment(j, ownerAsg(t)); ui.tab = "djobs"; ui.view = null; ui.jtab = "up"; window.scrollTo(0, 0);
+    addAssignment(j, truckerAsg(t)); ui.tab = "djobs"; ui.view = null; ui.jtab = "up"; window.scrollTo(0, 0);
     toast("Accepted. It's in My jobs, and the contractor can see you."); },
   "d-confirm": (id, tk) => { job(id).assignments.find(a => a.truck === tk).confirmed = true; toast("Thanks! The contractor can see you're coming."); },
   "d-cant": (id, tk) => { const j = job(id), a = j.assignments.find(x => x.truck === tk); removeAssignment(j, a); ui.view = null;
@@ -3519,7 +3527,7 @@ Object.assign(ACTS, {
   "d-online": () => { S.online = !S.online; toast(S.online ? "You'll also get same-day requests." : "Same-day requests are off."); },
   "d-offer-yes": () => { const j = job(ui.offer.jid), t = myDriverTruck(); ui.offer = null; renderOverlay();
     if (!j || openFor(j, t.type) <= 0) { toast("Sorry, that job just filled."); return; }
-    addAssignment(j, ownerAsg(t)); ui.tab = "dtoday"; ui.view = `work:${j.id}:${t.id}`; window.scrollTo(0, 0); toast("Job accepted. The contractor can see you. Clock in when you get there."); },
+    addAssignment(j, truckerAsg(t)); ui.tab = "dtoday"; ui.view = `work:${j.id}:${t.id}`; window.scrollTo(0, 0); toast("Job accepted. The contractor can see you. Clock in when you get there."); },
   "d-offer-no": () => { S.declined.push(ui.offer.jid); ui.offer = null; renderOverlay(); toast("Declined."); },
   "d-jtab": k => { ui.jtab = k; },
   "d-radius": r => { S.radius = +r; toast(`Jobs and alerts up to ${r} miles from ${DHOME.name}.`); },
@@ -3531,11 +3539,11 @@ Object.assign(ACTS, {
   "al-open": id => { const al = alerts().find(x => x.id === id); if (!al) return false; al.read = true; ui.tab = "dfind"; ui.view = "djob:" + al.jid; window.scrollTo(0, 0); },
   "al-close": id => { const al = alerts().find(x => x.id === id); if (al) al.read = true; },
   "push-on": () => { enablePush(); return false; },
-  "push-test": role => { const d = role === "driver";
+  "push-test": role => { const d = role === "driver"; if (role === "hired") { notifyMe("New job from Delgado Hauling", "You're on T-14 for the Doolittle Dr overlay, 6:00 AM. Tap to see the job.", "hired/"); toast("Test sent. Look at the top of your screen."); return false; }
     notifyMe(d ? "New job near you" : "Still 2 trucks short · Today", d ? "Thu Nov 19 · 7:00 AM · Dublin Blvd overlay · 12 mi away · $150/hr · 1 spot left" : "Main St needs one 10 wheeler and one 12 wheeler. Tap to send it farther out or ask a broker.", d ? "driver/djob:J-1051" : "contractor/job:J-1042");
     toast("Test sent. Look at the top of your screen."); return false; },
   // With the push server: a test that arrives 10 seconds later, so you can lock your phone and see it on the lock screen
-  "push-test-later": role => { const d = role === "driver";
+  "push-test-later": role => { const d = role === "driver"; if (role === "hired") { notifyMe("New job from Delgado Hauling", "You're on T-14 for the Doolittle Dr overlay, 6:00 AM. Tap to see the job.", "hired/", 10); toast("Coming in 10 seconds. Lock your phone now."); return false; }
     notifyMe(d ? "New job near you" : "Still 2 trucks short · Today", d ? "Thu Nov 19 · 7:00 AM · Dublin Blvd overlay · 12 mi away · $150/hr · 1 spot left" : "Main St needs one 10 wheeler and one 12 wheeler. Tap to send it farther out or ask a broker.", d ? "driver/djob:J-1051" : "contractor/job:J-1042", 10);
     toast("Coming in 10 seconds. Lock your phone now."); return false; },
   "d-alertpref": k => { const p = alertPrefs(); p[k] = !p[k]; if (k === "push" && p[k] && pushState() !== "granted") enablePush(); toast(p[k] ? `${k === "text" ? "Texts" : "Phone notifications"} on for new jobs.` : `${k === "text" ? "Texts" : "Phone notifications"} off.`); },
@@ -3675,17 +3683,16 @@ function welcomeScreen() {
   return heroMap("welcome", [], { trucks: 14, center: FROM.Oakland, top: '<span></span><button class="fpill" type="button" data-act="w-demo:contractor">Skip ›</button>' })
     + `<div class="sheet">
     <div class="stack" style="gap:6px"><h1 style="font-size:38px;line-height:1.02">Dump trucks on demand.</h1>
-      <p class="muted">Vetted 10 wheelers, 12 wheelers and super dumpers, booked in minutes. No broker in the middle.</p></div>
+      <p class="muted">Vetted 10 wheelers, 12 wheelers and super dumpers, booked in minutes. No middleman taking a cut.</p></div>
     <div class="stack" style="gap:10px">
       ${tile("w-contractor", CONE, "I need trucks", "Paving and construction companies")}
-      ${tile("w-driver", truckPic("w12"), "I drive my own truck", "Owner-operators")}
-      ${tile("w-fleet", truckPic("sd"), "I own several trucks", "Trucking companies with their own trucks and drivers")}
-      ${tile("w-broker", HEADSET, "I'm a broker", "I dispatch trucks for my customers")}
+      ${tile("w-driver", truckPic("w12"), "I drive my own truck", "Truckers: one truck, you drive it")}
+      ${tile("w-fleet", truckPic("sd"), "I have more than one truck", "Brokers: you book the jobs, your drivers run them")}
     </div>
-    <p class="muted" style="text-align:center;font-size:13.5px">Driving for a trucking company? Use the invite link they texted you. <button type="button" class="linkbtn" style="font-size:13.5px" data-act="w-invite">See how it works</button></p>
+    <p class="muted" style="text-align:center;font-size:13.5px">Driving for a broker? Use the invite link they texted you. <button type="button" class="linkbtn" style="font-size:13.5px" data-act="w-invite">See how it works</button></p>
     <p style="text-align:center;font-size:15px">Already have an account? <button type="button" class="linkbtn" data-act="w-login">Log in</button></p>
     <div class="demo-row"><div class="eyebrow">Explore the demo · no sign-up</div>
-      <div class="chips">${[["contractor", "Contractor"], ["owner", "Truck owner"], ["driver", "Driver"], ["broker", "Broker"], ["admin", "Admin"]].map(([r, l]) => `<button class="pick" type="button" data-act="w-demo:${r}">${l}</button>`).join("")}</div>
+      <div class="chips">${[["contractor", "Contractor"], ["driver", "Trucker"], ["owner", "Broker"], ["hired", "Hired driver"], ["admin", "Admin"]].map(([r, l]) => `<button class="pick" type="button" data-act="w-demo:${r}">${l}</button>`).join("")}</div>
       <span class="muted" style="font-size:12.5px">Opens the working app with sample jobs, trucks and drivers.</span></div>
     ${installCard()}
     <p class="muted" style="text-align:center;font-size:12.5px">Every driver and truck is checked before they can take jobs.</p></div>`;
@@ -3926,7 +3933,7 @@ Object.assign(ACTS, {
   "inv-cancel": () => { ui.inv = null; },
   "inv-send": () => { const n = (ui.inv.name || "").trim(), p = ui.inv.phone || ""; if (!n || p.replace(/\D/g, "").length !== 10) { toast("Enter their name and a 10-digit mobile number."); return false; }
     invites().unshift({ id: "I" + Date.now().toString(36), name: n, phone: p, owner: ME_OWNER, status: "sent" }); ui.inv = null; toast(`Invite texted to ${n.split(" ")[0]}.`); },
-  "inv-open": id => { const inv = invites().find(x => x.id === id); if (!inv) return false; ui = freshUi("driver"); ui.dsu = newDsu(inv); window.scrollTo(0, 0); },
+  "inv-open": id => { const inv = invites().find(x => x.id === id); if (!inv) return false; ui = freshUi("hired"); ui.dsu = newDsu(inv); window.scrollTo(0, 0); },
   "ds-prev": () => { ui.dsu.step--; window.scrollTo(0, 0); },
   "ds-next": () => { if (!dsuValid()) return false; ui.dsu.step++; window.scrollTo(0, 0); },
   "ds-submit": () => { if (!dsuValid()) return false; submitDsu(); window.scrollTo(0, 0); toast("Sent for review."); },
@@ -4126,6 +4133,7 @@ const TABS = {
   contractor: [["jobs", "Jobs", "jobs"], ["live", "Live map", "live"], ["plants", "Plants", "plants"], ["reps", "Reports", "reps"], ["bill", "Billing", "bill"]],
   owner: [["today", "Today", "today"], ["find", "Find work", "find"], ["fleet", "Fleet", "fleet"], ["pay", "Pay", "pay"], ["docs", "Docs", "docs"]],
   driver: [["dtoday", "Today", "today"], ["dfind", "Find jobs", "find"], ["djobs", "My jobs", "cal"], ["dpay", "Pay", "clock"], ["dme", "My info", "me"]],
+  hired: [["dtoday", "Today", "today"], ["djobs", "My jobs", "cal"], ["dme", "My info", "me"]],
   broker: [["board", "Dispatch", "board"], ["trucks", "Trucks", "today"], ["bfee", "Billing", "bill"]],
   admin: [["vet", "Vetting", "docs"], ["over", "Overview", "over"], ["drivers", "Drivers", "fleet"], ["set", "Settings", "set"]]
 };
@@ -4133,14 +4141,14 @@ const TABS = {
 function badge(role, tab) {
   if (role === "contractor" && tab === "jobs") return myJobs().filter(j => !j.approved && j.dayN >= 0 && filled(j) < needed(j)).length;
   if (role === "owner" && tab === "today") return ownerOffers().length;
-  if (role === "driver" && tab === "dtoday") return driverAssignments().filter(x => x.j.dayN === 1 && !x.a.confirmed).length;
+  if ((role === "driver" || role === "hired") && tab === "dtoday") return driverAssignments().filter(x => x.j.dayN === 1 && !x.a.confirmed).length;
   if (role === "driver" && tab === "dfind") return ui.tab === "dfind" ? 0 : newBoardJobs().length;   // nearby jobs not looked at yet
   if (role === "broker" && tab === "board") return brokerOpen().filter(j => j.req && j.req.status === "searching").length;
   if (role === "admin" && tab === "vet") return S.applicants.filter(a => !S.approvedApplicants.includes(a.id)).length;
   return 0;
 }
 // Opens on the side you used last (Contractor the first time)
-const lastRole = () => { try { const r = localStorage.getItem("t2u-role"); return TABS[r] ? r : "contractor"; } catch (e) { return "contractor"; } };
+const lastRole = () => { try { let r = localStorage.getItem("t2u-role"); if (r === "broker") r = "owner"; return TABS[r] ? r : "contractor"; } catch (e) { return "contractor"; } };
 ui = freshUi(lastRole());
 
 function workView(v, driver) { const [, jid, t] = v.split(":"), j = job(jid); return ownerWork(j, j && j.assignments.find(a => a.truck === t), driver); }
@@ -4165,10 +4173,10 @@ function screen() {
     if (v && v.startsWith("work:")) return workView(v, false);
     return { today: ownerToday, find: ownerFind, fleet: ownerFleet, pay: ownerPay, docs: ownerDocs }[ui.tab]();
   }
-  if (ui.role === "driver") {
+  if (ui.role === "driver" || ui.role === "hired") {
     if (v === "clockout") return driverClockOut();
     if (v && v.startsWith("work:")) return workView(v, true);
-    if (v && v.startsWith("djob:")) return driverJobOffer(job(v.slice(5)));
+    if (v && v.startsWith("djob:") && ui.role === "driver") return driverJobOffer(job(v.slice(5)));
     return { dtoday: driverToday, dfind: driverFind, djobs: driverMyJobs, dpay: driverPay, dme: driverMe }[ui.tab]();
   }
   if (ui.role === "broker") {
@@ -4334,10 +4342,10 @@ applyLayout();
 
 // Direct links open a side of the app: #contractor #owner #driver #broker (or #fleet) #admin, and #signup
 function openFromHash() {
-  const h = location.hash.slice(1).toLowerCase(), roles = { contractor: "contractor", owner: "owner", driver: "driver", broker: "broker", fleet: "broker", admin: "admin" };
+  const h = location.hash.slice(1).toLowerCase(), roles = { contractor: "contractor", owner: "owner", driver: "driver", trucker: "driver", broker: "owner", fleet: "owner", hired: "hired", admin: "admin" };
   if (h === "signup") { ui = freshUi("driver"); ui.signup = newSignup(); }
   else if (h === "welcome" || (!h && !seenWelcome())) { ui = freshUi("contractor"); ui.welcome = true; }
-  else if (h === "invite") { markSeen(); const inv = { id: "I-demo", name: "Sam Ortiz", phone: "(510) 555-0166", owner: ME_OWNER, status: "sent" }; if (!invites().some(x => x.id === inv.id)) invites().unshift(inv); ui = freshUi("driver"); ui.dsu = newDsu(inv); }
+  else if (h === "invite") { markSeen(); const inv = { id: "I-demo", name: "Sam Ortiz", phone: "(510) 555-0166", owner: ME_OWNER, status: "sent" }; if (!invites().some(x => x.id === inv.id)) invites().unshift(inv); ui = freshUi("hired"); ui.dsu = newDsu(inv); }
   else if (roles[h]) ui = freshUi(roles[h]);
   // Opened by tapping a notification: ?go=driver/djob:J-1051 opens that screen
   const go = new URLSearchParams(location.search).get("go");
