@@ -467,6 +467,17 @@ main { --mp: 16px; }
 .next-list .row > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .linkish { font-weight: 700; font-size: 14px; }
 .act-ink { color: var(--act-ink); font-weight: 700; }
+/* Projects: work-day tiles on a project page */
+.pdays { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; }
+.pday { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 2px; display: grid; gap: 1px; text-align: center; font: 600 12px/1.25 var(--body); color: var(--fg); cursor: pointer; min-height: 44px; }
+.pday b { font-size: 13px; }
+.pday.good { background: var(--good-soft); border-color: transparent; color: var(--good); }
+.pday.warn { background: var(--act-bg); border-color: var(--act); color: var(--act-deep); }
+.pday.info { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
+.pday.plan { border-style: dashed; color: var(--muted); }
+.pday.past { cursor: default; }
+.pcard.need { border: 2px solid var(--act); }
+.pcard .pline { font-size: 13px; }
 .good-ink { color: var(--good); font-weight: 700; }
 .mk { font-weight: 800; margin-right: 2px; }
 .mk.ok { color: var(--good); }
@@ -1352,9 +1363,23 @@ function seed() {
   const day = n => ({ dayN: n, date: dayName(n) }), RATE = { w10: 115, w12: 130, sd: 150 };
   return {
     nextId: 1053,
+    // Projects: one road or lot job that runs over several days. Each day's truck request (a job) belongs to one.
+    // plan = the work days (0 = today); prior = loads, tons and trucking cost from past days that aren't in the demo's job list.
+    projects: [
+      { id: "P-MAIN", name: "Main St mill and overlay", customer: "City of Oakland", contract: "26-114", plan: [-7, -6, -5, -4, -2, 0, 5, 6, 7, 8], budget: 62000, prior: { loads: 79, tons: 1452, cost: 31800 } },
+      { id: "P-RT9", name: "Route 9 shoulder widening", customer: "Caltrans", contract: "04-2K8104", plan: [1, 2, 5, 6, 7, 8, 9, 12], budget: 48000 },
+      { id: "P-CV", name: "Castro Valley Blvd patch paving", customer: "Alameda County", contract: "PW-2291", plan: [-1, 0], budget: 7500, prior: { loads: 9, tons: 162, cost: 2980 } },
+      { id: "P-LAKE", name: "Lakeside lot repave", customer: "Lakeside Plaza LLC", contract: "", plan: [-1], budget: 0 },
+      { id: "P-DOO", name: "Doolittle Dr overlay", customer: "City of San Leandro", contract: "SL-26-07", plan: [-6, -5, 2], budget: 21000, prior: { loads: 46, tons: 851, cost: 10400 } },
+      { id: "P-MIS", name: "Mission Blvd mill and fill", customer: "City of Hayward", contract: "H-5521", plan: [3, 5, 6], budget: 40000 },
+      { id: "P-DUB", name: "Dublin Blvd overlay", customer: "City of Dublin", contract: "CIP 26-03", plan: [5, 6], budget: 16000 },
+      { id: "P-FRE", name: "Fremont Blvd repave", customer: "City of Fremont", contract: "F-8830", plan: [9, 12, 13, 14], budget: 55000 },
+      { id: "P-HESP", name: "Hesperian Blvd overlay", customer: "Alameda County", contract: "PW-2240", plan: [-5, -4, -3], budget: 24000, prior: { loads: 52, tons: 940, cost: 13900 } },
+      { id: "P-150", name: "150th Ave grind-out", customer: "City of San Leandro", contract: "SL-26-04", plan: [-2], budget: 0 }
+    ],
     jobs: [
       {
-        id: "J-1042", ...lucas, name: "Main St mill and overlay", kindIx: 2, pts: { pickup: { lat: 37.7985, lng: -122.2575 }, dropoff: { lat: 37.763, lng: -122.213 } },
+        id: "J-1042", ...lucas, project: "P-MAIN", name: "Main St mill and overlay", kindIx: 2, pts: { pickup: { lat: 37.7985, lng: -122.2575 }, dropoff: { lat: 37.763, lng: -122.213 } },
         pickup: "Job site: Main St, Oak Ave to 5th St", dropoff: "Gallagher & Burk, 344 High St, Oakland",
         dayN: 0, date: "Today", start: "6:00 AM", hours: 10, needs: { w10: 2, w12: 3, sd: 1 }, rate: { w10: 115, w12: 130, sd: 150 },
         notes: "Stage on Oak Ave shoulder. Hard hats and vests on site.", approved: false,
@@ -1385,7 +1410,7 @@ function seed() {
         assignments: [ { truck: "T-22", type: "sd", owner: TRUCKER_CO, driver: ME_DRIVER, phone: ME_PHONE, status: "assigned", checkIn: null, hours: null, tickets: [] } ]
       },
       {
-        id: "J-1038", ...lucas, name: "Lakeside lot repave", kindIx: 0, pts: { pickup: { lat: 37.808, lng: -122.253 }, dropoff: { lat: 37.73, lng: -122.18 } },
+        id: "J-1038", ...lucas, project: "P-LAKE", name: "Lakeside lot repave", kindIx: 0, pts: { pickup: { lat: 37.808, lng: -122.253 }, dropoff: { lat: 37.73, lng: -122.18 } },
         pickup: "Lakeside Plaza, 300 Shore Rd", dropoff: "County recycling yard, 88 Quarry Rd",
         dayN: -1, date: "Yesterday", start: "7:00 AM", hours: 9, needs: { w12: 2 }, rate: { w10: 115, w12: 130, sd: 150 },
         notes: "", approved: false,
@@ -1397,7 +1422,7 @@ function seed() {
         ]
       },
       {
-        id: "J-1047", ...lucas, name: "Route 9 shoulder widening", kindIx: 1, pts: { pickup: { lat: 37.763, lng: -122.213 }, dropoff: { lat: 37.705, lng: -122.08 } },
+        id: "J-1047", ...lucas, project: "P-RT9", name: "Route 9 shoulder widening", kindIx: 1, pts: { pickup: { lat: 37.763, lng: -122.213 }, dropoff: { lat: 37.705, lng: -122.08 } },
         pickup: "Gallagher & Burk, 344 High St, Oakland", dropoff: "Route 9, mile 14 to 16",
         dayN: 1, date: "Tomorrow", start: "5:30 AM", hours: 10, needs: { w10: 1, w12: 2, sd: 2 }, rate: { w10: 115, w12: 135, sd: 155 },
         notes: "Night crew handoff at 5:15 AM. Tarps required.", approved: false,
@@ -1409,7 +1434,7 @@ function seed() {
       },
       // More Lucas Paving jobs at real street corners (real places on the map, no customer addresses), from 3 days ago to next week
       {
-        id: "J-1031", ...lucas, name: "Hesperian Blvd overlay", kindIx: 2, pts: { pickup: { lat: 37.66564, lng: -122.11815 }, dropoff: { lat: 37.763, lng: -122.213 } },
+        id: "J-1031", ...lucas, project: "P-HESP", name: "Hesperian Blvd overlay", kindIx: 2, pts: { pickup: { lat: 37.66564, lng: -122.11815 }, dropoff: { lat: 37.763, lng: -122.213 } },
         pickup: "Job site: Hesperian Blvd & W A St, San Lorenzo", dropoff: "Gallagher & Burk, 344 High St, Oakland",
         ...day(-3), start: "6:00 AM", hours: 9, needs: { w12: 2, sd: 1 }, rate: RATE, notes: "", approved: true, stars: 5,
         assignments: [
@@ -1419,7 +1444,7 @@ function seed() {
         ]
       },
       {
-        id: "J-1034", ...lucas, name: "150th Ave grind-out", kindIx: 0, pts: { pickup: { lat: 37.70581, lng: -122.12925 }, dropoff: { lat: 37.744, lng: -122.199 } },
+        id: "J-1034", ...lucas, project: "P-150", name: "150th Ave grind-out", kindIx: 0, pts: { pickup: { lat: 37.70581, lng: -122.12925 }, dropoff: { lat: 37.744, lng: -122.199 } },
         pickup: "Job site: 150th Ave & E 14th St, San Leandro", dropoff: "Argent Materials, 8300 Baldwin St, Oakland",
         ...day(-2), start: "7:00 AM", hours: 7, needs: { w10: 2 }, rate: RATE, notes: "", approved: true, stars: 4,
         assignments: [
@@ -1428,7 +1453,7 @@ function seed() {
         ]
       },
       {
-        id: "J-1044", ...lucas, name: "Castro Valley Blvd patch paving", kindIx: 1, pts: { pickup: { lat: 37.763, lng: -122.213 }, dropoff: { lat: 37.69549, lng: -122.07399 } },
+        id: "J-1044", ...lucas, project: "P-CV", name: "Castro Valley Blvd patch paving", kindIx: 1, pts: { pickup: { lat: 37.763, lng: -122.213 }, dropoff: { lat: 37.69549, lng: -122.07399 } },
         pickup: "Gallagher & Burk, 344 High St, Oakland", dropoff: "Job site: Castro Valley Blvd & Redwood Rd, Castro Valley",
         ...day(0), start: "6:30 AM", hours: 8, needs: { w12: 1, sd: 1 }, rate: RATE, notes: "Patch crew works the eastbound lanes first.", approved: false,
         dsp: { contact: "Al Perez, Lucas Paving", phone: "(510) 555-0100", staging: "Redwood Rd, south of the boulevard", notes: "Patch crew works the eastbound lanes first." },
@@ -1439,7 +1464,7 @@ function seed() {
         ]
       },
       {
-        id: "J-1049", ...lucas, name: "Doolittle Dr overlay", kindIx: 2, pts: { pickup: { lat: 37.71627, lng: -122.1871 }, dropoff: { lat: 37.763, lng: -122.213 } },
+        id: "J-1049", ...lucas, project: "P-DOO", name: "Doolittle Dr overlay", kindIx: 2, pts: { pickup: { lat: 37.71627, lng: -122.1871 }, dropoff: { lat: 37.763, lng: -122.213 } },
         pickup: "Job site: Doolittle Dr & Davis St, San Leandro", dropoff: "Gallagher & Burk, 344 High St, Oakland",
         ...day(2), start: "6:00 AM", hours: 10, needs: { w12: 2, sd: 1 }, rate: RATE, notes: "", approved: false,
         assignments: [
@@ -1449,7 +1474,7 @@ function seed() {
         ]
       },
       {
-        id: "J-1050", ...lucas, name: "Mission Blvd mill and fill", kindIx: 2, pts: { pickup: { lat: 37.63639, lng: -122.05457 }, dropoff: { lat: 37.598, lng: -121.886 } },
+        id: "J-1050", ...lucas, project: "P-MIS", name: "Mission Blvd mill and fill", kindIx: 2, pts: { pickup: { lat: 37.63639, lng: -122.05457 }, dropoff: { lat: 37.598, lng: -121.886 } },
         pickup: "Job site: Mission Blvd & Tennyson Rd, Hayward", dropoff: "Martin Marietta, 7999 Athenour Way, Sunol",
         ...day(3), start: "6:00 AM", hours: 10, needs: { w10: 1, w12: 2, sd: 2 }, rate: RATE, notes: "", approved: false,
         assignments: [
@@ -1458,13 +1483,13 @@ function seed() {
         ]
       },
       {
-        id: "J-1051", ...lucas, name: "Dublin Blvd overlay", kindIx: 1, pts: { pickup: { lat: 37.688, lng: -121.836 }, dropoff: { lat: 37.70603, lng: -121.92357 } },
+        id: "J-1051", ...lucas, project: "P-DUB", name: "Dublin Blvd overlay", kindIx: 1, pts: { pickup: { lat: 37.688, lng: -121.836 }, dropoff: { lat: 37.70603, lng: -121.92357 } },
         pickup: "Vulcan Materials, 52 El Charro Rd, Pleasanton", dropoff: "Job site: Dublin Blvd & Village Pkwy, Dublin",
         ...day(5), start: "7:00 AM", hours: 8, needs: { w12: 2, sd: 2 }, rate: RATE, notes: "", approved: false,
         assignments: [ { truck: "S-9", type: "sd", owner: "Silva Trucking", phone: "(510) 555-0177", status: "assigned", checkIn: null, hours: null, tickets: [], confirmed: false } ]
       },
       {
-        id: "J-1052", ...lucas, name: "Fremont Blvd repave", kindIx: 2, pts: { pickup: { lat: 37.54069, lng: -121.97317 }, dropoff: { lat: 37.556, lng: -121.862 } },
+        id: "J-1052", ...lucas, project: "P-FRE", name: "Fremont Blvd repave", kindIx: 2, pts: { pickup: { lat: 37.54069, lng: -121.97317 }, dropoff: { lat: 37.556, lng: -121.862 } },
         pickup: "Job site: Fremont Blvd & Stevenson Blvd, Fremont", dropoff: "DeSilva Gates, 6527 Calaveras Rd, Sunol",
         ...day(9), start: "6:00 AM", hours: 10, needs: { w10: 2, w12: 2, sd: 2 }, rate: RATE, notes: "", approved: false,
         assignments: []
@@ -2303,20 +2328,122 @@ function contractorJobs() {
     ${bookedCard()}
     ${contractorWorkingNow()}
     ${installCard()}
-    <button type="button" class="card tap" data-go="alljobs"><div class="row"><h2>Your jobs</h2><span class="chev" aria-hidden="true">›</span></div>
-      <span class="muted" style="font-size:14px">${active.length ? `${active.length} open${finding ? ` · <span class="act-ink">${finding} still finding trucks</span>` : " · all booked"}` : "No jobs yet"}${done.length ? ` · ${done.length} approved` : ""}</span>
+    <button type="button" class="card tap" data-go="alljobs"><div class="row"><h2>Your projects</h2><span class="chev" aria-hidden="true">›</span></div>
+      <span class="muted" style="font-size:14px">${(() => { const ps = activeProjects(), need = ps.filter(p => projState(p).short.length).length; return ps.length ? `${ps.length} active${need ? ` · <span class="act-ink">${need} need${need === 1 ? "s" : ""} trucks</span>` : " · all booked"}` : "No jobs yet"; })()}</span>
       ${next.length ? `<div class="next-list">${next.map(j => `<div class="row"><span>${esc(calLabel(j.dayN))} · ${esc(j.name)}</span><span class="num ${shortJob(j) ? "act-ink" : "good-ink"}">${filled(j)}/${needed(j)}</span></div>`).join("")}</div>` : ""}
-      <span class="linkish">See all jobs and the calendar ›</span></button></div>`;
+      <span class="linkish">See projects and the calendar ›</span></button></div>`;
 }
-// All jobs: the calendar and every job
+// All jobs: Projects (each project and how it's going) or Days (the calendar and every truck request)
 function contractorAllJobs(inSplit) {
-  const active = cActive(), done = myJobs().filter(j => j.approved), finding = active.filter(shortJob).length;
+  const active = cActive(), done = myJobs().filter(j => j.approved), finding = active.filter(shortJob).length, days = ui.cjv === "days";
+  const ps = activeProjects(), need = ps.filter(p => projState(p).short.length).length;
   return `${inSplit ? "" : '<button class="back" type="button" data-go="back">‹ Home</button>'}
-    <div class="row"><div class="stack" style="gap:2px"><h1>Your jobs</h1><p class="muted" style="font-size:14px">${active.length ? `${active.length} open${finding ? ` · ${finding} still finding trucks` : " · all booked"}` : "No jobs yet"}</p></div>
+    <div class="row"><div class="stack" style="gap:2px"><h1>Your jobs</h1><p class="muted" style="font-size:14px">${days ? (active.length ? `${active.length} open${finding ? ` · ${finding} still finding trucks` : " · all booked"}` : "No jobs yet")
+        : `${ps.length} active project${ps.length === 1 ? "" : "s"}${need ? ` · <span class="act-ink">${need} need${need === 1 ? "s" : ""} you</span>` : ""}`}</p></div>
       <button class="btn small" type="button" data-act="rq-new" style="flex:none">+ Request trucks</button></div>
-    ${jobsCalendar(active, cJobCard)}
-    ${done.length ? `<p class="eyebrow">Approved and billed</p>${done.map(cJobCard).join("")}` : ""}`;
+    <div class="chips">${[["proj", "Projects"], ["days", "Days"]].map(([k, l]) => `<button class="pick" type="button" data-act="c-jv:${k}" aria-pressed="${(days ? "days" : "proj") === k}">${l}</button>`).join("")}</div>
+    ${days ? jobsCalendar(active, cJobCard) + (done.length ? `<p class="eyebrow">Approved and billed</p>${done.map(cJobCard).join("")}` : "") : projectsList()}`;
 }
+/* ================= Projects: a road or lot job that runs over several days ================= */
+const PROJS = () => S.projects || (S.projects = []);
+const proj = id => PROJS().find(p => p.id === id);
+const projJobs = p => myJobs().filter(j => j.project === p.id);
+const shortDate = n => dateOf(n).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+// Every work day: the planned ones plus any day trucks were requested for
+function projDays(p) {
+  const js = projJobs(p), all = [...new Set([...p.plan, ...js.map(j => j.dayN)])].sort((a, b) => a - b);
+  return all.map(n => ({ n, js: js.filter(j => j.dayN === n) }));
+}
+// Loads, tons and trucking cost so far (past days not in the demo + every truck on the project's job days)
+function projTotals(p) {
+  const pr = p.prior || { loads: 0, tons: 0, cost: 0 }, js = projJobs(p), as = js.flatMap(j => j.assignments);
+  return { loads: pr.loads + as.reduce((s, a) => s + a.tickets.length, 0), tons: pr.tons + as.reduce((s, a) => s + tons(a), 0),
+    cost: pr.cost + js.reduce((s, j) => s + j.assignments.filter(a => a.hours != null).reduce((t, a) => t + billOf(j, a), 0), 0) };
+}
+function projState(p) {
+  const days = projDays(p), js = projJobs(p), byDay = (a, b) => a.dayN - b.dayN;
+  const short = js.filter(j => j.dayN >= 0 && !j.approved && shortJob(j)).sort(byDay);
+  const approve = js.filter(j => j.dayN < 0 && !j.approved).sort(byDay);
+  const doneN = days.filter(d => d.n < 0).length, today = days.some(d => d.n === 0), first = days[0], last = days[days.length - 1];
+  const finished = !!last && last.n < 0 && !approve.length;
+  const L = first ? calLabel(first.n) : "", nd = `${days.length} day${days.length === 1 ? "" : "s"}`;
+  const label = finished ? `${nd} · done` : !doneN && !today ? `Starts ${/^(Today|Tomorrow)$/.test(L) ? L.toLowerCase() : L} · ${nd}` : `Day ${doneN + (today ? 1 : 0)} of ${days.length}`;
+  const dayStat = finished ? String(days.length) : `${doneN + (today ? 1 : 0)} of ${days.length}`;
+  const pct = finished ? 100 : Math.round(100 * (doneN + (today ? 0.5 : 0)) / Math.max(1, days.length));
+  const next = days.find(d => d.n >= 0);
+  return { days, short, approve, finished, label, dayStat, pct, next, first, last };
+}
+const activeProjects = () => PROJS().filter(p => projDays(p).length && !projState(p).finished)
+  .map(p => ({ p, st: projState(p) }))
+  .sort((a, b) => (b.st.short.length ? 2 : b.st.approve.length ? 1 : 0) - (a.st.short.length ? 2 : a.st.approve.length ? 1 : 0) || ((a.st.next ? a.st.next.n : 99) - (b.st.next ? b.st.next.n : 99)))
+  .map(x => x.p);
+// What's next for the project, in one line
+function projNextLine(p, st) {
+  if (st.short.length) { const j = st.short[0]; return `<span class="act-ink pline">${esc(calLabel(j.dayN))}: ${filled(j)} of ${needed(j)} trucks · ${needed(j) - filled(j)} short</span>`; }
+  if (st.approve.length) return `<span class="pline" style="color:var(--accent);font-weight:700">${st.approve.length} day${st.approve.length === 1 ? "" : "s"} ready to approve</span>`;
+  const nx = st.next; if (!nx) return "";
+  if (!nx.js.length) return `<span class="muted pline">${esc(calLabel(nx.n))}: trucks not requested yet</span>`;
+  const n = nx.js.reduce((s, j) => s + needed(j), 0);
+  return `<span class="good-ink pline">${esc(calLabel(nx.n))}: all ${n} truck${n === 1 ? "" : "s"} booked</span>`;
+}
+function projPill(st) {
+  return st.short.length ? '<span class="pill warn">Needs you</span>' : st.approve.length ? `<span class="pill info">Approve ${st.approve.length} day${st.approve.length === 1 ? "" : "s"}</span>`
+    : st.finished ? '<span class="pill good">Finished</span>' : '<span class="pill good">On track</span>';
+}
+function projCard(p) {
+  const st = projState(p), t = projTotals(p);
+  return `<button type="button" class="card tap pcard${st.short.length ? " need" : ""}${ui.view === "proj:" + p.id ? " sel" : ""}" data-go="proj:${p.id}">
+      <div class="row"><span class="eyebrow">${esc(p.customer || "Project")} · ${esc(shortDate(st.first.n))}${st.last.n !== st.first.n ? " – " + esc(shortDate(st.last.n)) : ""}</span>${projPill(st)}</div>
+      <h2>${esc(p.name)}</h2>
+      <div class="meter" aria-label="${st.pct}% done"><i style="width:${st.pct}%${st.finished ? "" : ";background:var(--good)"}"></i></div>
+      <div class="row muted" style="font-size:13px"><span>${esc(st.label)}</span><span class="num">${t.tons ? Math.round(t.tons).toLocaleString() + " t hauled" : ""}</span></div>
+      <div class="row muted" style="font-size:13px"><span class="num">Trucking ${money0(t.cost)}${p.budget ? " of " + money0(p.budget) : " so far"}</span>${p.budget ? `<span class="num">${Math.round(100 * t.cost / p.budget)}%</span>` : ""}</div>
+      ${st.finished ? "" : projNextLine(p, st)}
+    </button>`;
+}
+function projectsList() {
+  const ps = activeProjects(), loose = cActive().filter(j => !j.project || !proj(j.project)), done = PROJS().filter(p => projDays(p).length && projState(p).finished);
+  return (ps.map(projCard).join("") || '<div class="note">No active projects. Tap Request trucks to start one.</div>')
+    + (loose.length ? `<p class="eyebrow">Not in a project</p>${loose.map(cJobCard).join("")}` : "")
+    + (done.length ? `<details class="card"><summary style="cursor:pointer;font-weight:700">Finished projects · ${done.length}</summary><div class="stack" style="gap:8px;margin-top:8px">${done.map(projCard).join("")}</div></details>` : "");
+}
+// One project: progress, cost, every work day, its truck requests and its reports
+function projectPage(p) {
+  if (!p) { ui.view = "alljobs"; return contractorAllJobs(false); }
+  const st = projState(p), t = projTotals(p), js = projJobs(p).slice().sort((a, b) => a.dayN - b.dayN), site = js.find(j => j.pts);
+  const dayTile = ({ n, js: dj }) => {
+    const top = `<b>${n === 0 ? "Today" : esc(shortDate(n))}</b>`;
+    if (dj.length) { const j = dj[0], cls = n < 0 ? (j.approved ? "good" : "info") : shortJob(j) ? "warn" : "good";
+      const lab = n < 0 ? (j.approved ? "✓ done" : "approve") : shortJob(j) ? `${filled(j)}/${needed(j)} trucks` : "✓ booked";
+      return `<button type="button" class="pday ${cls}" data-go="job:${j.id}">${top}<span>${lab}</span></button>`; }
+    if (n < 0) return `<span class="pday good past">${top}<span>✓ done</span></span>`;
+    return `<button type="button" class="pday plan" data-act="pj-req:${p.id}:${n}" aria-label="Request trucks for ${esc(calLabel(n))}">${top}<span>request</span></button>`; };
+  const reps = js.filter(j => repWorked(j).length);
+  const tickets = js.reduce((s, j) => s + j.assignments.reduce((x, a) => x + a.tickets.length, 0), 0) + (p.prior ? p.prior.loads : 0);
+  const open = js.filter(j => !j.approved && j.dayN >= -1);
+  return `${isWide() ? "" : '<button class="back" type="button" data-go="alljobs">‹ Projects</button>'}
+    <div class="stack" style="gap:4px"><span class="eyebrow">${esc(p.customer || "New project")}${p.contract ? " · Contract " + esc(p.contract) : ""}</span><h1>${esc(p.name)}</h1>
+      ${site ? `<p class="muted">${esc(siteText(site))}${projPlant(site) ? " · " + esc(projPlant(site).name) : ""}</p>` : ""}</div>
+    <div class="stats"><div class="stat"><span>Days</span><div class="big">${esc(st.dayStat)}</div></div>
+      <div class="stat"><span>Tons</span><div class="big">${Math.round(t.tons).toLocaleString()}</div></div>
+      <div class="stat"><span>Loads</span><div class="big">${t.loads}</div></div></div>
+    <div class="card"><div class="row"><h2>Trucking cost</h2>${p.budget ? `<span class="muted num">Budget ${money0(p.budget)}</span>` : ""}</div>
+      ${p.budget ? `<div class="meter" aria-label="${Math.round(100 * t.cost / p.budget)}% of the budget"><i style="width:${Math.min(100, Math.round(100 * t.cost / p.budget))}%;background:${t.cost > p.budget ? "var(--bad)" : "var(--accent)"}"></i></div>` : ""}
+      <div class="row" style="font-size:14px"><span class="num"><strong>${money0(t.cost)}</strong> so far</span>${p.budget ? `<span class="muted num">${t.cost > p.budget ? money0(t.cost - p.budget) + " over" : money0(p.budget - t.cost) + " left"}</span>` : ""}</div>
+      <p class="muted" style="font-size:12.5px">Hours times each truck's rate, from approved and finished days. Today's trucks are added when they clock out.</p></div>
+    <div class="card"><div class="row"><h2>Work days</h2><span class="muted">${esc(st.label)}</span></div>
+      <div class="pdays">${st.days.map(dayTile).join("")}</div>
+      <div class="clegend muted"><span>${MK.ok} done or booked</span><span>${MK.act} needs trucks</span><span>dashed = not requested yet</span></div></div>
+    ${projNextLine(p, st) && !st.finished ? `<div class="note">${projNextLine(p, st)}</div>` : ""}
+    ${open.length ? `<p class="eyebrow">Truck requests</p>${open.map(cJobCard).join("")}` : ""}
+    <div class="card"><h2>Load tickets and reports</h2>
+      <span class="muted" style="font-size:13px">${tickets} load ticket${tickets === 1 ? "" : "s"} · ${st.days.filter(d => d.n < 0).length + (st.days.some(d => d.n === 0) ? 1 : 0)} day report${st.days.length === 1 ? "" : "s"}</span>
+      ${reps.length ? `<div class="list">${reps.map(j => `<button type="button" class="row linkrow" data-act="rep-open:${j.id}" style="background:none;border:0;padding:6px 0;font:inherit;color:inherit;cursor:pointer;text-align:left"><span>${esc(calLabel(j.dayN))} · day report</span><span class="chev" aria-hidden="true">›</span></button>`).join("")}</div>` : ""}
+      <button class="btn small ghost" type="button" data-act="pj-export:${p.id}" style="justify-self:start">Export for billing</button></div>
+    ${st.finished ? "" : `<button class="btn pin" type="button" data-act="pj-req:${p.id}">Request trucks for this project</button>`}`;
+}
+// The plant or dump site a job day uses (the end of the trip that isn't the job site)
+function projPlant(j) { const o = delivers(j) ? j.pts.pickup : j.pts.dropoff; return PLANTS.find(pl => Math.abs(pl.lat - o.lat) < 0.002 && Math.abs(pl.lng - o.lng) < 0.002); }
 const isWide = () => document.documentElement.dataset.layout === "wide";
 const split = (left, right) => `<div class="split"><div class="split-l">${left}</div><div class="split-r">${right}</div></div>`;
 /* Jobs tab calendar: a two-week strip on the phone (opens on "All"), a 4-week month grid on the Computer layout.
@@ -2491,7 +2618,7 @@ function contractorJob(j) {
     </div>`).join("");
   const tickets = j.assignments.flatMap(a => a.tickets.map(t => ({ ...t, truck: a.truck })));
   const open = Object.keys(j.needs).filter(t => openFor(j, t) > 0).map(t => `${openFor(j, t)} × ${tname(t)}`);
-  return `<button class="back" type="button" data-go="alljobs">‹ All jobs</button>
+  return `<button class="back" type="button" data-go="${j.project && proj(j.project) ? "proj:" + j.project : "alljobs"}">‹ ${j.project && proj(j.project) ? esc(proj(j.project).name) : "All jobs"}</button>
     <div class="stack" style="gap:4px"><span class="eyebrow">${esc(j.id)} · ${esc(j.date)} · start ${esc(j.start)}</span><h1>${esc(j.name)}</h1><p class="muted">${esc(kindOf(j))}</p></div>
     ${jobSummary(j, ready)}
     ${j.req ? reqCard(j) : ""}
@@ -2592,7 +2719,9 @@ function reqOptions() {
   const hrs = Array.from({ length: Math.max(1, 13 - Math.max(1, MIN_HRS)) }, (_, i) => Math.max(1, MIN_HRS) + i);
   const when = d.day === 0 ? "now" : d.day === 1 ? "for tomorrow" : "for " + dayName(d.day);
   return `<button class="back" type="button" data-act="rq-back">‹ Job site</button>
-    <div class="stack" style="gap:4px"><span class="eyebrow">Request trucks · step 2 of 2</span><h1>${esc(pt.name)}</h1><p class="muted">${esc(pt.sub)}</p></div>
+    <div class="stack" style="gap:4px"><span class="eyebrow">Request trucks · step 2 of 2</span><h1>${esc(d.project && proj(d.project) ? proj(d.project).name : pt.name)}</h1><p class="muted">${esc(d.project && proj(d.project) ? pt.name + ", " + pt.sub : pt.sub)}</p></div>
+    <div class="card"><label class="field">Project<select id="rq-proj"><option value="">New project: ${esc(pt.name)}</option>${activeProjects().map(p => `<option value="${p.id}" ${d.project === p.id ? "selected" : ""}>${esc(p.name)}${p.customer ? " · " + esc(p.customer) : ""}</option>`).join("")}</select></label>
+      <span class="muted" style="font-size:12.5px">Every day you request trucks for adds up on the project: days, tons, loads and trucking cost.</span></div>
     <div class="card"><h2>What are the trucks doing?</h2>
       <div class="chips">${KINDS.map((k, i) => `<button class="pick" type="button" data-act="rq-kind:${i}" aria-pressed="${d.kind === i}">${esc(k)}</button>`).join("")}</div>
       <label class="field">${d.kind === 0 ? "Dump site" : "Asphalt plant"} (closest first)<select id="rq-plant">${plants.map(({ p, mi }) => `<option value="${p.id}" ${p.id === d.plant ? "selected" : ""}>${esc(p.name)} · ${mi.toFixed(1)} mi${p.recycle ? " · recycling yard" : ""}</option>`).join("")}</select></label>
@@ -2624,7 +2753,9 @@ function sendRequest() {
   const siteTxt = `Job site: ${d.place.name}, ${d.place.sub}`, plTxt = `${pl.name}, ${pl.addr}`;
   const needs = Object.fromEntries(ON().filter(t => d.counts[t]).map(t => [t, d.counts[t]]));
   const sentTo = Object.keys(needs).reduce((s, t) => s + nearby(t, d.radius), 0);
-  const j = { id, by: ME_CONTRACTOR, name: d.place.name, kindIx: d.kind, kindText: d.kind >= BUILTIN_KINDS ? KINDS[d.kind] : null,
+  let pj = d.project && proj(d.project);
+  if (!pj) { pj = { id: "P-" + id.slice(2), name: d.place.name, customer: "", contract: "", plan: [d.day], budget: 0 }; PROJS().unshift(pj); }
+  const j = { id, by: ME_CONTRACTOR, project: pj.id, name: pj.name, kindIx: d.kind, kindText: d.kind >= BUILTIN_KINDS ? KINDS[d.kind] : null,
     pts: { pickup: del ? plPt : sitePt, dropoff: del ? sitePt : plPt }, pickup: del ? plTxt : siteTxt, dropoff: del ? siteTxt : plTxt,
     dayN: d.day, date: dayName(d.day), start: d.day ? d.time : nowTime(), hours: d.hours, needs,
     rate: Object.fromEntries(ON().map(t => [t, TYPES[t].rate])), notes: d.note.trim(), approved: false,
@@ -2712,6 +2843,16 @@ Object.assign(ACTS, {
   "rq-pl-": () => { ui.req.plantN = Math.max(0, ui.req.plantN - 1); },
   "rq-day": n => { ui.req.day = +n; },
   "c-day": n => { ui.cday = n === "all" ? null : +n; },
+  "c-jv": k => { ui.cjv = k; },
+  // Request trucks for a project: the site, plant, kind of work, trucks and start time come from its last day
+  "pj-req": (id, n) => { const p = proj(id); if (!p) return false; const st = projState(p), last = projJobs(p).filter(j => j.pts).sort((a, b) => b.dayN - a.dayN)[0];
+    ui.req = newReq(); ui.req.project = id; ui.view = null;
+    ui.req.day = n != null && n !== "" ? +n : (st.days.find(d => d.n >= 1 && !d.js.length) || { n: 1 }).n;
+    if (last) { const sp = siteP(last), [nm, ...rest] = siteText(last).split(", "), pl = projPlant(last);
+      ui.req.place = { name: nm, sub: rest.join(", ") || "", lat: sp.lat, lng: sp.lng }; ui.req.kind = last.kindIx; ui.req.counts = { ...last.needs };
+      ui.req.plant = pl ? pl.id : bestPlant(ui.req.place, last.kindIx); if (TIMES.includes(last.start)) ui.req.time = last.start; ui.req.hours = last.hours || ui.req.hours; ui.req.step = "opt"; }
+    window.scrollTo(0, 0); },
+  "pj-export": id => { const p = proj(id); toast(`In the full app this downloads every load ticket, hour and truck for ${p ? p.name : "the project"} as a spreadsheet.`); return false; },
   "c-reqday": n => { ACTS["rq-new"](); ui.req.day = +n; },
   "rq-send": () => { if (!reqTotal()) return false; sendRequest(); window.scrollTo(0, 0); },
   "bk-toggle": () => { bkSetOpen(!bkOpen()); },
@@ -4164,6 +4305,7 @@ function screen() {
     if (ui.req) return ui.req.step === "where" ? reqWhere() : reqOptions();
     // Computer layout: the list stays on the left and the job or report opens on the right
     if (v === "alljobs") return contractorAllJobs(false);
+    if (v && v.startsWith("proj:")) return isWide() ? split(contractorAllJobs(true), projectPage(proj(v.slice(5)))) : projectPage(proj(v.slice(5)));
     if (v && v.startsWith("job:")) return isWide() ? split(contractorAllJobs(true), contractorJob(job(v.slice(4)))) : contractorJob(job(v.slice(4)));
     if (v && v.startsWith("plant:")) return plantDetail(plant(v.slice(6)));
     if (v && v.startsWith("rep:")) { const [, id, tr] = v.split(":"), r = tr ? driverReport(job(id), tr) : jobReport(job(id)); return isWide() ? split(reportsTab(), r) : r; }
@@ -4312,6 +4454,7 @@ document.addEventListener("change", e => {
   if (el.dataset && el.dataset.mydoc && el.files[0]) { S.myDocs[+el.dataset.mydoc] = [S.myDocs[+el.dataset.mydoc][0], "New one sent for review", "good"]; toast("Got it. We'll check it within a day."); render(); return; }
   if (el.dataset && el.dataset.bpick) { const id = el.dataset.bpick; ui.bpick = el.checked ? [...(ui.bpick || []), id] : (ui.bpick || []).filter(x => x !== id); render(); return; }
   if (ui.req && el.id === "rq-plant") { ui.req.plant = el.value; render(); }
+  if (ui.req && el.id === "rq-proj") { ui.req.project = el.value || null; render(); }
   if (ui.req && el.id === "rq-time") { ui.req.time = el.value; }
   if (ui.req && el.id === "rq-hours") { ui.req.hours = +el.value; render(); }
   if (el.id === "pl-q") { ui.plq = el.value; render(); }
