@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+/* Trucks2U look: black and white like the demo, one green for the brand and "done",
+   one orange for "needs your action". */
+@theme {
+  --color-brand: #22a454;
+  --color-good: #06a35a;
+  --color-act: #e8890c;
+  --color-act-ink: #a85500;
+  --color-act-bg: #fff1de;
+  --color-tile: #f3f3f3;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+}
+
+html { color-scheme: light; }
+body { background: #fff; color: #111; }
