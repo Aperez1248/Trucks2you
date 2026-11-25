@@ -468,16 +468,32 @@ main { --mp: 16px; }
 .linkish { font-weight: 700; font-size: 14px; }
 .act-ink { color: var(--act-ink); font-weight: 700; }
 /* Projects: work-day tiles on a project page */
-.pdays { display: grid; grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); gap: 6px; }
-.pday { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 2px; display: grid; gap: 1px; text-align: center; font: 600 12px/1.25 var(--body); color: var(--fg); cursor: pointer; min-height: 44px; }
-.pday b { font-size: 13px; }
-.pday.good { background: var(--good-soft); border-color: transparent; color: var(--good); }
-.pday.warn { background: var(--act-bg); border-color: var(--act); color: var(--act-deep); }
-.pday.info { background: var(--accent-soft); border-color: transparent; color: var(--accent); }
-.pday.plan { border-style: dashed; color: var(--muted); }
-.pday.past { cursor: default; }
 .pcard.need { border: 2px solid var(--act); }
 .pcard .pline { font-size: 13px; }
+/* Project schedule: one row per project, one column per day */
+.psg { display: grid; gap: 3px; align-items: center; }
+.psg .ph { font-size: 11px; color: var(--muted); text-align: center; line-height: 1.15; border-radius: 6px; padding: 2px 0; }
+.psg .ph b { display: block; font-size: 13px; color: var(--fg); }
+.psg .ph.today { background: var(--act-bg); }
+.psg .pn { font: 700 12px/1.2 var(--body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: none; border: 0; padding: 0; text-align: left; color: var(--fg); cursor: pointer; min-width: 0; }
+.psc { height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font: 700 11px/1 var(--body); border: 0; background: none; padding: 0; color: var(--fg); min-width: 0; }
+button.psc { cursor: pointer; }
+.psc.ok { background: var(--good-soft); color: var(--good); }
+.psc.sh { background: var(--act-bg); color: var(--act-deep); box-shadow: inset 0 0 0 1.5px var(--act); }
+.psc.pl { border: 1.5px dashed var(--muted); opacity: .8; }
+.psg .ptot { font-size: 11px; text-align: center; line-height: 1.2; border-top: 1px solid var(--line); padding-top: 6px; }
+.psg .ptot.lab { text-align: left; font-weight: 700; }
+/* Project page: work days as a month calendar */
+.pcal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.pcal .pw { font-size: 11px; color: var(--muted); text-align: center; }
+.pcal .pd { height: 40px; border-radius: 8px; display: grid; place-content: center; gap: 1px; font: 700 13px/1.1 var(--body); border: 0; background: none; color: var(--muted); padding: 0; text-align: center; }
+.pcal button.pd { cursor: pointer; color: var(--fg); }
+.pcal .pd small { font-size: 10px; font-weight: 700; }
+.pcal .pd.good { background: var(--good-soft); color: var(--good); }
+.pcal .pd.warn { background: var(--act-bg); color: var(--act-deep); box-shadow: inset 0 0 0 1.5px var(--act); }
+.pcal .pd.info { background: var(--accent-soft); color: var(--accent); }
+.pcal .pd.plan { border: 1.5px dashed var(--muted); color: var(--fg); }
+.pcal .pd.today:not(.good):not(.warn):not(.info) { box-shadow: inset 0 0 0 1.5px var(--act); }
 .good-ink { color: var(--good); font-weight: 700; }
 .mk { font-weight: 800; margin-right: 2px; }
 .mk.ok { color: var(--good); }
@@ -2401,9 +2417,37 @@ function projCard(p) {
       ${st.finished ? "" : projNextLine(p, st)}
     </button>`;
 }
+/* Schedule: every active project against the days ahead. Phone: one week at a time; Computer: two weeks.
+   ✓ booked (green), ! still short (orange), dashed = a planned work day with no trucks asked for yet. */
+function projSchedule(ps) {
+  // On the computer: two weeks, unless a job or project is open beside it (then one week, like the phone)
+  const wide = isWide() && !/^(job|proj):/.test(ui.view || ""), N = wide ? 14 : 7, wk = wide ? 0 : (ui.psw || 0), from = wk * 7, days = Array.from({ length: N }, (_, i) => from + i);
+  const rows = ps.map(p => {
+    const js = projJobs(p), inRange = days.some(n => js.some(j => j.dayN === n) || p.plan.includes(n));
+    const later = projDays(p).find(d => d.n > days[N - 1]);
+    if (!inRange) return later && !projDays(p).some(d => d.n >= days[0] && d.n <= days[N - 1]) ? `<button type="button" class="pn" data-go="proj:${p.id}">${esc(p.name.split(" ").slice(0, 2).join(" "))}</button><span class="muted" style="grid-column:span ${N};font-size:12px">starts ${esc(calLabel(later.n))} ›</span>` : "";
+    return `<button type="button" class="pn" data-go="proj:${p.id}" title="${esc(p.name)}">${esc(p.name.split(" ").slice(0, 2).join(" "))}</button>` + days.map(n => {
+      const dj = js.filter(j => j.dayN === n);
+      if (dj.length) { const f = dj.reduce((s, j) => s + filled(j), 0), t = dj.reduce((s, j) => s + needed(j), 0), sh = dj.some(shortJob);
+        return `<button type="button" class="psc ${sh ? "sh" : "ok"}" data-go="job:${dj[0].id}" aria-label="${esc(p.name)}, ${esc(calLabel(n))}: ${f} of ${t} trucks">${sh ? `! ${f}/${t}` : `✓ ${t}`}</button>`; }
+      if (p.plan.includes(n)) return `<button type="button" class="psc pl" data-act="pj-req:${p.id}:${n}" aria-label="${esc(p.name)}, ${esc(calLabel(n))}: planned, request trucks"></button>`;
+      return '<span class="psc"></span>'; }).join("");
+  }).join("");
+  const tot = days.map(n => {
+    const js = cActive().filter(j => j.dayN === n), need = js.reduce((s, j) => s + needed(j), 0), short = js.reduce((s, j) => s + Math.max(0, needed(j) - filled(j)), 0);
+    const asked = ps.filter(p => p.plan.includes(n) && !projJobs(p).some(j => j.dayN === n)).length;
+    if (!need) return `<span class="ptot muted">${asked ? "not<br>asked" : "–"}</span>`;
+    return `<span class="ptot"><b class="num">${need}${asked ? "+" : ""}</b><br>${short ? `<span class="act-ink">${short} short</span>` : '<span class="good-ink">set</span>'}</span>`; }).join("");
+  const head = days.map(n => { const d = dateOf(n); return `<span class="ph${n === 0 ? " today" : ""}">${n === 0 ? "Today" : d.toLocaleDateString("en-US", { weekday: "short" })}<b>${d.getDate()}</b></span>`; }).join("");
+  const nav = wide ? '<span class="muted" style="font-size:13px">Next 2 weeks</span>'
+    : `<button class="btn small ghost" type="button" data-act="c-psw:${wk ? 0 : 1}" style="flex:none">${wk ? "‹ This week" : "Next week ›"}</button>`;
+  return `<div class="card psched" style="grid-column:1 / -1"><div class="row"><h2>Schedule</h2>${nav}</div>
+    <div class="psg" style="grid-template-columns:minmax(72px,1.4fr) repeat(${N}, minmax(0,1fr))"><span></span>${head}${rows}<span class="ptot lab">Trucks a day</span>${tot}</div>
+    ${calKey(["ok", "act"]).replace("</div>", "<span>dashed = planned, no trucks asked for</span></div>")}</div>`;
+}
 function projectsList() {
   const ps = activeProjects(), loose = cActive().filter(j => !j.project || !proj(j.project)), done = PROJS().filter(p => projDays(p).length && projState(p).finished);
-  return (ps.map(projCard).join("") || '<div class="note">No active projects. Tap Request trucks to start one.</div>')
+  return (ps.length ? projSchedule(ps) : "") + (ps.map(projCard).join("") || '<div class="note">No active projects. Tap Request trucks to start one.</div>')
     + (loose.length ? `<p class="eyebrow">Not in a project</p>${loose.map(cJobCard).join("")}` : "")
     + (done.length ? `<details class="card"><summary style="cursor:pointer;font-weight:700">Finished projects · ${done.length}</summary><div class="stack" style="gap:8px;margin-top:8px">${done.map(projCard).join("")}</div></details>` : "");
 }
@@ -2411,13 +2455,16 @@ function projectsList() {
 function projectPage(p) {
   if (!p) { ui.view = "alljobs"; return contractorAllJobs(false); }
   const st = projState(p), t = projTotals(p), js = projJobs(p).slice().sort((a, b) => a.dayN - b.dayN), site = js.find(j => j.pts);
-  const dayTile = ({ n, js: dj }) => {
-    const top = `<b>${n === 0 ? "Today" : esc(shortDate(n))}</b>`;
-    if (dj.length) { const j = dj[0], cls = n < 0 ? (j.approved ? "good" : "info") : shortJob(j) ? "warn" : "good";
-      const lab = n < 0 ? (j.approved ? "✓ done" : "approve") : shortJob(j) ? `${filled(j)}/${needed(j)} trucks` : "✓ booked";
-      return `<button type="button" class="pday ${cls}" data-go="job:${j.id}">${top}<span>${lab}</span></button>`; }
-    if (n < 0) return `<span class="pday good past">${top}<span>✓ done</span></span>`;
-    return `<button type="button" class="pday plan" data-act="pj-req:${p.id}:${n}" aria-label="Request trucks for ${esc(calLabel(n))}">${top}<span>request</span></button>`; };
+  // Work days as a month calendar: from the Sunday before the first day (or today) to the Saturday after the last
+  const lo = Math.min(st.first.n, 0), hi = Math.max(st.last.n, 0), c0 = lo - dateOf(lo).getDay(), c1 = hi + (6 - dateOf(hi).getDay());
+  const pcal = `<div class="pcal">${["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(w => `<span class="pw">${w}</span>`).join("")}${Array.from({ length: c1 - c0 + 1 }, (_, i) => {
+      const n = c0 + i, d = dateOf(n), num = (d.getDate() === 1 ? d.toLocaleDateString("en-US", { month: "short" }) + " " : "") + d.getDate(), wd = st.days.find(x => x.n === n), tcls = n === 0 ? " today" : "";
+      if (wd && wd.js.length) { const j = wd.js[0], cls = n < 0 ? (j.approved ? "good" : "info") : shortJob(j) ? "warn" : "good", mk = n < 0 ? (j.approved ? "✓" : "approve") : shortJob(j) ? `! ${filled(j)}/${needed(j)}` : "✓";
+        return `<button type="button" class="pd ${cls}${tcls}" data-go="job:${j.id}" aria-label="${esc(calLabel(n))}: ${esc(mk)}">${num}<small>${mk}</small></button>`; }
+      if (wd && n < 0) return `<span class="pd good">${num}<small>✓</small></span>`;
+      if (wd) return `<button type="button" class="pd plan${tcls}" data-act="pj-req:${p.id}:${n}" aria-label="${esc(calLabel(n))}: planned, request trucks">${num}</button>`;
+      if (n >= 0 && !st.finished) return `<button type="button" class="pd${tcls}" data-act="pj-add:${p.id}:${n}" aria-label="Add ${esc(calLabel(n))} as a work day" style="color:var(--muted)">${num}</button>`;
+      return `<span class="pd${tcls}">${num}</span>`; }).join("")}</div>`;
   const reps = js.filter(j => repWorked(j).length);
   const tickets = js.reduce((s, j) => s + j.assignments.reduce((x, a) => x + a.tickets.length, 0), 0) + (p.prior ? p.prior.loads : 0);
   const open = js.filter(j => !j.approved && j.dayN >= -1);
@@ -2432,8 +2479,9 @@ function projectPage(p) {
       <div class="row" style="font-size:14px"><span class="num"><strong>${money0(t.cost)}</strong> so far</span>${p.budget ? `<span class="muted num">${t.cost > p.budget ? money0(t.cost - p.budget) + " over" : money0(p.budget - t.cost) + " left"}</span>` : ""}</div>
       <p class="muted" style="font-size:12.5px">Hours times each truck's rate, from approved and finished days. Today's trucks are added when they clock out.</p></div>
     <div class="card"><div class="row"><h2>Work days</h2><span class="muted">${esc(st.label)}</span></div>
-      <div class="pdays">${st.days.map(dayTile).join("")}</div>
-      <div class="clegend muted"><span>${MK.ok} done or booked</span><span>${MK.act} needs trucks</span><span>dashed = not requested yet</span></div></div>
+      ${pcal}
+      <div class="clegend muted"><span>${MK.ok} done or booked</span><span>${MK.act} needs trucks</span><span>dashed = tap to request</span></div>
+      ${st.finished ? "" : '<span class="muted" style="font-size:12.5px">Tap a blank date to add a work day.</span>'}</div>
     ${projNextLine(p, st) && !st.finished ? `<div class="note">${projNextLine(p, st)}</div>` : ""}
     ${open.length ? `<p class="eyebrow">Truck requests</p>${open.map(cJobCard).join("")}` : ""}
     <div class="card"><h2>Load tickets and reports</h2>
@@ -2844,6 +2892,9 @@ Object.assign(ACTS, {
   "rq-day": n => { ui.req.day = +n; },
   "c-day": n => { ui.cday = n === "all" ? null : +n; },
   "c-jv": k => { ui.cjv = k; },
+  "c-psw": w => { ui.psw = +w; },
+  "pj-add": (id, n) => { const p = proj(id); if (!p) return false; n = +n; if (!p.plan.includes(n)) p.plan.push(n);
+    toast(`${calLabel(n)} added as a work day. Tap it to request trucks.`); },
   // Request trucks for a project: the site, plant, kind of work, trucks and start time come from its last day
   "pj-req": (id, n) => { const p = proj(id); if (!p) return false; const st = projState(p), last = projJobs(p).filter(j => j.pts).sort((a, b) => b.dayN - a.dayN)[0];
     ui.req = newReq(); ui.req.project = id; ui.view = null;
